@@ -54,7 +54,7 @@ $(document).ready(function(){
 
         // on initialise ajaxready à true au premier chargement de la fonction
         $(window).data('ajaxready', true);
-        $('article').append('<div id="loader">'+_t('LOADING')+'</div>');
+        $('article').append('<div id="loader">'+'LOADING'+'</div>');
         $(window).data('page', 1);
         $(window).data('nblus', 0);
 
@@ -64,7 +64,7 @@ $(document).ready(function(){
     $('[data-toggle-group]').click(function(){
         toggleTab($(this));
     });
-    //alert(_t('IDENTIFIED_WITH',['idleman']));
+
 
     // focus sur l'input du login
     if (document.getElementById('inputlogin')) document.getElementById('inputlogin').focus();
@@ -170,85 +170,6 @@ $(document).keydown(function (e) {
 $(window).scroll(function(){
     scrollInfini();
 });
-
-
-/** SECTION MARKET & PLUGINS **/
-
-function toggleTab(el){
-    if(el.hasClass('selected')) {
-        return false;
-    }
-    var tab = el.data('toggle-tab'),
-        group = el.data('toggle-group');
-    el.parent().find('li').removeClass('selected');
-    el.addClass('selected');
-    $('[data-zone='+tab+'][data-group='+group+']').fadeIn( 300, function() {
-        $(this).attr('aria-hidden', 'false');
-    });
-    $('[data-group='+group+'][aria-hidden="false"]').hide( 400, function() {
-        $(this).attr('aria-hidden', 'true');
-    });
-    if(tab==='market'){
-        searchPlugin();
-    }
-}
-
-function searchPlugin(keyword){
-    var ghZoneClass = 'gh-leed-market';
-    var ghZone = $('.'+ghZoneClass);
-    if(ghZone.length === 0){
-        ghZone = $('<div class="gh-leed-market">'+_t('LOADING')+'</div>');
-        ghZone.appendTo('[data-zone="market"]');
-    }
-    $.ajax({
-        url: 'action.php?action=getGithubMarket'
-    })
-        .done(function(data) {
-            if(data.length > 0){
-                var tpl = '<h3>'+_t('PLUGINS_INSTALL_FROM_GITHUB_LEED_MARKET')+'</h3>';
-                tpl += '<ul>';
-                for(i=0;i<data.length;i++){
-                    var plugin = data[i];
-                    tpl += '<li><ul>'+
-                        '<li><h4>Nom: </h4>'+plugin.name+'</li>';
-                    if(typeof(plugin.description) === 'string') {
-                        tpl += '<li>'+plugin.description+'</li>';
-                    }
-                    tpl += '<li><button class="btn" onclick="installPlugin(\''+plugin.zipUrl+'\',$(this).parent());">'+_t('PLUGINS_INSTALL')+'</button></li>'+
-                        '</ul></li>';
-                }
-                tpl += '</ul>';
-                ghZone.html(tpl);
-            } else {
-                ghZone.html('<p>' + _t('PLUGINS_ALL_INSTALLED_OR_NONE_FOUND') + '</p>');
-            }
-        });
-}
-
-function installPlugin(url,el){
-    var logsContainerClass = 'logs-container',
-        logsContainer = el.find('.'+logsContainerClass),
-        loading = _t('LOADING');
-    if(logsContainer.length){
-        logsContainer.html(loading);
-    } else {
-        logsContainer = $('<div class="'+logsContainerClass+'">'+loading+'</div>').appendTo(el);
-    }
-
-    $.ajax({
-        url: 'action.php?action=installPlugin&zip='+encodeURIComponent(url)
-    })
-        .done(function(data) {
-            var text = '';
-            $($.parseJSON(data)).each(function(key, val){
-                text += "<p>"+val+"</p>";
-            });
-            logsContainer.html(text);
-        })
-}
-
-/** FIN MARKET & PLUGINS **/
-
 
 function scrollInfini() {
     var deviceAgent = navigator.userAgent.toLowerCase();
@@ -506,7 +427,7 @@ function saveRenameFeed(element,feed,url){
     var feedNameValue = feedNameCase.val();
     var feedUrlCase = feedLine.children('.js-feedTitle:first').children('input[name="feedUrl"]');
     var feedUrlValue = feedUrlCase.val();
-    $(element).html(_t('RENAME'));
+    $(element).html('Renomemr');
     $(element).attr('style','background-color:#F16529;');
     $(element).attr('onclick','renameFeed(this,'+feed+')');
     feedNameCase.replaceWith('<a href="'+url+'">'+feedNameValue+'</a>');
@@ -644,80 +565,6 @@ function synchronize(code){
     }
 }
 
-// Affiche / cache les blocs résumé / content
-function toggleArticleDisplayMode(button, target){
-    if ($('#'+target+' > .summary').length>0 && $('#'+target+' > .summary').attr('style')!='display: none;'){
-
-        // je suis en mode affichage réduit et je passe en affichage mode complet
-        action = 'content';
-        $('#'+target+' > .summary').hide();
-        // chargement de l'article complet (content)
-        if ($.trim($('#'+target+' > .content').text()).length==0){
-            $.ajax({
-                url: "./action.php?action=articleDisplayMode&articleDisplayMode="+action+'&event_id='+target,
-                success:function(msg){
-                    if(msg.status == 'noconnect') {
-                        alert(msg.texte)
-                    } else {
-                        if( console && console.log && msg!="" ) console.log(msg);
-                        $('#'+target+' > .content').html(msg);
-                        $('#'+target+' > .content').show()
-                        // btn pour passer en mode title
-                        button.innerHTML = '|||';
-                        button.title = _t('EVENT_DISPLAY_CONTENT');
-                        $('#'+target+' > .articleDetails').last().show();
-                    }
-                }
-            });
-        } else {
-            $('#'+target+' > .content').show()
-            // btn pour passer en mode title
-            button.innerHTML = '|||';
-            button.title = _t('EVENT_DISPLAY_CONTENT');
-            $('#'+target+' > .articleDetails').last().show();
-        }
-
-    }else{
-        if ($('#'+target+' > .content').length>0 && $('#'+target+' > .content').attr('style')!='display: none;'){
-            // je suis en mode affichage complet et je passe en affichage mode title
-            $('#'+target+' > .content').hide();
-            // btn pour passer en mode reduit
-            button.innerHTML = '|&nbsp;&nbsp;';
-            button.title = _t('EVENT_DISPLAY_TITLE');
-            if ($('#'+target+' > .articleDetails').length > 1) {
-                $('#'+target+' > .articleDetails').last().hide();
-            }
-
-        }  else {
-
-            // je suis en mode affichage titre et je passe en affichage mode réduit
-            action = 'summary';
-            // chargement de l'article réduit (description)
-            if ($.trim($('#'+target+' > .summary').text()).length==0){
-                $.ajax({
-                    url: "./action.php?action=articleDisplayMode&articleDisplayMode="+action+'&event_id='+target,
-                    success:function(msg){
-                        if(msg.status == 'noconnect') {
-                            alert(msg.texte)
-                        } else {
-                            if( console && console.log && msg!="" ) console.log(msg);
-                            $('#'+target+' > .summary').html(msg);
-                            $('#'+target+' > .summary').show();
-                            // btn pour passer en mode complet
-                            button.innerHTML = '||&nbsp;';
-                            button.title = _t('EVENT_DISPLAY_SUMMARY');
-                        }
-                    }
-                });
-            } else {
-                $('#'+target+' > .summary').show();
-                // btn pour passer en mode complet
-                button.innerHTML = '||&nbsp;';
-                button.title = _t('EVENT_DISPLAY_SUMMARY');
-            }
-        }
-    }
-}
 
 // Disparition block et affichage block clique
 function toggleBlocks(target){

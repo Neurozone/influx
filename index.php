@@ -15,18 +15,13 @@ $logger = new Logger('influxLogger');
 $logger->pushHandler($stream);
 $logger->info('Influx started');
 
-$templatePath = __DIR__ . '/templates/influx-twig';
+$templatePath = __DIR__ . '/templates/influx';
 
 $loader = new \Twig\Loader\FilesystemLoader($templatePath);
 $twig = new \Twig\Environment($loader, [__DIR__ . '/cache' => 'cache', 'debug' => true,]);
 $twig->addExtension(new Umpirsky\Twig\Extension\PhpFunctionExtension());
 $twig->addExtension(new \Twig\Extension\DebugExtension());
 
-/*
-spl_autoload_register(function ($className) {
-    include_once $_SERVER['DOCUMENT_ROOT'] . '/classes/' . $className . '.php';
-});
-*/
 // Create Router instance
 $router = new \Bramus\Router\Router();
 
