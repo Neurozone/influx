@@ -1,0 +1,196 @@
+{% include 'header.twig' %}
+
+<div id="helpPanel" onclick="$(this).fadeOut(200);">
+    <h3>Raccourcis clavier</h3>
+    <ul>
+        <li><strong>m</strong> marque l’&eacute;l&eacute;ment s&eacute;lectionn&eacute; comme lu / non lu</li>
+        <li><strong>l</strong> marque l’&eacute;l&eacute;ment pr&eacute;c&eacute;dent comme non lu</li>
+        <li><strong>s</strong> marque l’&eacute;l&eacute;ment s&eacute;lectionn&eacute; comme favori / non favori</li>
+        <li><strong>n</strong> &eacute;l&eacute;ment suivant (sans l’ouvrir)</li>
+        <li><strong>v</strong> ouvre l’URL de l’&eacute;l&eacute;ment s&eacute;lectionn&eacute;</li>
+        <li><strong>p</strong> &eacute;l&eacute;ment pr&eacute;c&eacute;dent (sans l’ouvrir)</li>
+        <li><strong>espace</strong> &eacute;l&eacute;ment suivant (et l’ouvrir)</li>
+        <li><strong>k</strong> &eacute;l&eacute;ment pr&eacute;c&eacute;dent (et l’ouvrir)</li>
+        <li><strong>o</strong> ou <strong>enter</strong> ouvrir l’&eacute;l&eacute;ment s&eacute;lectionn&eacute;</li>
+        <li><strong>j</strong> change le mode d'affichage de l'article (titre, r&eacute;duit, complet)</li>
+        <li>touche h pour afficher/masquer le panneau d’aide"</li>
+    </ul>
+</div>
+
+<div id="main" class="wrapper clearfix index">
+    <!-- MENU -->
+    <div id="menuBar">
+        <aside>
+            <!-- TITRE MENU + OPTION TOUT MARQUER COMME LU -->
+            <h3 class="left">Flux</h3>
+            <button style="margin: 10px 0px 0px 10px;"
+                    onclick="if(confirm('Tout marquer comme lu pour tous les flux ?'))window.location='/action/readAll'">
+                Tout marquer comme lu
+            </button>
+            <div class="readingFolderButton"
+                 onclick="toggleUnreadFeedFolder(this, {{ displayOnlyUnreadFeedFolder_reverse }}) ;"
+                 title="Afficher uniquement non lus"><i class="icon-resize-full"></i></div>
+
+            <ul class="feeds clear">
+
+                <!--Pour chaques dossier-->
+                {% for folder in folders %}
+
+                <!-- DOSSIER -->
+                <li>
+                    <h1 class="folder{% if folder.unread == 0 %}hidefeed{% endif %}"
+                            {% if (displayOnlyUnreadFeedFolder == true) and (folder.unread == 0) %}
+                        style="display:none"
+                            {% endif %}>
+
+                        <a title="Marquer comme lu" class="folderLink"
+                           href="/folder/{{ folder.id }}"
+                           data-id="{{ folder.id }}">{{ folder.name }}</a>
+                        <a class="readFolder"
+                           title="Plier/D&eacute;plier le dossier"
+                           onclick="toggleFolder(this,{{ folder.getId }} )">
+                            {% if folder.isopen == 0 %}
+                                <i class="icon-folder-empty"></i>
+                            {% else %}
+                                <i class="icon-folder-open-empty"></i>
+                            {% endif %}</a>
+                        {% if folder.unread != 0 %}
+                            <a class="unreadForFolder"
+                               title="marquer comme lu le(s) {{ folder.unread }} evenement(s) non lu(s) de ce dossier"
+                               data-mark-all-read="folder">{{ folder.unread }}
+                                Non lu</a>
+                        {% endif %}
+
+                    </h1>
+                    <!-- FLUX DU DOSSIER -->
+                    <ul {% if folder.isopen == 0 %}style="display:none" {% endif %}>
+
+                        {% for feed in folder.feeds %}
+
+                            {% if displayOnlyUnreadFeedFolder == true %}
+                                <!-- Affichage des feeds ayant des articles non lus -->
+                                {% if feed.unread is not null %}
+
+                                    {% if feed.lastSyncInError == 0 %}
+                                        <li>
+                                    {% else %}
+                                        <li class="errorSync" title="Sync error">
+                                    {% endif %}
+                                    <a
+                                            href="/feed/{{ feed.id }}"
+                                            class="feedLink"
+                                            data-id="{{ feed.id }}"
+                                            title="{{ feed.url }}">{{ feed.name }} </a>
+                                    <button class="right unreadForFeed" data-mark-all-read="feed">
+                                        <span title="Marquer comme lu">{{ feed.unread }}</span>
+                                    </button>
+
+                                    </li>
+                                {% else %}
+                                    <!-- On cache les feeds n'ayant pas d'article non lus -->
+                                    {% if feed.lastSyncInError == 0 %}
+                                        <li class="hidefeed" style="display:none;">
+                                    {% else %}
+                                        <li class="hidefeed errorSync" style="display:none;"
+                                        title="sync error">
+                                    {% endif %}
+                                    <a
+                                            href="/feed/{{ feed.id }}"
+                                            class="feedLink"
+                                            data-id="{{ feed.id }}"
+                                            title="{{ feed.url }}">{{ feed.name }} </a>
+                                    {% if feed.unread is defined %}
+                                        <button class="right unreadForFeed" data-mark-all-read="feed">
+                                            <span title="marquer comme lu">{{ feed.unread }}</span>
+                                        </button>
+                                    {% endif %}
+
+                                    </li>
+                                {% endif %}
+                            {% else %}
+                                <!-- Affichage de tous les feeds -->
+                                {% if feed.unread is defined %}
+                                    {% if feed.lastSyncInError == 0 %}
+                                        <li>
+                                    {% else %}
+                                        <li class="errorSync" title="Erreur de sync">
+                                    {% endif %}
+                                {% else %}
+                                    {% if feed.lastSyncInError == 0 %}
+                                        <li class="hidefeed">
+                                    {% else %}
+                                        <li class="hidefeed errorSync" title="Erreur de sync">
+                                    {% endif %}
+                                {% endif %}
+                                <a
+                                        href="/feed/{{ feed.id }}"
+                                        class="feedLink"
+                                        data-id="{{ feed.id }}"
+                                        title="{{ feed.url }}">{{ feed.name }} </a>
+
+                                {% if feed.unread is not defined %}
+                                    <button class="right unreadForFeed" data-mark-all-read="feed">
+                                        <span title="Marquer comme lu">{{  feed.unread }}</span>
+                                    </button>
+                                {% endif %}
+
+                                </li>
+                            {% endif %}
+
+                        {% endfor %}
+
+
+
+                    </ul>
+                </li>
+                {% endfor %}
+            </ul>
+        </aside>
+
+
+    </div>
+
+    <article>
+        <header class="articleHead">
+
+            {% if action == 'feed' %}
+                <h1 class="articleSection"><a target="_blank" rel="noopener noreferrer"
+                                              href="{{ currentFeed.getWebSite }}">{{ currentFeed.getName }}</a> :</h1>
+                {{ currentFeed.getDescription }}
+                <div class="clear"></div>
+                {{ attribute(i18n, '_t', ['????']) }}
+                <a href="/feed/{{ feed }}/page/{{ page }}/unread">Non lu</a> |
+                <a href="/feed/{{ feed }}/page/{{ page }}/older">Plus vieux</a> en premier
+            {% endif %}
+
+            {% if action == 'folder' %}
+                <h1 class="articleSection">Dossier : {{ currentFolder.getName }}</h1>
+                <p>Tous les &eacute;v&eacute;nements non lus pour le dossier {{ currentFolder.getName }}</p>
+            {% endif %}
+
+            {% if action == 'favorites' %}
+
+                <h1 class="articleSection">Articles favoris <span id="nbarticle">{{ numberOfItem }}</span>
+                    }}</h1>
+            {% endif %}
+
+
+            {% if (action == 'unreadEvents') or (action == '') %}
+            {% set helpPanel = "#helpPanel" %}
+        </header>
+        <header class="articleHead">
+            <h1 class="articleSection">Non lu<span id="nbarticle">{{ numberOfItem }}</span>)</h1>
+            <i title="Touche h pour afficher/masquer le panneau d’aide" onclick="$('#helpPanel').fadeIn(200);"
+               class="icon-keyboard right pointer"></i>
+            {% endif %}
+
+            <div class="clear"></div>
+        </header>
+
+        {% include "article.twig" %}
+    </article>
+
+
+</div>
+{% include "footer.twig" %}
+

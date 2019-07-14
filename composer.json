@@ -1,0 +1,16 @@
+{
+    "require": {
+        "bramus/router": "^1.4",
+        "twig/twig": "^2.11",
+        "cocur/slugify": "^3.2",
+        "rain/raintpl": "^3.0.0",
+        "simplepie/simplepie": "^1.5",
+        "endroid/qr-code": "^3.6",
+        "spomky-labs/otphp": "^10.0",
+        "monolog/monolog": "^1.24",
+        "celd/opml-import-export": "dev-master",
+        "twig/extensions": "^1.5",
+        "umpirsky/twig-php-function": "^0.2.0",
+        "sinergi/browser-detector": "^6.1"
+    }
+}

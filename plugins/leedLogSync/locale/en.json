@@ -1,0 +1,6 @@
+{
+ "P_LOGSYNC_SHOW_FILE_ERR":"<li>No log file present.</li> <li>expected File: $1</li>",
+ "P_LOGSYNC_SHOW_FILE_TITLE":"Viewing the file: $1",
+ "P_LOGSYNC_TITLE":"Logs Sync. Cron",
+ "P_LOGSYNC_TITLE2":"Logs last synchronization"
+}

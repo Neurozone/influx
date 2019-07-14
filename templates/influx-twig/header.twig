@@ -1,0 +1,49 @@
+<!doctype html>
+<!--[if lt IE 7]> <html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js lt-ie9 lt-ie8" lang="en"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js lt-ie9" lang="en"> <![endif]-->
+<!--[if gt IE 8]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+    <title>
+        {% if currentFeed is defined %}
+            {{ attribute(currentFeed, 'getName') }}
+        {% endif %}
+        {% if currentFolder is defined %}
+            {{ currentFolder.getName }}
+        {% endif %}InFlux
+    </title>
+    <meta charset="utf-8">
+    <meta name="referrer" content="no-referrer" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="description" content="Agr&eacute;gateur de flux RSS InFlux">
+    <meta name="author" content="Hecate">
+    <meta name="viewport" content="width=device-width">
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="stylesheet" href=" {{ app.request.schemeAndHttpHost }}/templates/influx-twig/css/style.css">
+
+</head>
+<body>
+    <div class="global-wrapper">
+        <!-- <!> Balise ayant double utilit&eacute; : sert de base a javascript pour connaitre l'action courante permet le retour en haut de page -->
+        <a id="pageTopAnvil"></a>
+        <a id="pageTop" class="hidden">{{ action }}</a>
+        <div id="header-container">
+            <header class="wrapper clearfix">
+                <h1 class="logo" id="title"><a href="">In<i>Flux</i></a></h1>
+                <div class="loginBloc">
+                   - <span>Identifi&eacute; avec  {{ user }} </span><a href="logout" class="loginButton">{{  trans.DISCONNECT }}</a>
+                    <div class="clear"></div>
+                </div>
+
+                <nav>
+                    <ul>
+                        <li><a href="" title="Accueil"><i class="icon-home"></i></a></li>
+                        <li><a href="favorites" title="Favoris"><i class="icon-star-empty"></i></a></li>
+                        <li><a href="settings" title="Gestion"><i class="icon-cog"></i></a></li>
+                        <li><a class="synchronizeButton" title="Lancer une synchronisation manuelle" onclick="synchronize('{{ synchronisationCode }}');"><i class="icon-arrows-cw"></i></a></li>
+
+                    </ul>
+                </nav>
+            </header>
+        </div>
+    <div id="main-container">

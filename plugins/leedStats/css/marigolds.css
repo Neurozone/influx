@@ -1,0 +1,16 @@
+.leedStats_border{
+    border: 1px black solid;
+    padding: 0px 5px 0px 5px;
+}
+.leedStats_textleft{
+    text-align: left;
+}
+.leedStats_textright{
+    text-align: right;
+}
+.leedStats_textcenter{
+    text-align: center;
+}
+.leedStats_th{
+    background-color: darkgrey;
+}
