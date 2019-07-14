@@ -523,12 +523,12 @@ $router->get('/update', function () {
 });
 
 /* ---------------------------------------------------------------- */
-// Route: /syncronize
+// Route: /synchronize
 /* ---------------------------------------------------------------- */
 
-$router->get('/syncronize', function () use ($db) {
+$router->get('/synchronize', function () use ($db) {
 
-    $results = $db->query('SELECT id,name,desciption,website,url,lastupdate,folder,isverboxse,lastSyncInError FROM leed_feed ORDER BY name ');
+    $results = $db->query('SELECT id,name,description,website,url,lastupdate,folder,isverboxse,lastSyncInError FROM leed_feed ORDER BY name ');
     while ($rows = $results->fetch_array()) {
 /*
  *CREATE TABLE `leed_feed` (
