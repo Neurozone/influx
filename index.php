@@ -897,9 +897,9 @@ $router->mount('/article', function () use ($router, $twig, $myUser, $configurat
 // Route: /settings
 /* ---------------------------------------------------------------- */
 
-$router->mount('/settings', function () use ($router, $twig, $myUser, $configurationManager, $feedManager, $folderManager, $cookiedir, $eventManager, $logger) {
+$router->mount('/settings', function () use ($router, $twig, $trans, $logger, $config, $cookiedir ) {
 
-    $router->get('/', function () use ($twig, $myUser, $configurationManager, $feedManager, $folderManager, $cookiedir) {
+    $router->get('/', function () use ($twig, $cookiedir) {
 
         if (!$_SESSION['user']) {
             header('location: /login');
@@ -910,10 +910,10 @@ $router->mount('/settings', function () use ($router, $twig, $myUser, $configura
     });
 
     /* ---------------------------------------------------------------- */
-    // Route: /settings/plugin/changeState/{name}/state/{state}
+    // Route: /settings/plugin/{name}/state/{state}
     /* ---------------------------------------------------------------- */
 
-    $router->get('/plugin/changeState/{name}/state/{state}', function ($name, $state) {
+    $router->get('/plugin/{name}/state/{state}', function ($name, $state) {
 
         if ($state == '0') {
             Plugin::enabled($name);
@@ -928,7 +928,7 @@ $router->mount('/settings', function () use ($router, $twig, $myUser, $configura
     // Route: /settings/plugin/changeState/{name}/state/{state}
     /* ---------------------------------------------------------------- */
 
-    $router->get('/{option}', function ($option) use ($twig, $myUser, $configurationManager, $feedManager, $folderManager, $logger, $cookiedir) {
+    $router->get('/{option}', function ($option) use ($twig, $trans, $logger, $config, $cookiedir) {
 
         //$serviceUrl', rtrim($_SERVER['HTTP_HOST'] . $cookiedir, '/'));
 
@@ -976,14 +976,12 @@ $router->mount('/settings', function () use ($router, $twig, $myUser, $configura
     // Route: /settings/synchronize
     /* ---------------------------------------------------------------- */
 
-    $router->get('/synchronize', function ($option) use ($tpl, $i18n, $myUser, $configurationManager, $feedManager, $folderManager, $cookiedir) {
+    $router->get('/synchronize', function ($option) use ($twig, $trans, $logger, $conf, $cookiedir) {
 
         if (isset($myUser) && $myUser != false) {
-            $syncCode = $configurationManager->get('synchronisationCode');
-            $syncGradCount = $configurationManager->get('syncGradCount');
-            if (false == $myUser && !(isset($_['code']) && $configurationManager->get('synchronisationCode') != null && $_['code'] == $configurationManager->get('synchronisationCode')
-                )
-            ) {
+            $syncCode = $conf['synchronisationCode'];
+            $syncGradCount = $conf['syncGradCount'];
+            if (!(isset($_['code']) && $conf['synchronisationCode'] != null && $_GET['code'] == $conf['synchronisationCode'])) {
                 die(_t('YOU_MUST_BE_CONNECTED_ACTION'));
             }
             Functions::triggerDirectOutput();
@@ -991,13 +989,13 @@ $router->mount('/settings', function () use ($router, $twig, $myUser, $configura
 
             echo '<html>
                 <head>
-                <link rel="stylesheet" href="./templates/' . $theme . '/css/style.css">
+                <link rel="stylesheet" href="./templates/influx/css/style.css">
                 <meta name="referrer" content="no-referrer" />
                 </head>
                 <body>
                 <div class="sync">';
 
-            $synchronisationType = $configurationManager->get('synchronisationType');
+            $synchronisationType = $conf['synchronisationType'];
 
             $synchronisationCustom = array();
             Plugin::callHook("action_before_synchronisationtype", array(&$synchronisationCustom, &$synchronisationType, &$commandLine, $configurationManager, $start));
@@ -1027,7 +1025,7 @@ $router->mount('/settings', function () use ($router, $twig, $myUser, $configura
     // Route: /statistics
     /* ---------------------------------------------------------------- */
 
-    $router->get('/statistics', function () use ($tpl, $configurationManager, $myUser, $logger) {
+    $router->get('/statistics', function () use ($twig, $trans, $logger, $conf, $logger) {
 
         if (!$_SESSION['user']) {
             header('location: /login');
