@@ -63,12 +63,16 @@ while ($row = $result_configuration->fetch_array()) {
 // Reverse proxy
 /* ---------------------------------------------------------------- */
 
+// @todo
+
+/*
 // Use X-Forwarded-For HTTP Header to Get Visitor's Real IP Address
 if (isset($_SERVER['HTTP_X_FORWARDED_FOR']) && $config['reverse_proxy'] == 1) {
     $http_x_headers = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
 
     $_SERVER['REMOTE_ADDR'] = $http_x_headers[0];
 }
+*/
 
 /* ---------------------------------------------------------------- */
 // i18n
@@ -79,15 +83,15 @@ $language = new Language();
 if ($language->getLanguage() == $config['language'] && is_file('locales/' . $config['language'] . '.json')) {
     $_SESSION['language'] = $language->getLanguage();
     $l_trans = json_decode(file_get_contents('locales/' . $config['language'] . '.json'), true);
-    $l_trans2 = json_decode(file_get_contents('templates/influx-twig/locales/' . $config['language'] . '.json'), true);
+    $l_trans2 = json_decode(file_get_contents('templates/influx/locales/' . $config['language'] . '.json'), true);
 } elseif ($language->getLanguage() != $config['language'] && is_file('locales/' . $config['language'] . '.json')) {
     $_SESSION['language'] = $language->getLanguage();
     $l_trans = json_decode(file_get_contents('locales/' . $config['language'] . '.json'), true);
-    $l_trans2 = json_decode(file_get_contents('templates/influx-twig/locales/' . $config['language'] . '.json'), true);
+    $l_trans2 = json_decode(file_get_contents('templates/influx/locales/' . $config['language'] . '.json'), true);
 } elseif (!is_file('locales/' . $config['language'] . '.json')) {
     $_SESSION['language'] = 'en';
     $l_trans = json_decode(file_get_contents('locales/' . $_SESSION['language'] . '.json'), true);
-    $l_trans2 = json_decode(file_get_contents('templates/influx-twig/locales/' . $_SESSION['language'] . '.json'), true);
+    $l_trans2 = json_decode(file_get_contents('templates/influx/locales/' . $_SESSION['language'] . '.json'), true);
 }
 
 $trans = array_merge($l_trans, $l_trans2);
@@ -331,9 +335,11 @@ $router->get('/', function () use (
     $trans
 ) {
 
-    if (!$_SESSION['user']) {
+    /*
+    if (!isset($_SESSION['user'])) {
         header('location: /login');
     }
+    */
     $action = '';
 
     $wrongLogin = !empty($wrongLogin);
@@ -375,10 +381,6 @@ $router->get('/', function () use (
 
     }
 
-    if (!isset($_SESSION['user'])) {
-        header('location: /login');
-    }
-
 
     $html = '';
 
@@ -410,11 +412,10 @@ $router->get('/', function () use (
             'page' => $page,
             'pages' => $pages,
             'startArticle' => $startArticle,
-            'user' => $_SESSION['user'],
+            //'user' => $_SESSION['user'],
             'scroll' => $scroll,
             'target' => $target,
             //'unread' => $unread,
-            'wrongLogin' => $wrongLogin,
             'trans' => $trans
         ]
     );
@@ -627,13 +628,13 @@ $router->get('/synchronize', function () use ($db) {
 // Route: /install
 /* ---------------------------------------------------------------- */
 
-$router->mount('/install', function () use ($router, $twig, $myUser, $configurationManager, $feedManager, $folderManager, $cookiedir, $eventManager, $logger) {
+$router->mount('/install', function () use ($router, $twig, $cookiedir, $logger) {
 
     /* ---------------------------------------------------------------- */
     // Route: /install/
     /* ---------------------------------------------------------------- */
 
-    $router->get('/', function () use ($twig, $myUser, $configurationManager, $feedManager, $folderManager, $cookiedir) {
+    $router->get('/', function () use ($twig, $cookiedir) {
 
         $filelist = glob("locales/*.json");
 
@@ -644,7 +645,7 @@ $router->mount('/install', function () use ($router, $twig, $myUser, $configurat
 
         $templateslist = glob("templates/*");
         foreach ($templateslist as $tpl) {
-            tpl_array = explode(".", basename($tpl));
+            $tpl_array = explode(".", basename($tpl));
             $list_templates[] = tpl_array[0];
         }
 
@@ -656,7 +657,7 @@ $router->mount('/install', function () use ($router, $twig, $myUser, $configurat
 
     });
 
-    $router->post('/', function () use ($twig, $myUser, $configurationManager, $feedManager, $folderManager, $cookiedir) {
+    $router->post('/', function () use ($twig, $cookiedir) {
 
         $install = new Install();
         /* Prend le choix de langue de l'utilisateur, soit :
@@ -833,7 +834,9 @@ $router->get('/favorites', function () use (
 // Route: /article
 /* ---------------------------------------------------------------- */
 
-$router->mount('/article', function () use ($router, $twig, $myUser, $configurationManager, $feedManager, $folderManager, $cookiedir, $eventManager, $logger) {
+// @todo
+
+$router->mount('/article', function () use ($router, $twig, $cookiedir, $logger) {
 
     /*
      * Plugin::callHook("index_pre_treatment", array(&$_));
@@ -1076,7 +1079,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
     // Route: /settings/synchronize
     /* ---------------------------------------------------------------- */
 
-    $router->get('/synchronize', function ($option) use ($twig, $trans, $logger, $conf, $cookiedir) {
+    $router->get('/synchronize', function ($option) use ($twig, $trans, $logger, $config, $cookiedir) {
 
         if (isset($myUser) && $myUser != false) {
             $syncCode = $conf['synchronisationCode'];
@@ -1125,7 +1128,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
     // Route: /statistics
     /* ---------------------------------------------------------------- */
 
-    $router->get('/statistics', function () use ($twig, $trans, $logger, $conf, $logger) {
+    $router->get('/statistics', function () use ($twig, $trans, $logger, $config) {
 
         if (!$_SESSION['user']) {
             header('location: /login');
@@ -1247,7 +1250,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
     // Route: /settings/feed/add
     /* ---------------------------------------------------------------- */
 
-    $router->post('/feed/add', function () use ($tpl, $configurationManager, $logger, $trans) {
+    $router->post('/feed/add', function () use ($twig, $trans, $logger, $config) {
 
         if (!$_SESSION['user']) {
             header('location: /login');
@@ -1278,7 +1281,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
     // Route: /settings/feed/remove/{id}
     /* ---------------------------------------------------------------- */
 
-    $router->get('/feed/remove/{id}', function ($id) use ($tpl, $configurationManager, $myUser, $feedManager, $eventManager) {
+    $router->get('/feed/remove/{id}', function ($id) use ($twig, $trans, $logger, $config) {
 
         if (!$_SESSION['user']) {
             header('location: /login');
@@ -1292,11 +1295,33 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
         header('location: /settings');
     });
 
-    $router->get('/feed/rename/{id}', function ($id) use ($tpl, $configurationManager, $myUser, $feedManager, $folderManager, $eventManager) {
+    $router->get('/feed/rename/{id}', function ($id) use ($twig, $trans, $logger, $config) {
 
         if (!$_SESSION['user']) {
             header('location: /login');
         }
+
+        if (isset($id)) {
+            $feedManager->change(array('name' => $_['name'], 'url' => Functions::clean_url($_['url'])), array('id' => $_['id']));
+        }
+        header('location: /settings');
+    });
+
+    $router->get('/feed/folder/{id}', function ($id) use ($twig, $trans, $logger, $config) {
+
+        if (!$_SESSION['user']) {
+            header('location: /login');
+        }
+
+        /*
+         *
+         * if ($myUser == false) exit(_t('YOU_MUST_BE_CONNECTED_ACTION'));
+        if (isset($_['feed'])) {
+            $feedManager->change(array('folder' => $_['folder']), array('id' => $_['feed']));
+        }
+        header('location: ./settings.php');
+         *
+         */
 
         if (isset($id)) {
             $feedManager->change(array('name' => $_['name'], 'url' => Functions::clean_url($_['url'])), array('id' => $_['id']));
@@ -1351,24 +1376,177 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
         header('location: /settings');
     });
 
+    $router->get('/feeds/export', function ($id) use ($tpl, $configurationManager, $myUser, $feedManager, $folderManager, $eventManager) {
+
+        if (!$_SESSION['user']) {
+            header('location: /login');
+        }
+
+        /*
+         * if (isset($_POST['exportButton'])) {
+            $opml = new Opml();
+            $xmlStream = $opml->export();
+
+            header('Content-Description: File Transfer');
+            header('Content-Type: application/octet-stream');
+            header('Content-Disposition: attachment; filename=leed-' . date('d-m-Y') . '.opml');
+            header('Content-Transfer-Encoding: binary');
+            header('Expires: 0');
+            header('Cache-Control: must-revalidate');
+            header('Pragma: public');
+            header('Content-Length: ' . strlen($xmlStream));
+
+        ob_clean();
+        flush();
+        echo $xmlStream;
+    }
+        break;
+         *
+         */
+
+        if (isset($id) && is_numeric($id) && $id > 0) {
+            $eventManager->customQuery('DELETE FROM `' . MYSQL_PREFIX . 'event` WHERE `' . MYSQL_PREFIX . 'event`.`feed` in (SELECT `' . MYSQL_PREFIX . 'feed`.`id` FROM `' . MYSQL_PREFIX . 'feed` WHERE `' . MYSQL_PREFIX . 'feed`.`folder` =\'' . intval($_['id']) . '\') ;');
+            $feedManager->delete(array('folder' => $id));
+            $folderManager->delete(array('id' => $id));
+        }
+
+        header('location: /settings');
+    });
+
+    $router->get('/feeds/import', function ($id) use ($tpl, $configurationManager, $myUser, $feedManager, $folderManager, $eventManager) {
+
+        if (!$_SESSION['user']) {
+            header('location: /login');
+        }
+
+        /*
+         * // On ne devrait pas mettre de style ici.
+        echo "<html>
+            <style>
+                a {
+                    color:#F16529;
+                }
+
+                html,body{
+                        font-family:Verdana;
+                        font-size: 11px;
+                }
+                .error{
+                        background-color:#C94141;
+                        color:#ffffff;
+                        padding:5px;
+                        border-radius:5px;
+                        margin:10px 0px 10px 0px;
+                        box-shadow: 0 0 3px 0 #810000;
+                    }
+                .error a{
+                        color:#ffffff;
+                }
+                </style>
+            </style><body>
+\n";
+        if ($myUser == false) exit(_t('YOU_MUST_BE_CONNECTED_ACTION'));
+        if (!isset($_POST['importButton'])) break;
+        $opml = new Opml();
+        echo "<h3>" . _t('IMPORT') . "</h3><p>" . _t('PENDING') . "</p>\n";
+        try {
+            $errorOutput = $opml->import($_FILES['newImport']['tmp_name']);
+        } catch (Exception $e) {
+            $errorOutput = array($e->getMessage());
+        }
+        if (empty($errorOutput)) {
+            echo "<p>" . _t('IMPORT_NO_PROBLEM') . "</p>\n";
+        } else {
+            echo "<div class='error'>" . _t('IMPORT_ERROR') . "\n";
+            foreach ($errorOutput as $line) {
+                echo "<p>$line</p>\n";
+            }
+            echo "</div>";
+        }
+        if (!empty($opml->alreadyKnowns)) {
+            echo "<h3>" . _t('IMPORT_FEED_ALREADY_KNOWN') . " : </h3>\n<ul>\n";
+            foreach ($opml->alreadyKnowns as $alreadyKnown) {
+                foreach ($alreadyKnown as &$elt) $elt = htmlspecialchars($elt);
+                $text = Functions::truncate($alreadyKnown->feedName, 60);
+                echo "<li><a target='_parent' href='{$alreadyKnown->xmlUrl}'>"
+                    . "{$text}</a></li>\n";
+            }
+            echo "</ul>\n";
+        }
+        $syncLink = "action.php?action=synchronize&format=html";
+        echo "<p>";
+        echo "<a href='$syncLink' style='text-decoration:none;font-size:3em'>"
+            . "↺</a>";
+        echo "<a href='$syncLink'>" . _t('CLIC_HERE_SYNC_IMPORT') . "</a>";
+        echo "<p></body></html>\n";
+        break;
+         *
+         */
+
+        if (isset($id) && is_numeric($id) && $id > 0) {
+            $eventManager->customQuery('DELETE FROM `' . MYSQL_PREFIX . 'event` WHERE `' . MYSQL_PREFIX . 'event`.`feed` in (SELECT `' . MYSQL_PREFIX . 'feed`.`id` FROM `' . MYSQL_PREFIX . 'feed` WHERE `' . MYSQL_PREFIX . 'feed`.`folder` =\'' . intval($_['id']) . '\') ;');
+            $feedManager->delete(array('folder' => $id));
+            $folderManager->delete(array('id' => $id));
+        }
+
+        header('location: /settings');
+    });
+
 });
 
+// @todo
+
 /* ---------------------------------------------------------------- */
-// Route: /about
+// Route: /action/readAll
 /* ---------------------------------------------------------------- */
 
-$router->get('/about', function () use ($twig, $config) {
+$router->get('/action/{readAll}', function () use ($myUser, $eventManager) {
 
     if (!$_SESSION['user']) {
         header('location: /login');
     }
 
-    $config['otpEnabled'];
-
+    $whereClause = array();
+    $whereClause['unread'] = '1';
+    if (isset($_['feed'])) $whereClause['feed'] = $_['feed'];
+    if (isset($_['last-event-id'])) $whereClause['id'] = '<= ' . $_['last-event-id'];
+    $eventManager->change(array('unread' => '0'), $whereClause);
+    if (!Functions::isAjaxCall()) {
+        header('location: ./index.php');
+    }
 
 });
 
-$router->get('/action/{readAll}', function () use ($myUser, $eventManager) {
+// @todo
+
+/* ---------------------------------------------------------------- */
+// Route: /action/readFolder
+/* ---------------------------------------------------------------- */
+
+$router->get('/action/{readFolder}', function () use ($twig, $trans, $logger, $config) {
+
+    if (!$_SESSION['user']) {
+        header('location: /login');
+    }
+
+    $whereClause = array();
+    $whereClause['unread'] = '1';
+    if (isset($_['feed'])) $whereClause['feed'] = $_['feed'];
+    if (isset($_['last-event-id'])) $whereClause['id'] = '<= ' . $_['last-event-id'];
+    $eventManager->change(array('unread' => '0'), $whereClause);
+    if (!Functions::isAjaxCall()) {
+        header('location: ./index.php');
+    }
+
+});
+
+// @todo
+
+/* ---------------------------------------------------------------- */
+// Route: /action/updateConfiguration
+/* ---------------------------------------------------------------- */
+
+$router->get('/action/{updateConfiguration}', function () use ($twig, $trans, $logger, $config) {
 
     if (!$_SESSION['user']) {
         header('location: /login');
@@ -1391,9 +1569,9 @@ $router->get('/action/{readAll}', function () use ($myUser, $eventManager) {
 // Route: /qrcode
 /* ---------------------------------------------------------------- */
 
-$router->mount('/qrcode', function () use ($router, $tpl, $myUser, $configurationManager, $feedManager, $folderManager, $cookiedir, $eventManager) {
+$router->mount('/qrcode', function () use ($router, $twig, $trans, $logger, $config) {
 
-    $router->get('/qr', function () use ($myUser, $eventManager) {
+    $router->get('/qr', function () {
 
         if (!$_SESSION['user']) {
             header('location: /login');
@@ -1416,7 +1594,7 @@ $router->mount('/qrcode', function () use ($router, $tpl, $myUser, $configuratio
         QRcode::png($qrCode, false, 'QR_LEVEL_H', $_qrSize, $_qrMargin);
     });
 
-    $router->get('/text', function () use ($myUser, $eventManager) {
+    $router->get('/text', function () use ($twig, $trans, $logger, $config) {
 
         $qrCode = substr($_SERVER['QUERY_STRING'], 1 + strlen($methode));
 
