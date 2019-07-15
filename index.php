@@ -9,6 +9,9 @@ use Endroid\QrCode\Response\QrCodeResponse;
 use Sinergi\BrowserDetector\Language;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
+use Celd\Opml\Importer;
+use Celd\Opml\Model\FeedList;
+use Celd\Opml\Model\Feeed;
 
 $stream = new StreamHandler(__DIR__ . '/logs/influx.log', Logger::DEBUG);
 $logger = new Logger('influxLogger');
@@ -25,12 +28,22 @@ $twig->addExtension(new \Twig\Extension\DebugExtension());
 // Create Router instance
 $router = new \Bramus\Router\Router();
 
-if (!file_exists('conf/config.php')) {
-    header('location: /install');
-    exit();
+session_start();
+
+if (file_exists('conf/config.php')) {
+    require_once('conf/config.php');
+
+}
+else{
+    if(!isset($_SESSION['install']) or $_SESSION['install'] == false)
+    {
+        $_SESSION['install'] = true;
+        header('location: /install');
+        exit();
+    }
+
 }
 
-require_once('conf/config.php');
 
 /* ---------------------------------------------------------------- */
 // Timezone
@@ -101,9 +114,12 @@ $trans = array_merge($l_trans, $l_trans2);
 /* ---------------------------------------------------------------- */
 
 $cookiedir = '';
-if (dirname($_SERVER['SCRIPT_NAME']) != '/') $cookiedir = dirname($_SERVER["SCRIPT_NAME"]) . '/';
+if (dirname($_SERVER['SCRIPT_NAME']) != '/')
+{
+    $cookiedir = dirname($_SERVER["SCRIPT_NAME"]) . '/';
+}
 session_set_cookie_params(0, $cookiedir);
-session_start();
+
 mb_internal_encoding('UTF-8'); // UTF8 pour fonctions mb_*
 $start = microtime(true);
 
@@ -302,6 +318,9 @@ $articleDisplayMode = $config['articleDisplayMode'];
 
 $router->before('GET|POST|PUT|DELETE|PATCH|OPTIONS', '.*', function () use ($logger) {
     $logger->info($_SERVER['REQUEST_URI']);
+    if (!$_SESSION['user']) {
+        header('location: /login');
+    }
 });
 
 /* ---------------------------------------------------------------- */
@@ -335,14 +354,8 @@ $router->get('/', function () use (
     $trans
 ) {
 
-    /*
-    if (!isset($_SESSION['user'])) {
-        header('location: /login');
-    }
-    */
-    $action = '';
 
-    $wrongLogin = !empty($wrongLogin);
+    $action = '';
 
     $filter = array('unread' => 1);
     $resultsNbUnread = $db->query('SELECT count(*) as nb_items from leed_event where unread = 1');
@@ -430,7 +443,7 @@ $router->get('/', function () use (
 /* ---------------------------------------------------------------- */
 
 $router->get('/login', function () use ($twig) {
-    echo $twig->render('login.html');
+    echo $twig->render('login.twig');
 });
 
 /* ---------------------------------------------------------------- */
@@ -1256,9 +1269,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
 
     $router->post('/feed/add', function () use ($twig, $trans, $logger, $config) {
 
-        if (!$_SESSION['user']) {
-            header('location: /login');
-        }
+
 
         $newFeed = new Feed();
         $newFeed->setUrl(Functions::clean_url($_POST['newUrl']));
@@ -1311,21 +1322,13 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
         header('location: /settings');
     });
 
-    $router->get('/feed/folder/{id}', function ($id) use ($twig, $trans, $logger, $config) {
+    $router->get('/feed/folder/{id}', function ($id) use ($twig, $trans, $logger, $config, $db) {
 
         if (!$_SESSION['user']) {
             header('location: /login');
         }
 
-        /*
-         *
-         * if ($myUser == false) exit(_t('YOU_MUST_BE_CONNECTED_ACTION'));
-        if (isset($_['feed'])) {
-            $feedManager->change(array('folder' => $_['folder']), array('id' => $_['feed']));
-        }
-        header('location: ./settings.php');
-         *
-         */
+
 
         if (isset($id)) {
             $feedManager->change(array('name' => $_['name'], 'url' => Functions::clean_url($_['url'])), array('id' => $_['id']));
@@ -1371,11 +1374,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
             header('location: /login');
         }
 
-        if (isset($id) && is_numeric($id) && $id > 0) {
-            $eventManager->customQuery('DELETE FROM `' . MYSQL_PREFIX . 'event` WHERE `' . MYSQL_PREFIX . 'event`.`feed` in (SELECT `' . MYSQL_PREFIX . 'feed`.`id` FROM `' . MYSQL_PREFIX . 'feed` WHERE `' . MYSQL_PREFIX . 'feed`.`folder` =\'' . intval($_['id']) . '\') ;');
-            $feedManager->delete(array('folder' => $id));
-            $folderManager->delete(array('id' => $id));
-        }
+
 
         header('location: /settings');
     });
@@ -1385,6 +1384,14 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
         if (!$_SESSION['user']) {
             header('location: /login');
         }
+
+        $feedList = new FeedList();
+
+
+
+
+        $importer = new Importer();
+        echo $importer->export($feedList);
 
         /*
          * if (isset($_POST['exportButton'])) {
@@ -1408,11 +1415,12 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
          *
          */
 
+        /*
         if (isset($id) && is_numeric($id) && $id > 0) {
             $eventManager->customQuery('DELETE FROM `' . MYSQL_PREFIX . 'event` WHERE `' . MYSQL_PREFIX . 'event`.`feed` in (SELECT `' . MYSQL_PREFIX . 'feed`.`id` FROM `' . MYSQL_PREFIX . 'feed` WHERE `' . MYSQL_PREFIX . 'feed`.`folder` =\'' . intval($_['id']) . '\') ;');
             $feedManager->delete(array('folder' => $id));
             $folderManager->delete(array('id' => $id));
-        }
+        }*/
 
         header('location: /settings');
     });
@@ -1487,11 +1495,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
          *
          */
 
-        if (isset($id) && is_numeric($id) && $id > 0) {
-            $eventManager->customQuery('DELETE FROM `' . MYSQL_PREFIX . 'event` WHERE `' . MYSQL_PREFIX . 'event`.`feed` in (SELECT `' . MYSQL_PREFIX . 'feed`.`id` FROM `' . MYSQL_PREFIX . 'feed` WHERE `' . MYSQL_PREFIX . 'feed`.`folder` =\'' . intval($_['id']) . '\') ;');
-            $feedManager->delete(array('folder' => $id));
-            $folderManager->delete(array('id' => $id));
-        }
+
 
         header('location: /settings');
     });
@@ -1708,7 +1712,7 @@ $router->get('/feed/{id}', function ($id) use (
 
     echo $twig->render('index.twig',
         [
-            //'action' => $action,
+            'action' => 'feed',
             'allEvents' => $allEvents,
             'allFeedsPerFolder' => $allFeedsPerFolder,
             'articleDisplayFolderSort' => $articleDisplayFolderSort,
@@ -1725,17 +1729,17 @@ $router->get('/feed/{id}', function ($id) use (
             //'feedState' => $feedState,
             'folders' => $folders,
             //'functions' => New Functions(),
-            'nextPages' => $nextPages,
+            //'nextPages' => $nextPages,
             'numberOfItem' => $numberOfItem,
             'optionFeedIsVerbose' => $optionFeedIsVerbose,
-            'previousPages' => $previousPages,
+            //'previousPages' => $previousPages,
             'page' => $page,
             'pages' => $pages,
             'startArticle' => $startArticle,
             'user' => $_SESSION['user'],
             'scroll' => $scroll,
             'target' => $target,
-            'unread' => $unread,
+            //'unread' => $unread,
             //$unreadEventsForFolder,
             //'wrongLogin' => $wrongLogin,
         ]
@@ -1816,7 +1820,7 @@ $router->get('/folder/{id}', function ($id) use (
 
     echo $twig->render('index.twig',
         [
-            //'action' => $action,
+            'action' => 'folder',
             'allEvents' => $allEvents,
             'allFeedsPerFolder' => $allFeedsPerFolder,
             'articleDisplayFolderSort' => $articleDisplayFolderSort,
@@ -1833,21 +1837,41 @@ $router->get('/folder/{id}', function ($id) use (
             //'feedState' => $feedState,
             'folders' => $folders,
             //'functions' => New Functions(),
-            'nextPages' => $nextPages,
+            //'nextPages' => $nextPages,
             'numberOfItem' => $numberOfItem,
             'optionFeedIsVerbose' => $optionFeedIsVerbose,
-            'previousPages' => $previousPages,
+            //'previousPages' => $previousPages,
             'page' => $page,
             'pages' => $pages,
             'startArticle' => $startArticle,
             'user' => $_SESSION['user'],
             'scroll' => $scroll,
             'target' => $target,
-            'unread' => $unread,
+            //'unread' => $unread,
             //$unreadEventsForFolder,
             //'wrongLogin' => $wrongLogin,
         ]
     );
+
+});
+
+// @todo API resful
+
+$router->mount('/api', function () use ($router, $db, $logger) {
+
+    $router->get('/feed', function() { /* ... */ });
+
+    $router->get('/feed/{id}/unread', function() {
+
+    });
+
+    $router->get('/folder', function() { /* ... */ });
+    $router->get('/folder/{id}', function() { /* ... */ });
+    $router->post('pattern', function() { /* ... */ });
+    $router->put('pattern', function() { /* ... */ });
+    $router->delete('pattern', function() { /* ... */ });
+    $router->options('pattern', function() { /* ... */ });
+    $router->patch('pattern', function() { /* ... */ });
 
 });
 

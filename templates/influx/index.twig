@@ -54,7 +54,7 @@
                                data-id="{{ folder.id }}">{{ folder.name }}</a>
                             <a class="readFolder"
                                title="Plier/D&eacute;plier le dossier"
-                               onclick="toggleFolder(this,{{ folder.getId }} )">
+                               onclick="toggleFolder(this,{{ folder.id }} )">
                                 {% if folder.isopen == 0 %}
                                     <i class="icon-folder-empty"></i>
                                 {% else %}
@@ -159,9 +159,9 @@
         <header class="articleHead">
 
             {% if action == 'feed' %}
-                <h1 class="articleSection"><a target="_blank" rel="noopener noreferrer"
-                                              href="{{ currentFeed.getWebSite }}">{{ currentFeed.getName }}</a> :</h1>
-                {{ currentFeed.getDescription }}
+                {{  dump(feed) }}
+                <h1 class="articleSection"><a target="_blank" rel="noopener noreferrer" href="{{ feed.website }}">{{ feed.name }}</a> :</h1>
+                {{ feed.description }}
                 <div class="clear"></div>
                 {{ attribute(i18n, '_t', ['????']) }}
                 <a href="/feed/{{ feed }}/page/{{ page }}/unread">Non lu</a> |
@@ -169,8 +169,8 @@
             {% endif %}
 
             {% if action == 'folder' %}
-                <h1 class="articleSection">Dossier : {{ currentFolder.getName }}</h1>
-                <p>Tous les &eacute;v&eacute;nements non lus pour le dossier {{ currentFolder.getName }}</p>
+                <h1 class="articleSection">Dossier : {{ folder.name }}</h1>
+                <p>Tous les &eacute;v&eacute;nements non lus pour le dossier {{ folder.name }}</p>
             {% endif %}
 
             {% if action == 'favorites' %}
@@ -184,7 +184,7 @@
             {% set helpPanel = "#helpPanel" %}
         </header>
         <header class="articleHead">
-            <h1 class="articleSection">Non lu<span id="nbarticle">{{ numberOfItem }}</span>)</h1>
+            <h1 class="articleSection">Non lu(s) (<span id="nbarticle">{{ numberOfItem }}</span>)</h1>
             <i title="Touche h pour afficher/masquer le panneau d’aide" onclick="$('#helpPanel').fadeIn(200);"
                class="icon-keyboard right pointer"></i>
             {% endif %}

@@ -2,7 +2,7 @@
     {% set plainDescription = event.description|striptags|escape %}
 
     <!-- CORPS ARTICLE -->
-    <section id="{{ event.id }}" data-feed="{{ event.feed }}" class="{% if event.unread is not defined %}eventRead{% endif %} {% if hightlighted is divisible by(2) %}eventHightLighted{% endif %}">
+    <section id="{{ event.id }}" data-feed="{{ event.feed }}" class="{% if event.unread == 0 %}eventRead{% else %}eventUnread{% endif %} {% if hightlighted is divisible by(2) %}eventHightLighted{% endif %}">
         <a title="Retourner au d&eacute;but" class="goTopButton" href="#pageTopAnvil"><i class="icon-up-dir"></i></a>
         <!-- TITRE -->
         <h2 class="articleTitle">
