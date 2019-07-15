@@ -20,6 +20,12 @@
 <div id="main" class="wrapper clearfix index">
     <!-- MENU -->
     <div id="menuBar">
+        <section class="searchMenu">
+            <form action="/search" method="post">
+                <input name="search" id="search" placeholder="..." value="" type="text">
+                <button type="submit">Rechercher</button>
+            </form>
+        </section>
         <aside>
             <!-- TITRE MENU + OPTION TOUT MARQUER COMME LU -->
             <h3 class="left">Flux</h3>
@@ -36,113 +42,112 @@
                 <!--Pour chaques dossier-->
                 {% for folder in folders %}
 
-                <!-- DOSSIER -->
-                <li>
-                    <h1 class="folder{% if folder.unread == 0 %}hidefeed{% endif %}"
-                            {% if (displayOnlyUnreadFeedFolder == true) and (folder.unread == 0) %}
-                        style="display:none"
-                            {% endif %}>
+                    <!-- DOSSIER -->
+                    <li>
+                        <h1 class="folder{% if folder.unread == 0 %}hidefeed{% endif %}"
+                                {% if (displayOnlyUnreadFeedFolder == true) and (folder.unread == 0) %}
+                            style="display:none"
+                                {% endif %}>
 
-                        <a title="Marquer comme lu" class="folderLink"
-                           href="/folder/{{ folder.id }}"
-                           data-id="{{ folder.id }}">{{ folder.name }}</a>
-                        <a class="readFolder"
-                           title="Plier/D&eacute;plier le dossier"
-                           onclick="toggleFolder(this,{{ folder.getId }} )">
-                            {% if folder.isopen == 0 %}
-                                <i class="icon-folder-empty"></i>
-                            {% else %}
-                                <i class="icon-folder-open-empty"></i>
-                            {% endif %}</a>
-                        {% if folder.unread != 0 %}
-                            <a class="unreadForFolder"
-                               title="marquer comme lu le(s) {{ folder.unread }} evenement(s) non lu(s) de ce dossier"
-                               data-mark-all-read="folder">{{ folder.unread }}
-                                Non lu</a>
-                        {% endif %}
-
-                    </h1>
-                    <!-- FLUX DU DOSSIER -->
-                    <ul {% if folder.isopen == 0 %}style="display:none" {% endif %}>
-
-                        {% for feed in folder.feeds %}
-
-                            {% if displayOnlyUnreadFeedFolder == true %}
-                                <!-- Affichage des feeds ayant des articles non lus -->
-                                {% if feed.unread is not null %}
-
-                                    {% if feed.lastSyncInError == 0 %}
-                                        <li>
-                                    {% else %}
-                                        <li class="errorSync" title="Sync error">
-                                    {% endif %}
-                                    <a
-                                            href="/feed/{{ feed.id }}"
-                                            class="feedLink"
-                                            data-id="{{ feed.id }}"
-                                            title="{{ feed.url }}">{{ feed.name }} </a>
-                                    <button class="right unreadForFeed" data-mark-all-read="feed">
-                                        <span title="Marquer comme lu">{{ feed.unread }}</span>
-                                    </button>
-
-                                    </li>
+                            <a title="Marquer comme lu" class="folderLink"
+                               href="/folder/{{ folder.id }}"
+                               data-id="{{ folder.id }}">{{ folder.name }}</a>
+                            <a class="readFolder"
+                               title="Plier/D&eacute;plier le dossier"
+                               onclick="toggleFolder(this,{{ folder.getId }} )">
+                                {% if folder.isopen == 0 %}
+                                    <i class="icon-folder-empty"></i>
                                 {% else %}
-                                    <!-- On cache les feeds n'ayant pas d'article non lus -->
-                                    {% if feed.lastSyncInError == 0 %}
-                                        <li class="hidefeed" style="display:none;">
+                                    <i class="icon-folder-open-empty"></i>
+                                {% endif %}</a>
+                            {% if folder.unread != 0 %}
+                                <a class="unreadForFolder"
+                                   title="marquer comme lu le(s) {{ folder.unread }} evenement(s) non lu(s) de ce dossier"
+                                   data-mark-all-read="folder">{{ folder.unread }}
+                                    Non lu</a>
+                            {% endif %}
+
+                        </h1>
+                        <!-- FLUX DU DOSSIER -->
+                        <ul {% if folder.isopen == 0 %}style="display:none" {% endif %}>
+
+                            {% for feed in folder.feeds %}
+
+                                {% if displayOnlyUnreadFeedFolder == true %}
+                                    <!-- Affichage des feeds ayant des articles non lus -->
+                                    {% if feed.unread is not null %}
+
+                                        {% if feed.lastSyncInError == 0 %}
+                                            <li>
+                                        {% else %}
+                                            <li class="errorSync" title="Sync error">
+                                        {% endif %}
+                                        <a
+                                                href="/feed/{{ feed.id }}"
+                                                class="feedLink"
+                                                data-id="{{ feed.id }}"
+                                                title="{{ feed.url }}">{{ feed.name }} </a>
+                                        <button class="right unreadForFeed" data-mark-all-read="feed">
+                                            <span title="Marquer comme lu">{{ feed.unread }}</span>
+                                        </button>
+
+                                        </li>
                                     {% else %}
-                                        <li class="hidefeed errorSync" style="display:none;"
-                                        title="sync error">
+                                        <!-- On cache les feeds n'ayant pas d'article non lus -->
+                                        {% if feed.lastSyncInError == 0 %}
+                                            <li class="hidefeed" style="display:none;">
+                                        {% else %}
+                                            <li class="hidefeed errorSync" style="display:none;"
+                                            title="sync error">
+                                        {% endif %}
+                                        <a
+                                                href="/feed/{{ feed.id }}"
+                                                class="feedLink"
+                                                data-id="{{ feed.id }}"
+                                                title="{{ feed.url }}">{{ feed.name }} </a>
+                                        {% if feed.unread is defined %}
+                                            <button class="right unreadForFeed" data-mark-all-read="feed">
+                                                <span title="marquer comme lu">{{ feed.unread }}</span>
+                                            </button>
+                                        {% endif %}
+
+                                        </li>
+                                    {% endif %}
+                                {% else %}
+                                    <!-- Affichage de tous les feeds -->
+                                    {% if feed.unread is defined %}
+                                        {% if feed.lastSyncInError == 0 %}
+                                            <li>
+                                        {% else %}
+                                            <li class="errorSync" title="Erreur de sync">
+                                        {% endif %}
+                                    {% else %}
+                                        {% if feed.lastSyncInError == 0 %}
+                                            <li class="hidefeed">
+                                        {% else %}
+                                            <li class="hidefeed errorSync" title="Erreur de sync">
+                                        {% endif %}
                                     {% endif %}
                                     <a
                                             href="/feed/{{ feed.id }}"
                                             class="feedLink"
                                             data-id="{{ feed.id }}"
                                             title="{{ feed.url }}">{{ feed.name }} </a>
-                                    {% if feed.unread is defined %}
+
+                                    {% if feed.unread is not defined %}
                                         <button class="right unreadForFeed" data-mark-all-read="feed">
-                                            <span title="marquer comme lu">{{ feed.unread }}</span>
+                                            <span title="Marquer comme lu">{{ feed.unread }}</span>
                                         </button>
                                     {% endif %}
 
                                     </li>
                                 {% endif %}
-                            {% else %}
-                                <!-- Affichage de tous les feeds -->
-                                {% if feed.unread is defined %}
-                                    {% if feed.lastSyncInError == 0 %}
-                                        <li>
-                                    {% else %}
-                                        <li class="errorSync" title="Erreur de sync">
-                                    {% endif %}
-                                {% else %}
-                                    {% if feed.lastSyncInError == 0 %}
-                                        <li class="hidefeed">
-                                    {% else %}
-                                        <li class="hidefeed errorSync" title="Erreur de sync">
-                                    {% endif %}
-                                {% endif %}
-                                <a
-                                        href="/feed/{{ feed.id }}"
-                                        class="feedLink"
-                                        data-id="{{ feed.id }}"
-                                        title="{{ feed.url }}">{{ feed.name }} </a>
 
-                                {% if feed.unread is not defined %}
-                                    <button class="right unreadForFeed" data-mark-all-read="feed">
-                                        <span title="Marquer comme lu">{{  feed.unread }}</span>
-                                    </button>
-                                {% endif %}
-
-                                </li>
-                            {% endif %}
-
-                        {% endfor %}
+                            {% endfor %}
 
 
-
-                    </ul>
-                </li>
+                        </ul>
+                    </li>
                 {% endfor %}
             </ul>
         </aside>

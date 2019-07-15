@@ -631,7 +631,7 @@ $router->get('/synchronize', function () use ($db) {
 $router->mount('/install', function () use ($router, $twig, $cookiedir, $logger) {
 
     /* ---------------------------------------------------------------- */
-    // Route: /install/
+    // Route: /install (GET)
     /* ---------------------------------------------------------------- */
 
     $router->get('/', function () use ($twig, $cookiedir) {
@@ -646,7 +646,7 @@ $router->mount('/install', function () use ($router, $twig, $cookiedir, $logger)
         $templateslist = glob("templates/*");
         foreach ($templateslist as $tpl) {
             $tpl_array = explode(".", basename($tpl));
-            $list_templates[] = tpl_array[0];
+            $list_templates[] = $tpl_array[0];
         }
 
         echo $twig->render('install.twig',
@@ -656,6 +656,10 @@ $router->mount('/install', function () use ($router, $twig, $cookiedir, $logger)
             ]);
 
     });
+
+    /* ---------------------------------------------------------------- */
+    // Route: /install (POST
+    /* ---------------------------------------------------------------- */
 
     $router->post('/', function () use ($twig, $cookiedir) {
 
@@ -1514,6 +1518,29 @@ $router->get('/action/{readAll}', function () use ($twig, $db,$logger,$trans,$co
     if (!Functions::isAjaxCall()) {
         header('location: ./index.php');
     }
+
+});
+
+// @todo
+
+/* ---------------------------------------------------------------- */
+// Route: /search
+/* ---------------------------------------------------------------- */
+
+$router->get('/search', function () use ($twig, $db,$logger,$trans,$config) {
+
+    if (!$_SESSION['user']) {
+        header('location: /login');
+    }
+
+    $search = $this->escape_string($_GET['plugin_search']);
+    $requete = 'SELECT id,title,guid,content,description,link,pubdate,unread, favorite
+            FROM `'.MYSQL_PREFIX.'event`
+            WHERE title like \'%'.htmlentities($search).'%\'';
+    if (isset($_GET['search_option']) && $_GET['search_option']=="1"){
+        $requete = $requete.' OR content like \'%'.htmlentities($search).'%\'';
+    }
+    $requete = $requete.' ORDER BY pubdate desc';
 
 });
 
