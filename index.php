@@ -683,7 +683,7 @@ $router->mount('/install', function () use ($router, $twig, $cookiedir, $logger)
         if (file_exists('constant.php')) {
             die(_t('ALREADY_INSTALLED'));
         }
-        define('DEFAULT_TEMPLATE', 'influx-twig');
+        define('DEFAULT_TEMPLATE', 'influx');
         $templates = scandir('templates');
         if (!in_array(DEFAULT_TEMPLATE, $templates)) die('Missing default template : ' . DEFAULT_TEMPLATE);
         $templates = array_diff($templates, array(DEFAULT_TEMPLATE, '.', '..')); // Répertoires non voulus sous Linux
@@ -836,7 +836,7 @@ $router->get('/favorites', function () use (
 
 // @todo
 
-$router->mount('/article', function () use ($router, $twig, $cookiedir, $logger) {
+$router->mount('/article', function () use ($router, $twig, $db,$logger,$trans,$config) {
 
     /*
      * Plugin::callHook("index_pre_treatment", array(&$_));
@@ -928,7 +928,7 @@ $html = $tpl->draw($view);
     // Route: /article
     /* ---------------------------------------------------------------- */
 
-    $router->get('/', function () use ($twig, $myUser, $configurationManager, $feedManager, $folderManager, $cookiedir) {
+    $router->get('/', function () use ($twig, $db,$logger,$trans,$config) {
 
         if (!$_SESSION['user']) {
             header('location: /login');
@@ -942,7 +942,7 @@ $html = $tpl->draw($view);
     // Route: /article/favorite
     /* ---------------------------------------------------------------- */
 
-    $router->get('/favorites', function () use ($twig, $myUser, $configurationManager, $feedManager, $folderManager, $cookiedir) {
+    $router->get('/favorites', function () use ($twig, $db,$logger,$trans,$config) {
 
         if (!$_SESSION['user']) {
             header('location: /login');
@@ -956,7 +956,7 @@ $html = $tpl->draw($view);
     // Route: /article/unread
     /* ---------------------------------------------------------------- */
 
-    $router->get('/unread', function () use ($twig, $myUser, $configurationManager, $feedManager, $folderManager, $cookiedir) {
+    $router->get('/unread', function () use ($twig, $db,$logger,$trans,$config) {
 
         if (!$_SESSION['user']) {
             header('location: /login');
@@ -970,7 +970,7 @@ $html = $tpl->draw($view);
     // Route: /article/feed/{id}
     /* ---------------------------------------------------------------- */
 
-    $router->get('/feed/{id}', function () use ($twig, $myUser, $configurationManager, $feedManager, $folderManager, $cookiedir) {
+    $router->get('/feed/{id}', function () use ($twig, $db,$logger,$trans,$config) {
 
         if (!$_SESSION['user']) {
             header('location: /login');
@@ -984,7 +984,7 @@ $html = $tpl->draw($view);
     // Route: /article/folder/{id}
     /* ---------------------------------------------------------------- */
 
-    $router->get('/folder/{id}', function () use ($twig, $myUser, $configurationManager, $feedManager, $folderManager, $cookiedir) {
+    $router->get('/folder/{id}', function () use ($twig, $db,$logger,$trans,$config) {
 
         if (!$_SESSION['user']) {
             header('location: /login');
@@ -1000,7 +1000,7 @@ $html = $tpl->draw($view);
 // Route: /settings
 /* ---------------------------------------------------------------- */
 
-$router->mount('/settings', function () use ($router, $twig, $trans, $logger, $config, $cookiedir ) {
+$router->mount('/settings', function () use ($router, $twig, $trans, $logger, $config, $db, $cookiedir ) {
 
     $router->get('/', function () use ($twig, $cookiedir) {
 
@@ -1329,7 +1329,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
         header('location: /settings');
     });
 
-    $router->post('/folder/add', function () use ($tpl, $configurationManager, $myUser, $eventManager, $feedManager, $folderManager) {
+    $router->post('/folder/add', function () use ($twig, $db,$logger,$trans,$config) {
 
         if (!$_SESSION['user']) {
             header('location: /login');
@@ -1347,7 +1347,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
         header('location: /settings');
     });
 
-    $router->get('/folder/remove/{id}', function ($id) use ($tpl, $configurationManager, $myUser, $feedManager, $folderManager, $eventManager) {
+    $router->get('/folder/remove/{id}', function ($id) use ($twig, $db,$logger,$trans,$config) {
 
         if (!$_SESSION['user']) {
             header('location: /login');
@@ -1361,7 +1361,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
         header('location: /settings');
     });
 
-    $router->get('/folder/rename/{id}', function ($id) use ($tpl, $configurationManager, $myUser, $feedManager, $folderManager, $eventManager) {
+    $router->get('/folder/rename/{id}', function ($id) use ($twig, $db,$logger,$trans,$config) {
 
         if (!$_SESSION['user']) {
             header('location: /login');
@@ -1376,7 +1376,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
         header('location: /settings');
     });
 
-    $router->get('/feeds/export', function ($id) use ($tpl, $configurationManager, $myUser, $feedManager, $folderManager, $eventManager) {
+    $router->get('/feeds/export', function ($id) use ($twig, $db,$logger,$trans,$config) {
 
         if (!$_SESSION['user']) {
             header('location: /login');
@@ -1413,7 +1413,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
         header('location: /settings');
     });
 
-    $router->get('/feeds/import', function ($id) use ($tpl, $configurationManager, $myUser, $feedManager, $folderManager, $eventManager) {
+    $router->get('/feeds/import', function ($id) use ($twig, $db,$logger,$trans,$config) {
 
         if (!$_SESSION['user']) {
             header('location: /login');
@@ -1500,7 +1500,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
 // Route: /action/readAll
 /* ---------------------------------------------------------------- */
 
-$router->get('/action/{readAll}', function () use ($myUser, $eventManager) {
+$router->get('/action/{readAll}', function () use ($twig, $db,$logger,$trans,$config) {
 
     if (!$_SESSION['user']) {
         header('location: /login');
@@ -1523,7 +1523,7 @@ $router->get('/action/{readAll}', function () use ($myUser, $eventManager) {
 // Route: /action/readFolder
 /* ---------------------------------------------------------------- */
 
-$router->get('/action/{readFolder}', function () use ($twig, $trans, $logger, $config) {
+$router->get('/action/{readFolder}', function () use ($twig, $db,$logger,$trans,$config) {
 
     if (!$_SESSION['user']) {
         header('location: /login');
@@ -1546,7 +1546,7 @@ $router->get('/action/{readFolder}', function () use ($twig, $trans, $logger, $c
 // Route: /action/updateConfiguration
 /* ---------------------------------------------------------------- */
 
-$router->get('/action/{updateConfiguration}', function () use ($twig, $trans, $logger, $config) {
+$router->get('/action/{updateConfiguration}', function () use ($twig, $db,$logger,$trans,$config) {
 
     if (!$_SESSION['user']) {
         header('location: /login');
@@ -1569,7 +1569,7 @@ $router->get('/action/{updateConfiguration}', function () use ($twig, $trans, $l
 // Route: /qrcode
 /* ---------------------------------------------------------------- */
 
-$router->mount('/qrcode', function () use ($router, $twig, $trans, $logger, $config) {
+$router->mount('/qrcode', function () use ($router, $twig, $db,$logger,$trans,$config) {
 
     $router->get('/qr', function () {
 
