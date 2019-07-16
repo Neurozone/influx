@@ -1,9 +1,3 @@
--- MySQL dump 10.17  Distrib 10.3.16-MariaDB, for Linux (x86_64)
---
--- Host: localhost    Database: leed
--- ------------------------------------------------------
--- Server version       10.3.16-MariaDB-log
-
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
@@ -16,45 +10,28 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
--- Table structure for table `leed_configuration`
+-- Table structure for table `configuration`
 --
 
-DROP TABLE IF EXISTS `leed_configuration`;
+DROP TABLE IF EXISTS `configuration`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `leed_configuration` (
-                                      `id` int(11) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `configuration` (
                                       `key` varchar(255) NOT NULL,
-                                      `value` text NOT NULL,
+                                      `value` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
                                       PRIMARY KEY (`id`),
                                       UNIQUE KEY `uniquekey` (`key`)
 ) ENGINE=InnoDB AUTO_INCREMENT=78 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `leed_configuration_old`
+-- Table structure for table `event`
 --
 
-DROP TABLE IF EXISTS `leed_configuration_old`;
+DROP TABLE IF EXISTS `event`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `leed_configuration_old` (
-                                          `id` int(11) NOT NULL AUTO_INCREMENT,
-                                          `key` varchar(255) NOT NULL,
-                                          `value` text NOT NULL,
-                                          PRIMARY KEY (`id`),
-                                          UNIQUE KEY `uniquekey` (`key`)
-) ENGINE=InnoDB AUTO_INCREMENT=78 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `leed_event`
---
-
-DROP TABLE IF EXISTS `leed_event`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `leed_event` (
+CREATE TABLE `event` (
                               `id` int(11) NOT NULL AUTO_INCREMENT,
                               `guid` varchar(45) COLLATE utf8mb4_unicode_ci NOT NULL,
                               `title` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -64,26 +41,26 @@ CREATE TABLE `leed_event` (
                               `link` varchar(2048) COLLATE utf8mb4_unicode_ci NOT NULL,
                               `unread` int(11) NOT NULL,
                               `feed` int(11) NOT NULL,
-                              `favorite` int(11) NOT NULL,
+                              `favorite` tinyint(1) NOT NULL,
                               `pubdate` int(11) NOT NULL,
                               `syncId` int(11) NOT NULL,
                               PRIMARY KEY (`id`),
                               KEY `indexfeed` (`feed`),
                               KEY `indexunread` (`unread`),
                               KEY `indexfavorite` (`favorite`),
-                              KEY `dba_idx_leed_event_3` (`feed`,`unread`),
-                              KEY `dba_idx_leed_event_4` (`pubdate`),
-                              KEY `dba_idx_leed_event_5` (`guid`,`feed`),
+                              KEY `dba_idx_event_3` (`feed`,`unread`),
+                              KEY `dba_idx_event_4` (`pubdate`),
+                              KEY `dba_idx_event_5` (`guid`,`feed`),
                               KEY `indexguidfeed` (`guid`,`feed`),
-                              KEY `dba_idx_leed_event_6` (`creator`),
-                              KEY `dba_idx_leed_event_7` (`feed`,`unread`,`pubdate`),
-                              KEY `dba_idx_leed_event_8` (`title`),
-                              KEY `dba_idx_leed_event_9` (`guid`),
+                              KEY `dba_idx_event_6` (`creator`),
+                              KEY `dba_idx_event_7` (`feed`,`unread`,`pubdate`),
+                              KEY `dba_idx_event_8` (`title`),
+                              KEY `dba_idx_event_9` (`guid`),
                               FULLTEXT KEY `title` (`title`),
                               FULLTEXT KEY `title_2` (`title`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1295775 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ROW_FORMAT=DYNAMIC;
 /*!40101 SET character_set_client = @saved_cs_client */;
-ALTER DATABASE `leed` CHARACTER SET latin1 COLLATE latin1_swedish_ci ;
+ALTER DATABASE `influx` CHARACTER SET latin1 COLLATE latin1_swedish_ci ;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
 /*!50003 SET @saved_col_connection = @@collation_connection */ ;
@@ -93,7 +70,7 @@ ALTER DATABASE `leed` CHARACTER SET latin1 COLLATE latin1_swedish_ci ;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`dba`@`localhost`*/ /*!50003 trigger tr_b_ins_leed_event before insert on leed_event for each row
+/*!50003 CREATE*/ /*!50017 DEFINER=`dba`@`localhost`*/ /*!50003 trigger tr_b_ins_event before insert on event for each row
 begin
     if (new.pubdate is null)
     then
@@ -105,16 +82,16 @@ DELIMITER ;
 /*!50003 SET character_set_client  = @saved_cs_client */ ;
 /*!50003 SET character_set_results = @saved_cs_results */ ;
 /*!50003 SET collation_connection  = @saved_col_connection */ ;
-ALTER DATABASE `leed` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci ;
+ALTER DATABASE `influx` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci ;
 
 --
--- Table structure for table `leed_feed`
+-- Table structure for table `flux`
 --
 
-DROP TABLE IF EXISTS `leed_feed`;
+DROP TABLE IF EXISTS `flux`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `leed_feed` (
+CREATE TABLE `flux` (
                              `id` int(11) NOT NULL AUTO_INCREMENT,
                              `name` varchar(225) COLLATE utf8mb4_unicode_ci NOT NULL,
                              `description` mediumtext COLLATE utf8mb4_unicode_ci NOT NULL,
@@ -122,70 +99,44 @@ CREATE TABLE `leed_feed` (
                              `url` mediumtext COLLATE utf8mb4_unicode_ci NOT NULL,
                              `lastupdate` varchar(225) COLLATE utf8mb4_unicode_ci NOT NULL,
                              `folder` int(11) NOT NULL,
-                             `isverbose` int(1) NOT NULL,
+                             `isverbose` tinyint(1) NOT NULL,
                              `lastSyncInError` int(1) NOT NULL DEFAULT 0,
                              PRIMARY KEY (`id`),
                              KEY `indexfolder` (`folder`),
-                             KEY `dba_idx_leed_feed_1` (`id`,`name`),
-                             KEY `dba_idx_leed_feed_2` (`name`,`id`),
-                             KEY `dba_idx_leed_feed_3` (`name`)
+                             KEY `dba_idx_flux_1` (`id`,`name`),
+                             KEY `dba_idx_flux_2` (`name`,`id`),
+                             KEY `dba_idx_flux_3` (`name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=434 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `leed_folder`
+-- Table structure for table `folder`
 --
 
-DROP TABLE IF EXISTS `leed_folder`;
+DROP TABLE IF EXISTS `category`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `leed_folder` (
+CREATE TABLE `category` (
                                `id` int(11) NOT NULL AUTO_INCREMENT,
                                `name` varchar(225) NOT NULL,
                                `parent` int(11) NOT NULL,
-                               `isopen` int(11) NOT NULL,
+                               `isopen` tinyint(1) NOT NULL,
                                PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Table structure for table `leed_plugin_feaditlater`
+-- Table structure for table `user`
 --
 
-DROP TABLE IF EXISTS `leed_plugin_feaditlater`;
+DROP TABLE IF EXISTS `user`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `leed_plugin_feaditlater` (
-                                           `id` int(11) NOT NULL AUTO_INCREMENT,
-                                           `event` int(11) NOT NULL,
-                                           PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=15 DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `leed_plugin_search`
---
-
-DROP TABLE IF EXISTS `leed_plugin_search`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `leed_plugin_search` (
-                                      `search` varchar(255) NOT NULL,
-                                      PRIMARY KEY (`search`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Table structure for table `leed_user`
---
-
-DROP TABLE IF EXISTS `leed_user`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `leed_user` (
+CREATE TABLE `user` (
                              `id` int(11) NOT NULL AUTO_INCREMENT,
                              `login` varchar(225) NOT NULL,
                              `password` varchar(225) NOT NULL,
+                             `email` varchar(225) NOT NULL,
                              `otpSecret` varchar(225) DEFAULT NULL,
                              PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8;
@@ -199,5 +150,3 @@ CREATE TABLE `leed_user` (
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
-
--- Dump completed on 2019-07-14 19:53:39
