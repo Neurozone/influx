@@ -5,41 +5,7 @@ namespace Influx;
 
 class Configuration {
     protected $id,$key,$value,$confTab;
-    protected $TABLE_NAME = 'configuration';
-    protected $object_fields =
-        array(
-            'id'=>'key',
-            'key'=>'string',
-            'value'=>'longstring'
-        );
-    protected $object_fields_uniques =
-        array(
-            'key'
-        );
-    protected $options = array(
-        'articleDisplayAnonymous' => '0',
-        'articleDisplayAuthor' => '1',
-        'articleDisplayDate' => '1',
-        'articleDisplayFolderSort' => '1',
-        'articleDisplayHomeSort' => '1',
-        'articleDisplayLink' => '1',
-        'articleDisplayMode' => 'summary',
-        'articlePerPages' => '5',
-        'displayOnlyUnreadFeedFolder' => 'false',
-        'feedMaxEvents' => '50',
-        'language' => 'en',
-        'optionFeedIsVerbose' => 1,
-        'paginationScale' => 5,
-        'syncGradCount' => '10',
-        'synchronisationCode' => '',
-        'synchronisationEnableCache' => '0',
-        'synchronisationForceFeed' => '0',
-        'synchronisationType' => 'auto',
-        'theme' => 'marigolds',
-        'root' => '',
-        'cryptographicSalt' => '',
-        'otpEnabled' => 0
-    );
+
     function __construct(){
         parent::__construct();
     }
