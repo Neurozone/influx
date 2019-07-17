@@ -274,7 +274,8 @@ where f.id = ' . $rows['id']);
 
     while ($rowsFeedsByFolder = $resultsFeedsByFolder->fetch_array()) {
 
-        $resultsUnreadByFeed = $db->query('SELECT count(*) as unread FROM leed_folder f inner join leed_feed fe on fe.folder = f.id inner join leed_event e on e.feed = fe.id  where e.unread = 1 and fe.id = ' . $rowsFeedsByFolder['feed_id']);
+        $resultsUnreadByFeed = $db->query('SELECT count(*) as unread FROM leed_folder f inner join leed_feed fe on fe.folder = f.id 
+    inner join leed_event e on e.feed = fe.id  where e.unread = 1 and fe.id = ' . $rowsFeedsByFolder['feed_id']);
 
         $unreadEventsByFeed = 0;
 
@@ -827,18 +828,18 @@ $router->get('/favorites', function () use (
             'events' => $events,
             //'feedState' => $feedState,
             'folders' => $folders,
-            'functions' => New Functions(),
-            'nextPages' => $nextPages,
+            //'functions' => New Functions(),
+            //'nextPages' => $nextPages,
             'numberOfItem' => $numberOfItem,
             'optionFeedIsVerbose' => $optionFeedIsVerbose,
-            'previousPages' => $previousPages,
+            //'previousPages' => $previousPages,
             'page' => $page,
             'pages' => $pages,
             'startArticle' => $startArticle,
             'user' => $_SESSION['user'],
             'scroll' => $scroll,
             'target' => $target,
-            'unread' => $unread,
+            //'unread' => $unread,
             //$unreadEventsForFolder,
             //'wrongLogin' => $wrongLogin,
         ]

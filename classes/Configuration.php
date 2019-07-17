@@ -3,125 +3,96 @@
 
 namespace Influx;
 
-class Configuration {
-    protected $id,$key,$value,$confTab;
-    protected $TABLE_NAME = 'configuration';
-    protected $object_fields =
-        array(
-            'id'=>'key',
-            'key'=>'string',
-            'value'=>'longstring'
-        );
-    protected $object_fields_uniques =
-        array(
-            'key'
-        );
-    protected $options = array(
-        'articleDisplayAnonymous' => '0',
-        'articleDisplayAuthor' => '1',
-        'articleDisplayDate' => '1',
-        'articleDisplayFolderSort' => '1',
-        'articleDisplayHomeSort' => '1',
-        'articleDisplayLink' => '1',
-        'articleDisplayMode' => 'summary',
-        'articlePerPages' => '5',
-        'displayOnlyUnreadFeedFolder' => 'false',
-        'feedMaxEvents' => '50',
-        'language' => 'en',
-        'optionFeedIsVerbose' => 1,
-        'paginationScale' => 5,
-        'syncGradCount' => '10',
-        'synchronisationCode' => '',
-        'synchronisationEnableCache' => '0',
-        'synchronisationForceFeed' => '0',
-        'synchronisationType' => 'auto',
-        'theme' => 'marigolds',
-        'root' => '',
-        'cryptographicSalt' => '',
-        'otpEnabled' => 0
-    );
-    function __construct(){
-        parent::__construct();
-    }
-    public function getAll(){
-        if(!isset($_SESSION['configuration'])){
-            $configurationManager = new Configuration();
-            $configs = $configurationManager->populate();
-            $confTab = array();
-            foreach($configs as $config){
-                $this->confTab[$config->getKey()] = $config->getValue();
-            }
-            $_SESSION['configuration'] = serialize($this->confTab);
-        }else{
-            $this->confTab = unserialize($_SESSION['configuration']);
-        }
-    }
-    public function get($key){
-        return (isset($this->confTab[$key])?$this->confTab[$key]:'');
-    }
-    public function put($key,$value){
-        $configurationManager = new Configuration();
-        if (isset($this->confTab[$key])){
-            $configurationManager->change(array('value'=>$value),array('key'=>$key));
-        } else {
-            $configurationManager->add($key,$value);
-        }
-        $this->confTab[$key] = $value;
-        unset($_SESSION['configuration']);
-    }
-    protected function createSynchronisationCode() {
-        return substr(sha1(rand(0,30).time().rand(0,30)),0,10);
-    }
-    public function add($key,$value){
+use mysqli;
 
-        $this->setKey($key);
-        $this->setValue($value);
-        $this->save();
-        $this->confTab[$key] = $value;
-        unset($_SESSION['configuration']);
+class Configuration
+{
+    private $id, $key, $value, $confTab;
+    
+
+    private $db;
+
+
+    function __construct()
+    {
+        $this->db = new mysqli(MYSQL_HOST, MYSQL_LOGIN, MYSQL_MDP, MYSQL_BDD);
+        $this->set_charset('utf8mb4');
+        $this->query('SET NAMES utf8mb4');
+
     }
-    public function setDefaults() {
-        foreach($this->options as $option => $defaultValue) {
-            switch($option) {
-                case 'language':
-                    $value = isset($_POST['install_changeLngLeed']) ? $_POST['install_changeLngLeed'] : $defaultValue;
-                    break;
-                case 'theme':
-                    $value = isset($_POST['template']) ? $_POST['template'] : $defaultValue;
-                    break;
-                case 'synchronisationCode':
-                    $value = $this->createSynchronisationCode();
-                    break;
-                case 'root':
-                    $root = $_POST['root'];
-                    $value = (substr($root, strlen($root)-1)=='/'?$root:$root.'/');
-                    break;
-                case 'cryptographicSalt':
-                    $value = $this->generateSalt();
-                    break;
-                default:
-                    $value = $defaultValue;
-                    break;
-            }
-            $this->add($option, $value);
+
+    public function getAll()
+    {
+        $config = '';
+
+        $query_configuration = 'select * from leed_configuration';
+        $result_configuration = $this->db->query($query_configuration);
+
+        while ($row = $result_configuration->fetch_array()) {
+            $config[$row['key']] = $row['value'];
         }
+
+        return $config;
     }
-    protected function generateSalt() {
-        return ''.mt_rand().mt_rand();
+
+    public function get($key)
+    {
+        $query_configuration = "select value from leed_configuration where key = '" . $key . "'";
+        $result_configuration = $this->db->query($query_configuration);
+
+        while ($row = $result_configuration->fetch_array()) {
+            $config = $row['value'];
+        }
+
+        return $config
     }
-    function getId(){
+
+    public function put($key, $value)
+    {
+        $query_configuration = "update configuration set value = '" . $value . "' where key = '" . $key . "'";
+        $this->db->query($query_configuration);
+    }
+
+    protected function createSynchronisationCode()
+    {
+        return substr(sha1(rand(0, 30) . time() . rand(0, 30)), 0, 10);
+    }
+
+    public function add($key, $value)
+    {
+
+        $query_configuration = "insert into configuration values('" . $key . "', '" . $value . "')";
+        $this->db->query($query_configuration);
+    }
+
+
+    protected function generateSalt()
+    {
+        return '' . mt_rand() . mt_rand();
+    }
+
+    function getId()
+    {
         return $this->id;
     }
-    function getKey(){
+
+    function getKey()
+    {
         return $this->key;
     }
-    function setKey($key){
+
+    function setKey($key)
+    {
         $this->key = $key;
     }
-    function getValue(){
+
+    function getValue()
+    {
         return $this->value;
     }
-    function setValue($value){
+
+    function setValue($value)
+    {
         $this->value = $value;
     }
 }
