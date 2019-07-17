@@ -18,7 +18,7 @@
     <meta name="description" content="Agr&eacute;gateur de flux RSS InFlux">
     <meta name="author" content="Hecate">
     <meta name="viewport" content="width=device-width">
-    <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="icon" type="image/png" href="/templates/influx/css/favicon.png" />
     <link rel="stylesheet" href=" {{ app.request.schemeAndHttpHost }}/templates/influx/css/style.css">
 
 </head>
@@ -29,6 +29,13 @@
         <a id="pageTop" class="hidden">{{ action }}</a>
         <div id="header-container">
             <header class="wrapper clearfix">
+                <h1 class="logo" id="title"><a href="">In<i>Flux</i></a></h1>
+                <div class="loginBloc">
+                   - <span>Identifi&eacute; avec  {{ user }} </span><a href="logout" class="loginButton">{{  trans.DISCONNECT }}</a>
+
+                    <div class="clear"></div>
+                </div>
+
                 <nav>
                     <ul>
                         <li><a href="" title="Accueil"><i class="icon-home"></i></a></li>
@@ -38,15 +45,6 @@
 
                     </ul>
                 </nav>
-                <div class="clear"></div>
-                <h1 class="logo" id="title"><a href="">In<i>Flux</i></a></h1>
-                <div class="loginBloc">
-                   - <span>Identifi&eacute; avec  {{ user }} </span><a href="logout" class="loginButton">{{  trans.DISCONNECT }}</a>
-
-                    <div class="clear"></div>
-                </div>
-
-
             </header>
         </div>
     <div id="main-container">
