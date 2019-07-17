@@ -1,10 +1,8 @@
 <?php
 
-
 namespace Influx;
 
-
-class Configuration
+class Flux
 {
 
 }

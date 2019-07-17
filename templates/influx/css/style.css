@@ -999,6 +999,9 @@ footer a,#main aside a{
 
 /* ============
     WIDE: Menu
+     nav ul li{
+        display:inline;
+    }
    ============ */
 
     #title{
@@ -1006,9 +1009,10 @@ footer a,#main aside a{
     }
 
     nav{
-        float:right;
-        width:20%;
+        float:left;
+        width:40%;
         margin-right: 0px;
+        display:inline;
     }
 
 /* ============

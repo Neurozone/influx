@@ -1,8 +1,10 @@
 <?php
 
+
 namespace Influx;
 
-class Feed
+
+class Item
 {
 
 }
