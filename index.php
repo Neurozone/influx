@@ -45,6 +45,17 @@ else{
 
 }
 
+function getClientIP(){
+    if (array_key_exists('HTTP_X_FORWARDED_FOR', $_SERVER)){
+        return  $_SERVER["HTTP_X_FORWARDED_FOR"];
+    }else if (array_key_exists('REMOTE_ADDR', $_SERVER)) {
+        return $_SERVER["REMOTE_ADDR"];
+    }else if (array_key_exists('HTTP_CLIENT_IP', $_SERVER)) {
+        return $_SERVER["HTTP_CLIENT_IP"];
+    }
+
+    return '';
+}
 
 /* ---------------------------------------------------------------- */
 // Timezone
@@ -70,7 +81,7 @@ $query_configuration = 'select * from configuration';
 $result_configuration = $db->query($query_configuration);
 
 while ($row = $result_configuration->fetch_array()) {
-    $config[$row['key']] = $row['value'];
+    $config[$row['name']] = $row['value'];
 }
 
 /* ---------------------------------------------------------------- */
@@ -271,13 +282,13 @@ where unread = 1 and lfo.id = ' . $rows['id']);
     $resultsFeedsByFolder = $db->query('SELECT fe.id as feed_id, fe.name as feed_name, fe.description as feed_description, fe.website as feed_website, fe.url as feed_url, fe.lastupdate as feed_lastupdate, fe.lastSyncInError as feed_lastSyncInError 
 FROM categories f 
     inner join flux fe on fe.folder = f.id 
-where f.id = ' . $rows['id']);
+where f.id = ' . $rows['id'] . " order by fe.name");
 
 
     while ($rowsFeedsByFolder = $resultsFeedsByFolder->fetch_array()) {
 
         $resultsUnreadByFeed = $db->query('SELECT count(*) as unread FROM categories f inner join flux fe on fe.folder = f.id 
-    inner join items e on e.feed = fe.id  where e.unread = 1 and fe.id = ' . $rowsFeedsByFolder['feed_id']);
+    inner join items e on e.feed = fe.id  where e.unread = 1 and fe.id = ' . $rowsFeedsByFolder['feed_id'] );
 
         $unreadEventsByFeed = 0;
 
@@ -321,8 +332,8 @@ $articleDisplayMode = $config['articleDisplayMode'];
 
 $router->before('GET|POST|PUT|DELETE|PATCH|OPTIONS', '^((?!login).)*$', function () use ($logger) {
     $logger->info($_SERVER['REQUEST_URI']);
-    $logger->info($_SERVER['REMOTE_ADDR']);
-    $logger->info($_SERVER['HTTP_X_FORWARDED_FOR']);
+    $logger->info(getClientIP());
+
     if (!$_SESSION['user']) {
         header('location: /login');
     }
@@ -1507,7 +1518,22 @@ $router->get('/feed/{id}', function ($id) use (
 
     }
 
-    $events = $events;
+    $resultFlux = $db->query("select * from flux where id = " . $id);
+    while ($rows = $resultFlux->fetch_array()) {
+
+        $flux = array(
+            'id' => $rows['id'],
+            'name' => $rows['name'],
+            'description' => $rows['description'],
+            'website' => $rows['website'],
+            'url' => $rows['url'],
+            'lastupdate' => $rows['lastupdate'],
+            'folder' => $rows['folder'],
+            'isverbose' => $rows['isverbose'],
+            'lastSyncInError' => $rows['lastSyncInError'],
+        );
+
+    }
 
     //$order = 'unread';
     //$feed =  $id;
@@ -1528,7 +1554,7 @@ $router->get('/feed/{id}', function ($id) use (
             'displayOnlyUnreadFeedFolder' => $displayOnlyUnreadFeedFolder,
             //'eventManager' => $eventManager,
             'events' => $events,
-            //'feedState' => $feedState,
+            'feed' => $flux,
             'folders' => $folders,
             //'functions' => New Functions(),
             //'nextPages' => $nextPages,

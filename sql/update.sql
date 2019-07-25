@@ -19,8 +19,10 @@ WHERE t1.id < t2.id AND t1.guid = t2.guid;
 select count(guid), guid from items group by guid having count(guid) > 1 order by 1;
 select count(guid), guid from leed_event group by guid having count(guid) > 1 order by 1;
 
--- index flux
-KEY `indexfolder` (`folder`),
-  KEY `dba_idx_leed_feed_1` (`id`,`name`),
-  KEY `dba_idx_leed_feed_2` (`name`,`id`),
-  KEY `dba_idx_leed_feed_3` (`name`)
+CREATE TABLE `configuration` (
+       `id` int(11) NOT NULL AUTO_INCREMENT,
+       `name` varchar(255) NOT NULL,
+      `value` text NOT NULL,
+       PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+insert into configuration (name, value) select `key`,`value` from conf;
