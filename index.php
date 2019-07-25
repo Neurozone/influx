@@ -34,6 +34,7 @@ if (file_exists('conf/config.php')) {
     require_once('conf/config.php');
 
 }
+
 else{
     if(!isset($_SESSION['install']) or $_SESSION['install'] == false)
     {
@@ -65,7 +66,7 @@ $db = new mysqli(MYSQL_HOST, MYSQL_LOGIN, MYSQL_MDP, MYSQL_BDD);
 $db->set_charset('utf8mb4');
 $db->query('SET NAMES utf8mb4');
 
-$query_configuration = 'select * from leed_configuration';
+$query_configuration = 'select * from configuration';
 $result_configuration = $db->query($query_configuration);
 
 while ($row = $result_configuration->fetch_array()) {
@@ -78,9 +79,10 @@ while ($row = $result_configuration->fetch_array()) {
 
 // @todo
 
-/*
+
 // Use X-Forwarded-For HTTP Header to Get Visitor's Real IP Address
-if (isset($_SERVER['HTTP_X_FORWARDED_FOR']) && $config['reverse_proxy'] == 1) {
+/*
+if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
     $http_x_headers = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
 
     $_SERVER['REMOTE_ADDR'] = $http_x_headers[0];
@@ -118,7 +120,7 @@ if (dirname($_SERVER['SCRIPT_NAME']) != '/')
 {
     $cookiedir = dirname($_SERVER["SCRIPT_NAME"]) . '/';
 }
-session_set_cookie_params(0, $cookiedir);
+
 
 mb_internal_encoding('UTF-8'); // UTF8 pour fonctions mb_*
 $start = microtime(true);
@@ -223,17 +225,17 @@ $synchronisationCode = $config['synchronisationCode'];
 /* ---------------------------------------------------------------- */
 
 
-$results = $db->query('SELECT COUNT(leed_event.id),leed_feed.folder FROM leed_event INNER JOIN leed_feed ON leed_event.feed = leed_feed.id WHERE leed_event.unread =1 GROUP BY leed_feed.folder');
+$results = $db->query('SELECT COUNT(i.guid),f.folder FROM items i INNER JOIN flux f ON i.feed = f.id WHERE i.unread =1 GROUP BY f.folder');
 while ($item = $results->fetch_array()) {
     $events[$item[1]] = intval($item[0]);
 }
 
 $allEvents = $events;
 
-$results = $db->query("SELECT leed_feed.name AS name, leed_feed.id AS id, leed_feed.url AS url, leed_folder.id AS folder 
-FROM leed_feed 
-    INNER JOIN leed_folder ON leed_feed.folder = leed_folder.id 
-ORDER BY leed_feed.name");
+$results = $db->query("SELECT f.name AS name, f.id AS id, f.url AS url, c.id AS folder 
+FROM flux f 
+    INNER JOIN categories c ON f.folder = c.id 
+ORDER BY f.name");
 
 if ($results != false) {
     while ($item = $results->fetch_array()) {
@@ -253,13 +255,13 @@ $feeds['idMap'] = $feedsIdMap;
 $allFeeds = $feeds;
 $allFeedsPerFolder = $allFeeds['folderMap'];
 
-$results = $db->query('SELECT * FROM leed_folder ORDER BY name ');
+$results = $db->query('SELECT * FROM categories c ORDER BY name ');
 while ($rows = $results->fetch_array()) {
 
     $resultsUnreadByFolder = $db->query('SELECT count(*) as unread
-FROM leed_event le 
-    inner join leed_feed lfe on le.feed = lfe.id 
-    inner join leed_folder lfo on lfe.folder = lfo.id  
+FROM items le 
+    inner join flux lfe on le.feed = lfe.id 
+    inner join categories lfo on lfe.folder = lfo.id  
 where unread = 1 and lfo.id = ' . $rows['id']);
 
     while ($rowsUnreadByFolder = $resultsUnreadByFolder->fetch_array()) {
@@ -267,15 +269,15 @@ where unread = 1 and lfo.id = ' . $rows['id']);
     }
 
     $resultsFeedsByFolder = $db->query('SELECT fe.id as feed_id, fe.name as feed_name, fe.description as feed_description, fe.website as feed_website, fe.url as feed_url, fe.lastupdate as feed_lastupdate, fe.lastSyncInError as feed_lastSyncInError 
-FROM leed_folder f 
-    inner join leed_feed fe on fe.folder = f.id 
+FROM categories f 
+    inner join flux fe on fe.folder = f.id 
 where f.id = ' . $rows['id']);
 
 
     while ($rowsFeedsByFolder = $resultsFeedsByFolder->fetch_array()) {
 
-        $resultsUnreadByFeed = $db->query('SELECT count(*) as unread FROM leed_folder f inner join leed_feed fe on fe.folder = f.id 
-    inner join leed_event e on e.feed = fe.id  where e.unread = 1 and fe.id = ' . $rowsFeedsByFolder['feed_id']);
+        $resultsUnreadByFeed = $db->query('SELECT count(*) as unread FROM categories f inner join flux fe on fe.folder = f.id 
+    inner join items e on e.feed = fe.id  where e.unread = 1 and fe.id = ' . $rowsFeedsByFolder['feed_id']);
 
         $unreadEventsByFeed = 0;
 
@@ -317,8 +319,10 @@ $articleDisplayMode = $config['articleDisplayMode'];
 // Route: Before for logging
 /* ---------------------------------------------------------------- */
 
-$router->before('GET|POST|PUT|DELETE|PATCH|OPTIONS', '.*', function () use ($logger) {
+$router->before('GET|POST|PUT|DELETE|PATCH|OPTIONS', '^((?!login).)*$', function () use ($logger) {
     $logger->info($_SERVER['REQUEST_URI']);
+    $logger->info($_SERVER['REMOTE_ADDR']);
+    $logger->info($_SERVER['HTTP_X_FORWARDED_FOR']);
     if (!$_SESSION['user']) {
         header('location: /login');
     }
@@ -358,8 +362,8 @@ $router->get('/', function () use (
 
     $action = '';
 
-    $filter = array('unread' => 1);
-    $resultsNbUnread = $db->query('SELECT count(*) as nb_items from leed_event where unread = 1');
+    //$filter = array('unread' => 1);
+    $resultsNbUnread = $db->query('SELECT count(*) as nb_items from items where unread = 1');
     $numberOfItem = 0;
 
     while ($rows = $resultsNbUnread->fetch_array()) {
@@ -372,13 +376,13 @@ $router->get('/', function () use (
     $order = 'pubdate desc';
 
 
-    $results = $db->query('SELECT le.id, le.guid,le.title,le.creator,le.content,le.description,le.link,le.unread,le.feed,le.favorite,le.pubdate,le.syncId, lf.name as feed_name
-    FROM leed_event le inner join leed_feed lf on lf.id = le.feed where unread = 1 ORDER BY pubdate desc,unread desc LIMIT  ' . ($page - 1) * $articlePerPages . ',' . $config['articlePerPages']);
+    $results = $db->query('SELECT le.guid,le.title,le.creator,le.content,le.description,le.link,le.unread,le.feed,le.favorite,le.pubdate,le.syncId, lf.name as feed_name
+    FROM items le inner join flux lf on lf.id = le.feed where unread = 1 ORDER BY pubdate desc,unread desc LIMIT  ' . ($page - 1) * $articlePerPages . ',' . $config['articlePerPages']);
 
     while ($rows = $results->fetch_array()) {
 
         $events[] = array(
-            'id' => $rows['id'],
+            'id' => $rows['guid'],
             'guid' => $rows['guid'],
             'title' => $rows['title'],
             'creator' => $rows['creator'],
@@ -476,7 +480,7 @@ $router->post('/login', function () use ($db, $config, $logger) {
 
     $salt = $config['cryptographicSalt'];
 
-    if ($stmt = $db->prepare("select id,login,password from leed_user where login = ? and password = ?")) {
+    if ($stmt = $db->prepare("select id,login,password from user where login = ? and password = ?")) {
         $stmt->bind_param("ss", $_POST['login'], sha1($_POST['password'] . $salt));
         /* execute query */
         $stmt->execute();
@@ -517,7 +521,7 @@ $router->get('/logout', function () {
     $_SESSION = array();
     session_unset();
     session_destroy();
-    header('location: /');
+    header('location: /login');
 
 });
 
@@ -536,109 +540,6 @@ $router->get('/update', function () {
     header('location: /');
 
 });
-
-/* ---------------------------------------------------------------- */
-// Route: /synchronize
-/* ---------------------------------------------------------------- */
-
-$router->get('/synchronize', function () use ($db) {
-
-    $results = $db->query('SELECT id,name,description,website,url,lastupdate,folder,isverboxse,lastSyncInError FROM leed_feed ORDER BY name ');
-    while ($rows = $results->fetch_array()) {
-/*
- *CREATE TABLE `leed_feed` (
-                             `id` int(11) NOT NULL AUTO_INCREMENT,
-                             `name` varchar(225) COLLATE utf8mb4_unicode_ci NOT NULL,
-                             `description` mediumtext COLLATE utf8mb4_unicode_ci NOT NULL,
-                             `website` mediumtext COLLATE utf8mb4_unicode_ci NOT NULL,
-                             `url` mediumtext COLLATE utf8mb4_unicode_ci NOT NULL,
-                             `lastupdate` varchar(225) COLLATE utf8mb4_unicode_ci NOT NULL,
-                             `folder` int(11) NOT NULL,
-                             `isverbose` int(1) NOT NULL,
-                             `lastSyncInError` int(1) NOT NULL DEFAULT 0,
- *
- * $feed = new SimplePie();
-        $feed->enable_cache($enableCache);
-        $feed->force_feed($forceFeed);
-        $feed->set_feed_url($this->url);
-        $feed->set_useragent('Mozilla/5.0 (compatible; Exabot/3.0; +http://www.exabot.com/go/robot)');
-
-        $this->lastSyncInError = 0;
-        $this->lastupdate = $_SERVER['REQUEST_TIME'];
-        if (!$feed->init()) {
-            $this->error = $feed->error;
-            $this->lastSyncInError = 1;
-            $this->save();
-            return false;
-        }
-
-        $feed->handle_content_type(); // UTF-8 par défaut pour SimplePie
-
-        if($this->name=='') $this->name = $feed->get_title();
-        if($this->name=='') $this->name = $this->url;
-        $this->website = $feed->get_link();
-        $this->description = $feed->get_description();
-
-        $items = $feed->get_items();
-        $eventManager = new Event();
-
-        $events = array();
-        $iEvents = 0;
-        foreach($items as $item){
-            // Ne retient que les 100 premiers éléments de flux.
-            if ($iEvents++>=100) break;
-
-            // Si le guid existe déjà, on évite de le reparcourir.
-            $alreadyParsed = $eventManager->load(array('guid'=>$item->get_id(true), 'feed'=>$this->id));
-            if (isset($alreadyParsed)&&($alreadyParsed!=false)) {
-                $events[]=$alreadyParsed->getId();
-                continue;
-            }
-
-            // Initialisation des informations de l'événement (élt. de flux)
-            $event = new Event();
-            $event->setSyncId($syncId);
-            $event->setGuid($item->get_id(true));
-            $event->setTitle($item->get_title());
-            $event->setPubdate(
-                ''==$item->get_date()
-                    ? $this->lastupdate
-                    : $item->get_date()
-            );
-            $event->setCreator(
-                ''==$item->get_author()
-                    ? ''
-                    : $item->get_author()->name
-            );
-            $event->setLink($item->get_permalink());
-
-            $event->setFeed($this->id);
-            $event->setUnread(1); // inexistant, donc non-lu
-            $enclosure = $this->getEnclosureHtml($item->get_enclosure());
-            $event->setContent($item->get_content().$enclosure);
-            $event->setDescription($item->get_description().$enclosure);
-
-            if(trim($event->getDescription())=='')
-                $event->setDescription(
-                    substr($event->getContent(),0,300)
-                    .'…<br><a href="'.$event->getLink()
-                    .'">Lire la suite de l\'article</a>'
-                );
-            if(trim($event->getContent())=='')
-                $event->setContent($event->getDescription());
-
-            $event->setCategory($item->get_category());
-            $event->save();
-            $nbEvents++;
- */
-        $feed = new SimplePie();
-
-    }
-
-
-});
-
-
 
 /* ---------------------------------------------------------------- */
 // Route: /favorites
@@ -675,7 +576,7 @@ $router->get('/favorites', function () use (
         header('location: /login');
     }
 
-    $resultsNbFavorites = $db->query('SELECT count(*) as nb_items from leed_event where favorite = 1');
+    $resultsNbFavorites = $db->query('SELECT count(*) as nb_items from items where favorite = 1');
     $numberOfItem = 0;
 
     while ($rows = $resultsNbFavorites->fetch_array()) {
@@ -687,13 +588,13 @@ $router->get('/favorites', function () use (
     $startArticle = ($page - 1) * $articlePerPages;
     //$events = $eventManager->loadAllOnlyColumn($target, array('favorite' => 1), 'pubdate DESC', $startArticle . ',' . $articlePerPages);
 
-    $results = $db->query('SELECT le.id, le.guid,le.title,le.creator,le.content,le.description,le.link,le.unread,le.feed,le.favorite,le.pubdate,le.syncId, lf.name as feed_name
-    FROM leed_event le inner join leed_feed lf on lf.id = le.feed where favorite = 1 ORDER BY pubdate desc,unread desc LIMIT  ' . ($page - 1) * $articlePerPages . ',' . $config['articlePerPages']);
+    $results = $db->query('SELECT le.guid,le.title,le.creator,le.content,le.description,le.link,le.unread,le.feed,le.favorite,le.pubdate,le.syncId, lf.name as feed_name
+    FROM items le inner join flux lf on lf.id = le.feed where favorite = 1 ORDER BY pubdate desc,unread desc LIMIT  ' . ($page - 1) * $articlePerPages . ',' . $config['articlePerPages']);
 
     while ($rows = $results->fetch_array()) {
 
         $events[] = array(
-            'id' => $rows['id'],
+            'id' => $rows['guid'],
             'guid' => $rows['guid'],
             'title' => $rows['title'],
             'creator' => $rows['creator'],
@@ -1062,11 +963,11 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
 
         //Nombre global d'article lus / non lus / total / favoris
         $requete = 'SELECT
-                (SELECT count(1) FROM `' . MYSQL_PREFIX . 'feed`) as nbFeed,
-                (SELECT count(1) FROM `' . MYSQL_PREFIX . 'event` WHERE unread = 1) as nbUnread,
-                (SELECT count(1) FROM `' . MYSQL_PREFIX . 'event` WHERE unread = 0) as nbRead,
-                (SELECT count(1) FROM `' . MYSQL_PREFIX . 'event`) as nbTotal,
-                (SELECT count(1) FROM `' . MYSQL_PREFIX . 'event` WHERE favorite = 1) as nbFavorite
+                (SELECT count(1) FROM `' . MYSQL_PREFIX . 'flux`) as nbFeed,
+                (SELECT count(1) FROM `' . MYSQL_PREFIX . 'items` WHERE unread = 1) as nbUnread,
+                (SELECT count(1) FROM `' . MYSQL_PREFIX . 'items` WHERE unread = 0) as nbRead,
+                (SELECT count(1) FROM `' . MYSQL_PREFIX . 'items`) as nbTotal,
+                (SELECT count(1) FROM `' . MYSQL_PREFIX . 'items` WHERE favorite = 1) as nbFavorite
                 ';
         $query = $mysqli->customQuery($requete);
         if ($query != null) {
@@ -1098,11 +999,11 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
     ';
         //Nombre global d'article lus / non lus / total / favoris
         $requete = 'SELECT name, count(1) as nbTotal,
-                (SELECT count(1) FROM `' . MYSQL_PREFIX . 'event` le2 WHERE le2.unread=1 and le1.feed = le2.feed) as nbUnread,
-                (SELECT count(1) FROM `' . MYSQL_PREFIX . 'event` le2 WHERE le2.unread=0 and le1.feed = le2.feed) as nbRead,
-                (SELECT count(1) FROM `' . MYSQL_PREFIX . 'event` le2 WHERE le2.favorite=1 and le1.feed = le2.feed) as nbFavorite
-                FROM `' . MYSQL_PREFIX . 'feed` lf1
-                INNER JOIN `' . MYSQL_PREFIX . 'event` le1 on le1.feed = lf1.id
+                (SELECT count(1) FROM `' . MYSQL_PREFIX . 'items` le2 WHERE le2.unread=1 and le1.feed = le2.feed) as nbUnread,
+                (SELECT count(1) FROM `' . MYSQL_PREFIX . 'items` le2 WHERE le2.unread=0 and le1.feed = le2.feed) as nbRead,
+                (SELECT count(1) FROM `' . MYSQL_PREFIX . 'items` le2 WHERE le2.favorite=1 and le1.feed = le2.feed) as nbFavorite
+                FROM `' . MYSQL_PREFIX . 'flux` lf1
+                INNER JOIN `' . MYSQL_PREFIX . 'items` le1 on le1.feed = lf1.id
                 GROUP BY name
                 ORDER BY name
                 ';
@@ -1136,7 +1037,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
 
     ';
 
-        $requete = 'select lf.name, FROM_UNIXTIME(max(le.pubdate)) last_published from leed_feed lf inner join leed_event le on lf.id = le.feed group by lf.name order by 2';
+        $requete = 'select lf.name, FROM_UNIXTIME(max(le.pubdate)) last_published from flux lf inner join items le on lf.id = le.feed group by lf.name order by 2';
 
         $query = $mysqli->customQuery($requete);
         if ($query != null) {
@@ -1262,7 +1163,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
         }
 
         if (isset($id) && is_numeric($id) && $id > 0) {
-            $eventManager->customQuery('DELETE FROM `' . MYSQL_PREFIX . 'event` WHERE `' . MYSQL_PREFIX . 'event`.`feed` in (SELECT `' . MYSQL_PREFIX . 'feed`.`id` FROM `' . MYSQL_PREFIX . 'feed` WHERE `' . MYSQL_PREFIX . 'feed`.`folder` =\'' . intval($_['id']) . '\') ;');
+            $eventManager->customQuery('DELETE FROM `' . MYSQL_PREFIX . 'items` WHERE `' . MYSQL_PREFIX . 'event`.`feed` in (SELECT `' . MYSQL_PREFIX . 'feed`.`id` FROM `' . MYSQL_PREFIX . 'feed` WHERE `' . MYSQL_PREFIX . 'feed`.`folder` =\'' . intval($_['id']) . '\') ;');
             $feedManager->delete(array('folder' => $id));
             $folderManager->delete(array('id' => $id));
         }
@@ -1439,8 +1340,8 @@ $router->get('/search', function () use ($twig, $db,$logger,$trans,$config) {
     }
 
     $search = $this->escape_string($_GET['plugin_search']);
-    $requete = 'SELECT id,title,guid,content,description,link,pubdate,unread, favorite
-            FROM `'.MYSQL_PREFIX.'event`
+    $requete = 'SELECT title,guid,content,description,link,pubdate,unread, favorite
+            FROM `'.MYSQL_PREFIX.'items`
             WHERE title like \'%'.htmlentities($search).'%\'';
     if (isset($_GET['search_option']) && $_GET['search_option']=="1"){
         $requete = $requete.' OR content like \'%'.htmlentities($search).'%\'';
@@ -1570,7 +1471,7 @@ $router->get('/feed/{id}', function ($id) use (
         header('location: /login');
     }
 
-    $resultsNbFavorites = $db->query('SELECT count(*) as nb_items FROM leed_event le inner join leed_feed lf on lf.id = le.feed where le.feed = ' . $id);
+    $resultsNbFavorites = $db->query('SELECT count(*) as nb_items FROM items le inner join flux lf on lf.id = le.feed where le.feed = ' . $id);
     $numberOfItem = 0;
 
     while ($rows = $resultsNbFavorites->fetch_array()) {
@@ -1583,13 +1484,13 @@ $router->get('/feed/{id}', function ($id) use (
     $startArticle = ($page - 1) * $articlePerPages;
     //$events = $eventManager->loadAllOnlyColumn($target, array('favorite' => 1), 'pubdate DESC', $startArticle . ',' . $articlePerPages);
 
-    $results = $db->query('SELECT le.id, le.guid,le.title,le.creator,le.content,le.description,le.link,le.unread,le.feed,le.favorite,le.pubdate,le.syncId, lf.name as feed_name
-    FROM leed_event le inner join leed_feed lf on lf.id = le.feed where le.feed = ' . $id . ' ORDER BY pubdate desc,unread desc LIMIT  ' . ($page - 1) * $articlePerPages . ',' . $config['articlePerPages']);
+    $results = $db->query('SELECT le.guid,le.title,le.creator,le.content,le.description,le.link,le.unread,le.feed,le.favorite,le.pubdate,le.syncId, lf.name as feed_name
+    FROM items le inner join flux lf on lf.id = le.feed where le.feed = ' . $id . ' ORDER BY pubdate desc,unread desc LIMIT  ' . ($page - 1) * $articlePerPages . ',' . $config['articlePerPages']);
 
     while ($rows = $results->fetch_array()) {
 
         $events[] = array(
-            'id' => $rows['id'],
+            'id' => $rows['guid'],
             'guid' => $rows['guid'],
             'title' => $rows['title'],
             'creator' => $rows['creator'],
@@ -1678,7 +1579,7 @@ $router->get('/folder/{id}', function ($id) use (
     //$currentFeed = $feedManager->getById($id);
     //var_dump($currentFeed);
 
-    $resultsNbFavorites = $db->query('SELECT count(*) as nb_items FROM leed_event le inner join leed_feed lf on lf.id = le.feed where le.feed = ' . $id);
+    $resultsNbFavorites = $db->query('SELECT count(*) as nb_items FROM items le inner join flux lf on lf.id = le.feed where le.feed = ' . $id);
     $numberOfItem = 0;
 
     while ($rows = $resultsNbFavorites->fetch_array()) {
@@ -1692,7 +1593,7 @@ $router->get('/folder/{id}', function ($id) use (
     //$events = $eventManager->loadAllOnlyColumn($target, array('favorite' => 1), 'pubdate DESC', $startArticle . ',' . $articlePerPages);
 
     $results = $db->query('SELECT le.id, le.guid,le.title,le.creator,le.content,le.description,le.link,le.unread,le.feed,le.favorite,le.pubdate,le.syncId, lf.name as feed_name
-    FROM leed_event le inner join leed_feed lf on lf.id = le.feed where le.feed = ' . $id . ' ORDER BY pubdate desc,unread desc LIMIT  ' . ($page - 1) * $articlePerPages . ',' . $config['articlePerPages']);
+    FROM items le inner join flux lf on lf.id = le.feed where le.feed = ' . $id . ' ORDER BY pubdate desc,unread desc LIMIT  ' . ($page - 1) * $articlePerPages . ',' . $config['articlePerPages']);
 
     while ($rows = $results->fetch_array()) {
 
