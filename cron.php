@@ -2,13 +2,14 @@
 
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
+use SimplePie\SimplePie;
 
 require __DIR__ . '/vendor/autoload.php';
 
 $stream = new StreamHandler(__DIR__ . '/logs/synchronization.log', Logger::DEBUG);
 $logger = new Logger('SyncLogger');
 $logger->pushHandler($stream);
-$logger->info('Influx started');
+$logger->info('Sync started');
 
 $router = new \Bramus\Router\Router();
 
@@ -24,97 +25,156 @@ function truncate($msg, $limit)
     return htmlentities(mb_substr($str, 0, $nb, 'UTF-8') . $fin);
 }
 
-if (!ini_get('safe_mode')) @set_time_limit(0);
-
-
-/* ---------------------------------------------------------------- */
-// Mise en place d'un timezone par default pour utiliser les fonction de date en php
-$timezone_default = 'Europe/Paris'; // valeur par défaut :)
-date_default_timezone_set($timezone_default);
-$timezone_phpini = ini_get('date.timezone');
-if (($timezone_phpini != '') && (strcmp($timezone_default, $timezone_phpini))) {
-    date_default_timezone_set($timezone_phpini);
-}
-/* ---------------------------------------------------------------- */
-$cookiedir = '';
-if (dirname($_SERVER['SCRIPT_NAME']) != '/') $cookiedir = dirname($_SERVER["SCRIPT_NAME"]) . '/';
-session_set_cookie_params(0, $cookiedir);
-session_start();
-mb_internal_encoding('UTF-8'); // UTF8 pour fonctions mb_*
-$start = microtime(true);
-require_once('constant.php');
-
-class_exists('Functions') or require_once('Functions.class.php');
-class_exists('Plugin') or require_once('Plugin.class.php');
-class_exists('MysqlEntity') or require_once('MysqlEntity.class.php');
-class_exists('Update') or require_once('Update.class.php');
-class_exists('Feed') or require_once('Feed.class.php');
-class_exists('Event') or require_once('Event.class.php');
-class_exists('User') or require_once('User.class.php');
-class_exists('Folder') or require_once('Folder.class.php');
-class_exists('Configuration') or require_once('Configuration.class.php');
-class_exists('Opml') or require_once('Opml.class.php');
-class_exists('Logger') or require_once('Logger.class.php');
-//error_reporting(E_ALL);
-//Calage de la date
-date_default_timezone_set('Europe/Paris');
-$configurationManager = new Configuration();
-$conf = $configurationManager->getAll();
-$theme = $configurationManager->get('theme');
-//Instanciation du template
-$tpl = new RainTPL();
-
-
-$resultUpdate = Update::ExecutePatch();
-$userManager = new User();
-$myUser = (isset($_SESSION['currentUser']) ? unserialize($_SESSION['currentUser']) : false);
-if (empty($myUser)) {
-    /* Pas d'utilisateur dans la session ?
-     * On tente de récupérer une nouvelle session avec un jeton. */
-    $myUser = User::existAuthToken();
-    $_SESSION['currentUser'] = serialize($myUser);
-}
-$feedManager = new Feed();
-$eventManager = new Event();
-$folderManager = new Folder();
-// Sélection de la langue de l'interface utilisateur
-if (!$myUser) {
-    $languages = Translation::getHttpAcceptLanguages();
-} else {
-    $languages = array($configurationManager->get('language'));
+function convertFileSize($bytes)
+{
+    if($bytes<1024){
+        return round(($bytes / 1024), 2).' o';
+    }elseif(1024<$bytes && $bytes<1048576){
+        return round(($bytes / 1024), 2).' ko';
+    }elseif(1048576<$bytes && $bytes<1073741824){
+        return round(($bytes / 1024)/1024, 2).' Mo';
+    }elseif(1073741824<$bytes){
+        return round(($bytes / 1024)/1024/1024, 2).' Go';
+    }
 }
 
+function getEnclosureHtml($enclosure) {
+	$html = '';
+        if($enclosure!=null && $enclosure->link!=''){
+            $enclosureName = substr(
+                $enclosure->link,
+                strrpos($enclosure->link, '/')+1,
+                strlen($enclosure->link)
+            );
+            $enclosureArgs = strpos($enclosureName, '?');
+            if($enclosureArgs!==false)
+                $enclosureName = substr($enclosureName,0,$enclosureArgs);
+            $enclosureFormat = isset($enclosure->handler)
+                ? $enclosure->handler
+                : substr($enclosureName, strrpos($enclosureName,'.')+1);
+            $html ='<div class="enclosure"><h1>Fichier média :</h1>';
+            $enclosureType = $enclosure->get_type();
+            if (strpos($enclosureType, 'image/') === 0) {
+                $html .= '<img src="' . $enclosure->link . '" />';
+            } elseif (strpos($enclosureType, 'audio/') === 0) {
+                $html .= '<audio src="' . $enclosure->link . '" preload="none" controls>Audio not supported</audio>';
+            } elseif (strpos($enclosureType, 'video/') === 0) {
+                $html .= '<video src="' . $enclosure->link . '" preload="none" controls>Video not supported</video>';
+            } else {
+                $html .= '<a href="'.$enclosure->link.'"> '.$enclosureName.'</a>';
+            }
+            $html .= ' <span>(Format '.strtoupper($enclosureFormat).', '.convertFileSize($enclosure->length).')</span></div>';
+        }
+        return $html;
+    }
 
-//Récuperation et sécurisation de toutes les variables POST et GET
-$_ = array();
-foreach ($_POST as $key => $val) {
-    $_[$key] = Functions::secure($val, 2); // on ne veut pas d'addslashes
+include_once('conf/config.php');
+
+$sp = new \SimplePie();
+$sp->enable_cache(true);
+$sp->set_useragent('Mozilla/5.0 (compatible; Exabot/3.0; +http://www.exabot.com/go/robot)');
+
+$db = new mysqli(MYSQL_HOST, MYSQL_LOGIN, MYSQL_MDP, MYSQL_BDD);
+$db->set_charset('utf8mb4');
+$db->query('SET NAMES utf8mb4');
+
+$query_feed = "select * from flux order by name";
+
+$result_feed = $db->query($query_feed);
+
+$currentDate = date('d/m/Y H:i:s');
+$nbErrors = 0;
+$nbOk = 0;
+$nbTotal = 0;
+$localTotal = 0; // somme de tous les temps locaux, pour chaque flux
+$nbTotalEvents = 0;
+$syncId = time();
+
+while ($row = $result_feed->fetch_array()) {
+
+    $fluxName = $row['name'];
+    $fluxUrl = $row['url'];
+    $fluxId = $row['id'];
+
+    $sp->set_feed_url($fluxUrl);
+    $sp->handle_content_type();
+
+    $success = $sp->init();
+
+
+    $logger->info($fluxName);
+
+    echo "\tParse flux: \t{$fluxName}\n";
+    $logger->info("\tParse flux: \t{$fluxName}\n");
+    echo "\t\tFlux id: \t$fluxId\n";
+    $logger->info("\t\tFlux id: \t$fluxId\n");
+    if($sp->error())
+    {
+        echo "\t\tFlux id: \t$sp->error()\n";
+        $logger->error("\t\tFlux id: \t$sp->error()\n");
+    }
+
+    foreach($sp->get_items() as $item)
+    {
+       $guid = $item->get_id(true);
+
+        $permalink = $item->get_permalink();
+        $content = $item->get_content();
+        $title = $item->get_title();
+        $description = $item->get_description();
+        $link = $item->get_link();
+
+        $enclosure = getEnclosureHtml($item->get_enclosure());
+        //$author = $item->get_author()->name;
+
+        $author = '';
+
+        if ($creator = $item->get_author())
+        {
+            $author =  $creator->get_name();
+        }
+        elseif($item->get_authors()){
+            foreach ($item->get_authors() as $creator)
+            {
+                $author .=   $creator->get_name() . ',';
+            }
+        }
+        else{
+            $author = $link;
+        }
+
+        if(is_numeric($item->get_date()))
+        {
+            $pubdate = $item->get_date();
+        }
+        elseif($item->get_date())
+        {
+            $pubdate = strtotime($item->get_date());
+        }
+        else{
+            $pubdate = time();
+        }
+
+        $insertOrUpdate = "INSERT INTO influx.items 
+        VALUES ('" . $guid . "','" . $title . "','" . $author . "','" . $content . $enclosure . "','" . $description . "','" . $permalink . "',1," . $fluxId . ",0," . $pubdate . ',' . $syncId . ',' . ") 
+        ON DUPLICATE KEY UPDATE title = '" . $title . "', content = '" . $content ."'";
+
+        $db->query($insertOrUpdate);
+
+    }
+
+
+
 }
-foreach ($_GET as $key => $val) {
-    $_[$key] = Functions::secure($val, 2); // on ne veut pas d'addslashes
-}
+/*
+echo "\t{$nbErrors}\t" . _t('ERRORS') . "\n";
+echo "\t{$nbOk}\t" . _t('GOOD') . "\n";
+echo "\t{$nbTotal}\t" . _t('AT_TOTAL') . "\n";
+echo "\t$currentDate\n";
+echo "\t$nbTotalEvents\n";
+echo "\t{$totalTimeStr}\t" . _t('SECONDS') . "\n";
 
-
-$commandLine = 'cli' == php_sapi_name();
-
-if ($commandLine) {
-    $action = 'commandLine';
-}
-
-$syncCode = $configurationManager->get('synchronisationCode');
-$syncGradCount = $configurationManager->get('syncGradCount');
-
-$synchronisationType = $configurationManager->get('synchronisationType');
-
-$synchronisationCustom = array();
-
-// sélectionne tous les flux, triés par le nom
-$feeds = $feedManager->populate('name');
-$syncTypeStr = _t('SYNCHRONISATION_TYPE') . ' : ' . _t('FULL_SYNCHRONISATION');
-
-
-if (!isset($synchronisationCustom['no_normal_synchronize'])) {
-    $feedManager->synchronize($feeds, $syncTypeStr, $commandLine, $configurationManager, $start);
+    //$feedManager->synchronize($feeds, $syncTypeStr, $commandLine, $configurationManager, $start);
 
     $currentDate = date('d/m/Y H:i:s');
     echo "{$syncTypeStr}\t{$currentDate}\n";
@@ -174,9 +234,8 @@ if (!isset($synchronisationCustom['no_normal_synchronize'])) {
     echo "\t$currentDate\n";
     echo "\t$nbTotalEvents\n";
     echo "\t{$totalTimeStr}\t" . _t('SECONDS') . "\n";
+*/
 
-
-}
 
 
 

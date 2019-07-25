@@ -75,7 +75,7 @@
 
                                 {% if displayOnlyUnreadFeedFolder == true %}
                                     <!-- Affichage des feeds ayant des articles non lus -->
-                                    {% if feed.unread is not null %}
+                                    {% if feed.unread > 0 %}
 
                                         {% if feed.lastSyncInError == 0 %}
                                             <li>
@@ -159,13 +159,13 @@
         <header class="articleHead">
 
             {% if action == 'feed' %}
-                {{  dump(feed) }}
+
                 <h1 class="articleSection"><a target="_blank" rel="noopener noreferrer" href="{{ feed.website }}">{{ feed.name }}</a> :</h1>
                 {{ feed.description }}
                 <div class="clear"></div>
-                {{ attribute(i18n, '_t', ['????']) }}
-                <a href="/feed/{{ feed }}/page/{{ page }}/unread">Non lu</a> |
-                <a href="/feed/{{ feed }}/page/{{ page }}/older">Plus vieux</a> en premier
+
+                <a href="/feed/{{ feed.id }}/page/{{ page }}/unread">Non lu</a> |
+                <a href="/feed/{{ feed.id }}/page/{{ page }}/older">Plus vieux</a> en premier
             {% endif %}
 
             {% if action == 'folder' %}

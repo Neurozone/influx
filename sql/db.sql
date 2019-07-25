@@ -21,10 +21,10 @@ CREATE TABLE `configuration`
 -- Table structure for table `event`
 --
 
-DROP TABLE IF EXISTS `event`;
+DROP TABLE IF EXISTS `items`;
 /*!40101 SET @saved_cs_client = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `event`
+CREATE TABLE `items`
 (
     `id`          int(11)                                  NOT NULL AUTO_INCREMENT,
     `guid`        varchar(45) COLLATE utf8mb4_unicode_ci   NOT NULL,
