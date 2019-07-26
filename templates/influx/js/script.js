@@ -430,7 +430,7 @@ function renameFeed(element,feed){
     var feedUrlCase = feedLine.children('.js-feedTitle').children('a:nth-child(2)');
     var feedUrlValue = feedUrlCase.attr('href');
     var url = feedNameCase.attr('href');
-    $(element).html(_t('SAVE'));
+    $(element).html('Save');
     $(element).attr('style','background-color:#0C87C9;');
     $(element).attr('onclick','saveRenameFeed(this,'+feed+',"'+url+'")');
     feedNameCase.replaceWith('<input type="text" name="feedName" value="'+feedNameValue+'" size="30" />');
@@ -449,7 +449,8 @@ function saveRenameFeed(element,feed,url){
     feedNameCase.replaceWith('<a href="'+url+'">'+feedNameValue+'</a>');
     feedUrlCase.replaceWith('<a class="underlink" href="'+feedUrlValue+'">'+feedUrlValue+'</a>');
     $.ajax({
-        url: "./action.php?action=renameFeed",
+        url: "/action/renameFeed",
+        type: 'post',
         data:{id:feed,name:feedNameValue,url:feedUrlValue}
     });
 }
