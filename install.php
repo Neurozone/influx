@@ -10,7 +10,6 @@ $stream = new StreamHandler(__DIR__ . '/logs/influx.log', Logger::DEBUG);
 $logger = new Logger('influxLogger');
 $logger->pushHandler($stream);
 $logger->info('Influx started');
-=======
 $stream = new StreamHandler(__DIR__ . '/logs/influx.log', Logger::DEBUG);
 $logger = new Logger('influxLogger');
 $logger->pushHandler($stream);

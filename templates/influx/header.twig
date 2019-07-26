@@ -31,7 +31,7 @@
             <header class="wrapper clearfix">
                 <h1 class="logo" id="title"><a href="">In<i>Flux</i></a></h1>
                 <div class="loginBloc">
-                   - <span>Identifi&eacute; avec  {{ user }} </span><a href="logout" class="loginButton">{{  trans.DISCONNECT }}</a>
+                   - <span>Identifi&eacute; avec  {{ user }} </span><a href="logout" class="loginButton">{{ trans.DISCONNECT }}</a>
 
                     <div class="clear"></div>
                 </div>
@@ -39,8 +39,8 @@
                 <nav>
                     <ul>
                         <li><a href="" title="Accueil"><i class="icon-home"></i></a></li>
-                        <li><a href="favorites" title="Favoris"><i class="icon-star-empty"></i></a></li>
-                        <li><a href="settings" title="Gestion"><i class="icon-cog"></i></a></li>
+                        <li><a href="/favorites" title="Favoris"><i class="icon-star-empty"></i></a></li>
+                        <li><a href="/settings" title="Gestion"><i class="icon-cog"></i></a></li>
                         <li><a class="synchronizeButton" title="Lancer une synchronisation manuelle" onclick="synchronize('{{ synchronisationCode }}');"><i class="icon-arrows-cw"></i></a></li>
 
                     </ul>

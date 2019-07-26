@@ -119,13 +119,14 @@ while ($row = $result_feed->fetch_array()) {
        $guid = $item->get_id(true);
 
         $permalink = $item->get_permalink();
-        $content = $item->get_content();
-        $title = $item->get_title();
-        $description = $item->get_description();
+        $content = $db->real_escape_string($item->get_content());
+        $title = $db->real_escape_string(mb_strimwidth($item->get_title(), 0, 250, "..."));
+        $description =  $db->real_escape_string(mb_strimwidth($item->get_description(), 0, 300, "..."));
+
         $link = $item->get_link();
 
         $enclosure = getEnclosureHtml($item->get_enclosure());
-        //$author = $item->get_author()->name;
+
 
         $author = '';
 
@@ -155,11 +156,20 @@ while ($row = $result_feed->fetch_array()) {
             $pubdate = time();
         }
 
-        $insertOrUpdate = "INSERT INTO influx.items 
-        VALUES ('" . $guid . "','" . $title . "','" . $author . "','" . $content . $enclosure . "','" . $description . "','" . $permalink . "',1," . $fluxId . ",0," . $pubdate . ',' . $syncId . ',' . ") 
-        ON DUPLICATE KEY UPDATE title = '" . $title . "', content = '" . $content ."'";
+        $insertOrUpdate = "INSERT INTO influx.items VALUES ('" . $guid . "','" . $title . "','" . $db->real_escape_string($author) . "','" . $content . $enclosure . "','" . $description . "','" . $permalink . "',1," . $fluxId . ",0," . $pubdate . ',' . $syncId . ") ON DUPLICATE KEY UPDATE title = '" . $title . "', content = '" . $content ."'";
 
         $db->query($insertOrUpdate);
+
+
+        echo "\t\tLine changed: \t$db->affected_rows\n";
+        $logger->info("\t\tLine changed: \t$db->affected_rows\n");
+        if ($db->errno) {
+            echo "\t\tFailure: \t$db->error\n";
+            $logger->info("\t\tFailure: \t$db->error\n");
+            $logger->error($insertOrUpdate);
+
+
+        }
 
     }
 

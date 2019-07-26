@@ -9,7 +9,6 @@ $stream = new StreamHandler(__DIR__ . '/logs/influx_api.log', Logger::DEBUG);
 $logger = new Logger('influxApiLogger');
 $logger->pushHandler($stream);
 $logger->info('Api requested');
-=======
 $stream = new StreamHandler(__DIR__ . '/logs/influx.log', Logger::DEBUG);
 $logger = new Logger('influxLogger');
 $logger->pushHandler($stream);

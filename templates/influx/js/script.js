@@ -167,12 +167,27 @@ $(document).keydown(function (e) {
     }
 });
 
+function getParameters()
+{
+    var url = window.location.toString();
+    var url_split =  url.split('/');
+
+    var id = url_split[4].split('#');
+    var ret_tab = { "protocol": url_split[0], "root" : url_split[2], "action": url_split[3], "id": id[0]}
+
+    return ret_tab;
+}
+
 $(window).scroll(function(){
     scrollInfini();
 });
 
 function scrollInfini() {
     var deviceAgent = navigator.userAgent.toLowerCase();
+
+    if( console && console.log ) console.log(getParameters());
+
+
 
     if($('.index').length) {
         // On teste si ajaxready vaut false, auquel cas on stoppe la fonction
@@ -193,10 +208,11 @@ function scrollInfini() {
                 hightlighted = 2;
             }
 
+            var url_route = getParameters();
             // récupération des variables passées en Get
-            var action = getUrlVars()['action'];
+            var action = url_route["action"];
             var folder = getUrlVars()['folder'];
-            var feed = getUrlVars()['feed'];
+            var feed = url_route["id"];
             var order = getUrlVars()['order'];
             if (order) {
                 order = '&order='+order
@@ -205,7 +221,7 @@ function scrollInfini() {
             }
 
             $.ajax({
-                url: './article.php',
+                url: '/article/flux',
                 type: 'post',
                 data: 'scroll='+$(window).data('page')+'&nblus='+$(window).data('nblus')+'&hightlighted='+hightlighted+'&action='+action+'&folder='+folder+'&feed='+feed+order,
 
@@ -246,7 +262,7 @@ function scrollInfini() {
 };
 
 /* Fonctions de séléctions */
-/* Cette fonction sera utilisé pour le scroll infinie, afin d'ajouter les évènements necessaires */
+/* Cette fonction sera utilisé pour le scroll infini, afin d'ajouter les évènements necessaires */
 function addEventsButtonLuNonLus(){
     var handler = function(event){
     var target = event.target;
@@ -454,8 +470,7 @@ function readThis(element,id,from,callback){
         parent.addClass('eventRead');
         addOrRemoveFeedNumber('-');
         $.ajax({
-            url: "./action.php?action=readContent",
-            data:{id:id},
+            url: "/action/readContent/" + id,
             success:function(msg){
                 if(msg.status == 'noconnect') {
                     alert(msg.texte)
@@ -505,8 +520,8 @@ function readThis(element,id,from,callback){
         if(from!='title'){
             addOrRemoveFeedNumber('+');
             $.ajax({
-                    url: "./action.php?action=unreadContent",
-                    data:{id:id},
+                    url: "/action/unreadContent/" + id,
+
                     success:function(msg){
                         if(msg.status == 'noconnect') {
                             alert(msg.texte)
@@ -533,8 +548,8 @@ function unReadThis(element,id,from){
     if(parent.hasClass('eventRead')){
         if(from!='title'){
             $.ajax({
-                url: "./action.php?action=unreadContent",
-                data:{id:id},
+                url: "/action/unreadContent/" + id,
+
                 success:function(msg){
                     if(msg.status == 'noconnect') {
                         alert(msg.texte)

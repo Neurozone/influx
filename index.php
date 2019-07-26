@@ -33,11 +33,8 @@ session_start();
 if (file_exists('conf/config.php')) {
     require_once('conf/config.php');
 
-}
-
-else{
-    if(!isset($_SESSION['install']) or $_SESSION['install'] == false)
-    {
+} else {
+    if (!isset($_SESSION['install']) or $_SESSION['install'] == false) {
         $_SESSION['install'] = true;
         header('location: /install');
         exit();
@@ -45,12 +42,13 @@ else{
 
 }
 
-function getClientIP(){
-    if (array_key_exists('HTTP_X_FORWARDED_FOR', $_SERVER)){
-        return  $_SERVER["HTTP_X_FORWARDED_FOR"];
-    }else if (array_key_exists('REMOTE_ADDR', $_SERVER)) {
+function getClientIP()
+{
+    if (array_key_exists('HTTP_X_FORWARDED_FOR', $_SERVER)) {
+        return $_SERVER["HTTP_X_FORWARDED_FOR"];
+    } else if (array_key_exists('REMOTE_ADDR', $_SERVER)) {
         return $_SERVER["REMOTE_ADDR"];
-    }else if (array_key_exists('HTTP_CLIENT_IP', $_SERVER)) {
+    } else if (array_key_exists('HTTP_CLIENT_IP', $_SERVER)) {
         return $_SERVER["HTTP_CLIENT_IP"];
     }
 
@@ -108,27 +106,23 @@ $language = new Language();
 
 if ($language->getLanguage() == $config['language'] && is_file('locales/' . $config['language'] . '.json')) {
     $_SESSION['language'] = $language->getLanguage();
-    $l_trans = json_decode(file_get_contents('locales/' . $config['language'] . '.json'), true);
-    $l_trans2 = json_decode(file_get_contents('templates/influx/locales/' . $config['language'] . '.json'), true);
+    $l_trans = json_decode(file_get_contents('templates/influx/locales/' . $config['language'] . '.json'), true);
 } elseif ($language->getLanguage() != $config['language'] && is_file('locales/' . $config['language'] . '.json')) {
     $_SESSION['language'] = $language->getLanguage();
-    $l_trans = json_decode(file_get_contents('locales/' . $config['language'] . '.json'), true);
-    $l_trans2 = json_decode(file_get_contents('templates/influx/locales/' . $config['language'] . '.json'), true);
+    $l_trans = json_decode(file_get_contents('templates/influx/locales/' . $config['language'] . '.json'), true);
 } elseif (!is_file('locales/' . $config['language'] . '.json')) {
     $_SESSION['language'] = 'en';
-    $l_trans = json_decode(file_get_contents('locales/' . $_SESSION['language'] . '.json'), true);
-    $l_trans2 = json_decode(file_get_contents('templates/influx/locales/' . $_SESSION['language'] . '.json'), true);
+    $l_trans = json_decode(file_get_contents('templates/influx/locales/' . $_SESSION['language'] . '.json'), true);
 }
 
-$trans = array_merge($l_trans, $l_trans2);
+$trans = $l_trans;
 
 /* ---------------------------------------------------------------- */
 //
 /* ---------------------------------------------------------------- */
 
 $cookiedir = '';
-if (dirname($_SERVER['SCRIPT_NAME']) != '/')
-{
+if (dirname($_SERVER['SCRIPT_NAME']) != '/') {
     $cookiedir = dirname($_SERVER["SCRIPT_NAME"]) . '/';
 }
 
@@ -142,13 +136,6 @@ $start = microtime(true);
 
 //$logger->info('templates/' . $theme . '/');
 
-//$userManager = new User();
-//$myUser = (isset($_SESSION['currentUser']) ? unserialize($_SESSION['currentUser']) : false);
-
-
-//$feedManager = new Feed();
-//$eventManager = new Event();
-//$folderManager = new Folder();
 
 //recuperation de tous les flux
 
@@ -288,7 +275,7 @@ where f.id = ' . $rows['id'] . " order by fe.name");
     while ($rowsFeedsByFolder = $resultsFeedsByFolder->fetch_array()) {
 
         $resultsUnreadByFeed = $db->query('SELECT count(*) as unread FROM categories f inner join flux fe on fe.folder = f.id 
-    inner join items e on e.feed = fe.id  where e.unread = 1 and fe.id = ' . $rowsFeedsByFolder['feed_id'] );
+    inner join items e on e.feed = fe.id  where e.unread = 1 and fe.id = ' . $rowsFeedsByFolder['feed_id']);
 
         $unreadEventsByFeed = 0;
 
@@ -666,7 +653,7 @@ $router->get('/favorites', function () use (
 
 // @todo
 
-$router->mount('/article', function () use ($router, $twig, $db,$logger,$trans,$config) {
+$router->mount('/article', function () use ($router, $twig, $db, $logger, $trans, $config) {
 
     /*
      * Plugin::callHook("index_pre_treatment", array(&$_));
@@ -758,11 +745,7 @@ $html = $tpl->draw($view);
     // Route: /article
     /* ---------------------------------------------------------------- */
 
-    $router->get('/', function () use ($twig, $db,$logger,$trans,$config) {
-
-        if (!$_SESSION['user']) {
-            header('location: /login');
-        }
+    $router->get('/', function () use ($twig, $db, $logger, $trans, $config) {
 
         header('location: /settings/manage');
 
@@ -772,11 +755,7 @@ $html = $tpl->draw($view);
     // Route: /article/favorite
     /* ---------------------------------------------------------------- */
 
-    $router->get('/favorites', function () use ($twig, $db,$logger,$trans,$config) {
-
-        if (!$_SESSION['user']) {
-            header('location: /login');
-        }
+    $router->get('/favorites', function () use ($twig, $db, $logger, $trans, $config) {
 
         header('location: /settings/manage');
 
@@ -786,27 +765,84 @@ $html = $tpl->draw($view);
     // Route: /article/unread
     /* ---------------------------------------------------------------- */
 
-    $router->get('/unread', function () use ($twig, $db,$logger,$trans,$config) {
-
-        if (!$_SESSION['user']) {
-            header('location: /login');
-        }
+    $router->get('/unread', function () use ($twig, $db, $logger, $trans, $config) {
 
         header('location: /settings/manage');
 
     });
 
     /* ---------------------------------------------------------------- */
-    // Route: /article/feed/{id}
+    // Route: /article/flux/{id}
     /* ---------------------------------------------------------------- */
 
-    $router->get('/feed/{id}', function () use ($twig, $db,$logger,$trans,$config) {
+    $router->post('/flux', function () use ($twig, $db, $logger, $trans, $config) {
 
-        if (!$_SESSION['user']) {
-            header('location: /login');
+        $scroll = $_POST['scroll'];
+        $nblus = isset($_POST['nblus']) ? $_POST['nblus'] : 0;
+        $hightlighted = $_POST['hightlighted'];
+        $action = $_POST['action'];
+        $folder = $_POST['folder'];
+        $feed = (int)$_POST['feed'];
+
+        $nblus = isset($_POST['nblus']) ? $_POST['nblus'] : 0;
+
+        $articleConf['startArticle'] = ($scroll * 50) - $nblus;
+
+        //$currentFeed = $feedManager->getById($_['feed']);
+        //$allowedOrder = array('date'=>'pubdate DESC','older'=>'pubdate','unread'=>'unread DESC,pubdate DESC');
+        //$order = (isset($_['order'])?$allowedOrder[$_['order']]:$allowedOrder['unread']);
+        //$events = $currentFeed->getEvents($articleConf['startArticle'],$articleConf['articlePerPages'],$order,$target,$filter);
+
+        $logger->info($articleConf['startArticle']);
+        $logger->info($config['articlePerPages']);
+
+        $offset = $articleConf['startArticle'];
+        $rowcount = $articleConf['startArticle'] + $config['articlePerPages'];
+
+        if ($articleConf['startArticle'] < 0) {
+            $articleConf['startArticle'] = 0;
         }
 
-        header('location: /settings/manage');
+        $q = 'SELECT le.guid,le.title,le.creator,le.content,le.description,le.link,le.unread,le.feed,le.favorite,le.pubdate,le.syncId, lf.name as feed_name
+                FROM items le 
+                    inner join flux lf on lf.id = le.feed 
+                where le.feed = ' . $feed . ' 
+                ORDER BY pubdate desc,unread desc 
+                LIMIT ' . $offset .
+            ',' . $rowcount;
+
+        $logger->info($q);
+
+        $results = $db->query($q);
+
+        while ($rows = $results->fetch_array()) {
+
+            $events[] = array(
+                'id' => $rows['guid'],
+                'guid' => $rows['guid'],
+                'title' => $rows['title'],
+                'creator' => $rows['creator'],
+                'content' => $rows['content'],
+                'description' => $rows['description'],
+                'link' => $rows['link'],
+                'unread' => $rows['unread'],
+                'feed' => $rows['feed'],
+                'favorite' => $rows['favorite'],
+                'pubdate' => date('Y-m-d H:i:s', $rows['pubdate']),
+                'syncId' => $rows['syncId'],
+                'feed_name' => $rows['feed_name'],
+            );
+
+        }
+
+        echo $twig->render('article.twig',
+            [
+
+                'events' => $events,
+                'scroll' => $scroll,
+
+            ]
+        );
 
     });
 
@@ -814,7 +850,7 @@ $html = $tpl->draw($view);
     // Route: /article/folder/{id}
     /* ---------------------------------------------------------------- */
 
-    $router->get('/folder/{id}', function () use ($twig, $db,$logger,$trans,$config) {
+    $router->get('/folder/{id}', function () use ($twig, $db, $logger, $trans, $config) {
 
         if (!$_SESSION['user']) {
             header('location: /login');
@@ -830,13 +866,9 @@ $html = $tpl->draw($view);
 // Route: /settings
 /* ---------------------------------------------------------------- */
 
-$router->mount('/settings', function () use ($router, $twig, $trans, $logger, $config, $db, $cookiedir ) {
+$router->mount('/settings', function () use ($router, $twig, $trans, $logger, $config, $db, $cookiedir,$folders) {
 
     $router->get('/', function () use ($twig, $cookiedir) {
-
-        if (!$_SESSION['user']) {
-            header('location: /login');
-        }
 
         header('location: /settings/manage');
 
@@ -861,7 +893,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
     // Route: /settings/{option}
     /* ---------------------------------------------------------------- */
 
-    $router->get('/{option}', function ($option) use ($twig, $trans, $logger, $config, $cookiedir) {
+    $router->get('/{option}', function ($option) use ($twig, $trans, $logger, $config, $cookiedir,$db,$folders) {
 
         //$serviceUrl', rtrim($_SERVER['HTTP_HOST'] . $cookiedir, '/'));
 
@@ -874,34 +906,49 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
             }
         }
         sort($themeList);
-        //$themeList', $themeList);
-        //$currentTheme', $configurationManager->get('theme'));
-        //$feeds', $feedManager->populate('name'));
-        $folders = $folderManager->populate('name');
-        $synchronisationType  = $configurationManager->get('synchronisationType');
-        $synchronisationEnableCache  = $configurationManager->get('synchronisationEnableCache');
-        $synchronisationForceFeed  = $configurationManager->get('synchronisationForceFeed');
-        $articleDisplayAnonymous  = $configurationManager->get('articleDisplayAnonymous');
-        $articleDisplayLink  = $configurationManager->get('articleDisplayLink');
-        $articleDisplayDate  = $configurationManager->get('articleDisplayDate');
-        $articleDisplayAuthor  = $configurationManager->get('articleDisplayAuthor');
-        $articleDisplayHomeSort  = $configurationManager->get('articleDisplayHomeSort');
-        $articleDisplayFolderSort = $configurationManager->get('articleDisplayFolderSort');
-        $articleDisplayMode  = $configurationManager->get('articleDisplayMode');
-        $optionFeedIsVerbose  = $configurationManager->get('optionFeedIsVerbose');
 
-        $otpEnabled  = false;
-        $section  = $option;
+        $results = $db->query('SELECT * FROM categories c ORDER BY name ');
+
+        /*
+        while ($rows = $results->fetch_array()) {
+            $folders['id'] = $rows['id'];
+        }*/
+
+        $resultsFlux = $db->query('SELECT * FROM flux f ORDER BY name ');
+        while ($rows = $resultsFlux->fetch_array()) {
+            $feeds['id'] = $rows['id'];
+        }
+
+        //$feeds', $feedManager->populate('name'));
+        //$folders = $folderManager->populate('name');
+
 
         $logger->info('Section: ' . $option);
-        $logger->info('User: ' . $myUser->getLogin());
 
-        //Suppression de l'état des plugins inexistants
-        Plugin::pruneStates();
 
-        //$plugins', Plugin::getAll());
-
-        //$tpl->draw('settings');
+        echo $twig->render('settings.twig',
+            [
+                'action' => 'folder',
+                'section' => $option,
+                'trans' => $trans,
+                'themeList' => $themeList,
+                'synchronisationType' => $config['synchronisationType'],
+                'synchronisationEnableCache' => $config['synchronisationEnableCache'],
+                'synchronisationForceFeed' => $config['synchronisationForceFeed'],
+                'articleDisplayAnonymous' => $config['articleDisplayAnonymous'],
+                'articleDisplayLink' => $config['articleDisplayLink'],
+                'articleDisplayDate' => $config['articleDisplayDate'],
+                'articleDisplayAuthor' => $config['articleDisplayAuthor'],
+                'articleDisplayHomeSort' => $config['articleDisplayHomeSort'],
+                'articleDisplayFolderSort' => $config['articleDisplayFolderSort'],
+                'articleDisplayMode' => $config['articleDisplayMode'],
+                'optionFeedIsVerbos' => $config['optionFeedIsVerbose'],
+                'otpEnabled' => false,
+                'currentTheme' => $config['theme'],
+                'folders' => $folders,
+                'feeds' => $feeds
+            ]
+        );
 
     });
 
@@ -1083,7 +1130,6 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
     $router->post('/feed/add', function () use ($twig, $trans, $logger, $config) {
 
 
-
         $newFeed = new Feed();
         $newFeed->setUrl(Functions::clean_url($_POST['newUrl']));
 
@@ -1142,14 +1188,13 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
         }
 
 
-
         if (isset($id)) {
             $feedManager->change(array('name' => $_['name'], 'url' => Functions::clean_url($_['url'])), array('id' => $_['id']));
         }
         header('location: /settings');
     });
 
-    $router->post('/folder/add', function () use ($twig, $db,$logger,$trans,$config) {
+    $router->post('/folder/add', function () use ($twig, $db, $logger, $trans, $config) {
 
         if (!$_SESSION['user']) {
             header('location: /login');
@@ -1167,7 +1212,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
         header('location: /settings');
     });
 
-    $router->get('/folder/remove/{id}', function ($id) use ($twig, $db,$logger,$trans,$config) {
+    $router->get('/folder/remove/{id}', function ($id) use ($twig, $db, $logger, $trans, $config) {
 
         if (!$_SESSION['user']) {
             header('location: /login');
@@ -1181,26 +1226,23 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
         header('location: /settings');
     });
 
-    $router->get('/folder/rename/{id}', function ($id) use ($twig, $db,$logger,$trans,$config) {
+    $router->get('/folder/rename/{id}', function ($id) use ($twig, $db, $logger, $trans, $config) {
 
         if (!$_SESSION['user']) {
             header('location: /login');
         }
 
 
-
         header('location: /settings');
     });
 
-    $router->get('/feeds/export', function ($id) use ($twig, $db,$logger,$trans,$config) {
+    $router->get('/feeds/export', function ($id) use ($twig, $db, $logger, $trans, $config) {
 
         if (!$_SESSION['user']) {
             header('location: /login');
         }
 
         $feedList = new FeedList();
-
-
 
 
         $importer = new Importer();
@@ -1238,7 +1280,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
         header('location: /settings');
     });
 
-    $router->get('/feeds/import', function ($id) use ($twig, $db,$logger,$trans,$config) {
+    $router->get('/feeds/import', function ($id) use ($twig, $db, $logger, $trans, $config) {
 
         if (!$_SESSION['user']) {
             header('location: /login');
@@ -1309,7 +1351,6 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
          */
 
 
-
         header('location: /settings');
     });
 
@@ -1321,6 +1362,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
 // Route: /action/readAll
 /* ---------------------------------------------------------------- */
 
+/*
 $router->get('/action/{readAll}', function () use ($twig, $db,$logger,$trans,$config) {
 
     if (!$_SESSION['user']) {
@@ -1337,6 +1379,26 @@ $router->get('/action/{readAll}', function () use ($twig, $db,$logger,$trans,$co
     }
 
 });
+*/
+/* ---------------------------------------------------------------- */
+// Route: /action/readContent/{id}
+/* ---------------------------------------------------------------- */
+
+$router->get('/action/readContent/{id}', function ($id) use ($twig, $db, $logger, $trans, $config) {
+
+    $result = $db->query("update items set unread = 0 where guid = '" . $id . "'");
+
+});
+
+/* ---------------------------------------------------------------- */
+// Route: /action/unreadContent/{id}
+/* ---------------------------------------------------------------- */
+
+$router->get('/action/unreadContent/{id}', function ($id) use ($twig, $db, $logger, $trans, $config) {
+
+    $result = $db->query("update items set unread = 1 where guid = '" . $id . "'");
+
+});
 
 // @todo
 
@@ -1344,7 +1406,7 @@ $router->get('/action/{readAll}', function () use ($twig, $db,$logger,$trans,$co
 // Route: /search
 /* ---------------------------------------------------------------- */
 
-$router->get('/search', function () use ($twig, $db,$logger,$trans,$config) {
+$router->get('/search', function () use ($twig, $db, $logger, $trans, $config) {
 
     if (!$_SESSION['user']) {
         header('location: /login');
@@ -1352,12 +1414,12 @@ $router->get('/search', function () use ($twig, $db,$logger,$trans,$config) {
 
     $search = $this->escape_string($_GET['plugin_search']);
     $requete = 'SELECT title,guid,content,description,link,pubdate,unread, favorite
-            FROM `'.MYSQL_PREFIX.'items`
-            WHERE title like \'%'.htmlentities($search).'%\'';
-    if (isset($_GET['search_option']) && $_GET['search_option']=="1"){
-        $requete = $requete.' OR content like \'%'.htmlentities($search).'%\'';
+            FROM `' . MYSQL_PREFIX . 'items`
+            WHERE title like \'%' . htmlentities($search) . '%\'';
+    if (isset($_GET['search_option']) && $_GET['search_option'] == "1") {
+        $requete = $requete . ' OR content like \'%' . htmlentities($search) . '%\'';
     }
-    $requete = $requete.' ORDER BY pubdate desc';
+    $requete = $requete . ' ORDER BY pubdate desc';
 
 });
 
@@ -1366,7 +1428,7 @@ $router->get('/search', function () use ($twig, $db,$logger,$trans,$config) {
 /* ---------------------------------------------------------------- */
 // Route: /action/readFolder
 /* ---------------------------------------------------------------- */
-
+/*
 $router->get('/action/{readFolder}', function () use ($twig, $db,$logger,$trans,$config) {
 
     if (!$_SESSION['user']) {
@@ -1383,14 +1445,14 @@ $router->get('/action/{readFolder}', function () use ($twig, $db,$logger,$trans,
     }
 
 });
-
+*/
 // @todo
 
 /* ---------------------------------------------------------------- */
 // Route: /action/updateConfiguration
 /* ---------------------------------------------------------------- */
 
-$router->get('/action/{updateConfiguration}', function () use ($twig, $db,$logger,$trans,$config) {
+$router->get('/action/updateConfiguration', function () use ($twig, $db, $logger, $trans, $config) {
 
     if (!$_SESSION['user']) {
         header('location: /login');
@@ -1413,7 +1475,7 @@ $router->get('/action/{updateConfiguration}', function () use ($twig, $db,$logge
 // Route: /qrcode
 /* ---------------------------------------------------------------- */
 
-$router->mount('/qrcode', function () use ($router, $twig, $db,$logger,$trans,$config) {
+$router->mount('/qrcode', function () use ($router, $twig, $db, $logger, $trans, $config) {
 
     $router->get('/qr', function () {
 
@@ -1452,7 +1514,9 @@ $router->mount('/qrcode', function () use ($router, $twig, $db,$logger,$trans,$c
 /* ---------------------------------------------------------------- */
 
 $router->get('/feed/{id}', function ($id) use (
-    $twig, $logger,
+    $twig,
+    $logger,
+    $trans,
     //$feedState,
     //$nextPages,
     //$previousPages,
@@ -1477,10 +1541,6 @@ $router->get('/feed/{id}', function ($id) use (
     $config,
     $db
 ) {
-
-    if (!$_SESSION['user']) {
-        header('location: /login');
-    }
 
     $resultsNbFavorites = $db->query('SELECT count(*) as nb_items FROM items le inner join flux lf on lf.id = le.feed where le.feed = ' . $id);
     $numberOfItem = 0;
@@ -1567,6 +1627,7 @@ $router->get('/feed/{id}', function ($id) use (
             'user' => $_SESSION['user'],
             'scroll' => $scroll,
             'target' => $target,
+            'trans' => $trans,
             //'unread' => $unread,
             //$unreadEventsForFolder,
             //'wrongLogin' => $wrongLogin,
@@ -1592,6 +1653,7 @@ $router->get('/folder/{id}', function ($id) use (
     $articleDisplayDate,
     $articleDisplayMode,
     $target,
+    $trans,
     $displayOnlyUnreadFeedFolder_reverse,
     $displayOnlyUnreadFeedFolder,
     $folders,
@@ -1618,13 +1680,13 @@ $router->get('/folder/{id}', function ($id) use (
     $startArticle = ($page - 1) * $articlePerPages;
     //$events = $eventManager->loadAllOnlyColumn($target, array('favorite' => 1), 'pubdate DESC', $startArticle . ',' . $articlePerPages);
 
-    $results = $db->query('SELECT le.id, le.guid,le.title,le.creator,le.content,le.description,le.link,le.unread,le.feed,le.favorite,le.pubdate,le.syncId, lf.name as feed_name
+    $results = $db->query('SELECT le.guid,le.title,le.creator,le.content,le.description,le.link,le.unread,le.feed,le.favorite,le.pubdate,le.syncId, lf.name as feed_name
     FROM items le inner join flux lf on lf.id = le.feed where le.feed = ' . $id . ' ORDER BY pubdate desc,unread desc LIMIT  ' . ($page - 1) * $articlePerPages . ',' . $config['articlePerPages']);
 
     while ($rows = $results->fetch_array()) {
 
         $events[] = array(
-            'id' => $rows['id'],
+            'id' => $rows['guid'],
             'guid' => $rows['guid'],
             'title' => $rows['title'],
             'creator' => $rows['creator'],
@@ -1642,9 +1704,6 @@ $router->get('/folder/{id}', function ($id) use (
     }
 
     $events = $events;
-
-    //$order = 'unread';
-    //$feed =  $id;
 
     echo $twig->render('index.twig',
         [
@@ -1675,6 +1734,7 @@ $router->get('/folder/{id}', function ($id) use (
             'user' => $_SESSION['user'],
             'scroll' => $scroll,
             'target' => $target,
+            'trans' => $trans,
             //'unread' => $unread,
             //$unreadEventsForFolder,
             //'wrongLogin' => $wrongLogin,
