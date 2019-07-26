@@ -13,18 +13,6 @@ $logger->info('Sync started');
 
 $router = new \Bramus\Router\Router();
 
-function truncate($msg, $limit)
-{
-    $str = html_entity_decode($msg, ENT_QUOTES, 'UTF-8');
-    $count = preg_match_all('/\X/u', $str);
-    if ($count <= $limit) {
-        return $msg;
-    }
-    $fin = '…';
-    $nb = $limit - 1;
-    return htmlentities(mb_substr($str, 0, $nb, 'UTF-8') . $fin);
-}
-
 function convertFileSize($bytes)
 {
     if($bytes<1024){
@@ -156,7 +144,7 @@ while ($row = $result_feed->fetch_array()) {
             $pubdate = time();
         }
 
-        $insertOrUpdate = "INSERT INTO influx.items VALUES ('" . $guid . "','" . $title . "','" . $db->real_escape_string($author) . "','" . $content . $enclosure . "','" . $description . "','" . $permalink . "',1," . $fluxId . ",0," . $pubdate . ',' . $syncId . ") ON DUPLICATE KEY UPDATE title = '" . $title . "', content = '" . $content ."'";
+        $insertOrUpdate = "INSERT INTO influx.items VALUES ('" . $guid . "','" . $title . "','" . $db->real_escape_string($author) . "','" . $content . $enclosure . "','" . $description . "','" . $permalink . "',1," . $fluxId . ",0," . $pubdate . ',' . time() . ',' . $syncId . ") ON DUPLICATE KEY UPDATE title = '" . $title . "', content = '" . $content ."'";
 
         $db->query($insertOrUpdate);
 

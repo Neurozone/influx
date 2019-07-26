@@ -11,6 +11,7 @@
         "celd/opml-import-export": "dev-master",
         "twig/extensions": "^1.5",
         "umpirsky/twig-php-function": "^0.2.0",
-        "sinergi/browser-detector": "^6.1"
+        "sinergi/browser-detector": "^6.1",
+        "phpmailer/phpmailer": "^6.0"
     }
 }

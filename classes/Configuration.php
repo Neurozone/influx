@@ -1,8 +1,5 @@
 <?php
 
-
-namespace Influx;
-
 class Configuration
 {
 
@@ -10,22 +7,25 @@ class Configuration
     private $value;
     private $db;
 
-    function __construct()
+    function __construct($db)
     {
-        $this->db = new mysqli(MYSQL_HOST, MYSQL_LOGIN, MYSQL_MDP, MYSQL_BDD);
-        $this->set_charset('utf8mb4');
-        $this->query('SET NAMES utf8mb4');
+        $this->db = $db;
+        $this->db->set_charset('utf8mb4');
+        $this->db->query('SET NAMES utf8mb4');
     }
 
     public function getAll()
     {
-        $config = '';
+        $config = array();
 
-        $query_configuration = 'select * from leed_configuration';
+        $query_configuration = 'select * from configuration';
         $result_configuration = $this->db->query($query_configuration);
 
         while ($row = $result_configuration->fetch_array()) {
-            $config[$row['name']] = $row['value'];
+
+            $name = $row['name'];
+            $config[$name] = $row['value'];
+
         }
 
         return $config;
@@ -33,7 +33,7 @@ class Configuration
 
     public function get($name)
     {
-        $query_configuration = "select value from leed_configuration where name = '" . $name . "'";
+        $query_configuration = "select value from configuration where name = '" . $name . "'";
         $result_configuration = $this->db->query($query_configuration);
 
         while ($row = $result_configuration->fetch_array()) {
@@ -49,22 +49,11 @@ class Configuration
         $this->db->query($query_configuration);
     }
 
-    protected function createSynchronisationCode()
-    {
-        return substr(sha1(rand(0, 30) . time() . rand(0, 30)), 0, 10);
-    }
-
     public function add($name, $value)
     {
 
         $query_configuration = "insert into configuration values('" . $name . "', '" . $value . "')";
         $this->db->query($query_configuration);
-    }
-
-
-    protected function generateSalt()
-    {
-        return '' . mt_rand() . mt_rand();
     }
 
     function getId()

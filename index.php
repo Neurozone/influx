@@ -9,10 +9,12 @@ use Endroid\QrCode\Response\QrCodeResponse;
 use Sinergi\BrowserDetector\Language;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
-use Celd\Opml\Importer;
-use Celd\Opml\Model\FeedList;
-use Celd\Opml\Model\Feeed;
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
 
+//use Celd\Opml\Importer;
+//use Celd\Opml\Model\FeedList;
+//use Celd\Opml\Model\Feeed;
 
 $stream = new StreamHandler(__DIR__ . '/logs/influx.log', Logger::DEBUG);
 $logger = new Logger('influxLogger');
@@ -23,7 +25,7 @@ $templatePath = __DIR__ . '/templates/influx';
 
 $loader = new \Twig\Loader\FilesystemLoader($templatePath);
 $twig = new \Twig\Environment($loader, [__DIR__ . '/cache' => 'cache', 'debug' => true,]);
-$twig->addExtension(new Umpirsky\Twig\Extension\PhpFunctionExtension());
+//$twig->addExtension(new Umpirsky\Twig\Extension\PhpFunctionExtension());
 $twig->addExtension(new \Twig\Extension\DebugExtension());
 
 // Create Router instance
@@ -60,13 +62,8 @@ function getClientIP()
 // Timezone
 /* ---------------------------------------------------------------- */
 
-// Mise en place d'un timezone par default pour utiliser les fonction de date en php
-$timezone_default = 'Europe/Paris'; // valeur par défaut :)
+$timezone_default = 'Europe/Paris';
 date_default_timezone_set($timezone_default);
-$timezone_phpini = ini_get('date.timezone');
-if (($timezone_phpini != '') && (strcmp($timezone_default, $timezone_phpini))) {
-    date_default_timezone_set($timezone_phpini);
-}
 
 /* ---------------------------------------------------------------- */
 // Database
@@ -76,12 +73,16 @@ $db = new mysqli(MYSQL_HOST, MYSQL_LOGIN, MYSQL_MDP, MYSQL_BDD);
 $db->set_charset('utf8mb4');
 $db->query('SET NAMES utf8mb4');
 
+
+
+/*
 $query_configuration = 'select * from configuration';
 $result_configuration = $db->query($query_configuration);
 
 while ($row = $result_configuration->fetch_array()) {
     $config[$row['name']] = $row['value'];
 }
+*/
 
 /* ---------------------------------------------------------------- */
 // Reverse proxy
@@ -98,6 +99,18 @@ if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
     $_SERVER['REMOTE_ADDR'] = $http_x_headers[0];
 }
 */
+
+spl_autoload_register(function ($className) {
+    include_once $_SERVER['DOCUMENT_ROOT'] . '/classes/' . $className . '.php';
+});
+
+$conf = new Configuration($db);
+$config = $conf->getAll();
+
+$fluxObject = new Flux($db, $logger);
+$itemsObject = new Items($db, $logger);
+$userObject = new User($db,$logger);
+$categoryObject = new Category($db,$logger);
 
 /* ---------------------------------------------------------------- */
 // i18n
@@ -122,17 +135,7 @@ $trans = $l_trans;
 //
 /* ---------------------------------------------------------------- */
 
-/*
-spl_autoload_register(function ($class_name) {
-    require_once dirname(__FILE__) . DIRECTORY_SEPARATOR . 'classes' . DIRECTORY_SEPARATOR . $class_name . '.php';
-});
-*/
-spl_autoload_register(function($className) {
-    include_once $_SERVER['DOCUMENT_ROOT'] . '/classes/' . $className . '.php';
-});
 
-$fluxObject = new Flux($db,$logger);
-$itemsObject = new Items($db,$logger);
 
 $cookiedir = '';
 if (dirname($_SERVER['SCRIPT_NAME']) != '/') {
@@ -142,38 +145,6 @@ if (dirname($_SERVER['SCRIPT_NAME']) != '/') {
 
 mb_internal_encoding('UTF-8'); // UTF8 pour fonctions mb_*
 $start = microtime(true);
-
-//$configurationManager = new Configuration();
-//$conf = $configurationManager->getAll();
-//$theme = $configurationManager->get('theme');
-
-//$logger->info('templates/' . $theme . '/');
-
-
-//recuperation de tous les flux
-
-//utilisé pour récupérer le statut d'un feed dans le template (en erreur ou ok)
-//$feedState = new Feed();
-
-$articleDisplayAuthor = $config['articleDisplayAuthor'];
-$articleDisplayDate = $config['articleDisplayDate'];
-$articleDisplayFolderSort = $config['articleDisplayFolderSort'];
-$articleDisplayHomeSort = $config['articleDisplayHomeSort'];
-$articleDisplayLink = $config['articleDisplayLink'];
-$articleDisplayMode = $config['articleDisplayMode'];
-$articlePerPages = $config['articlePerPages'];
-$displayOnlyUnreadFeedFolder = $config['displayOnlyUnreadFeedFolder'];
-if (!isset($displayOnlyUnreadFeedFolder)) $displayOnlyUnreadFeedFolder = false;
-($displayOnlyUnreadFeedFolder == 'true') ? $displayOnlyUnreadFeedFolder_reverse = 'false' : $displayOnlyUnreadFeedFolder_reverse = 'true';
-$optionFeedIsVerbose = $config['optionFeedIsVerbose'];
-
-$target = '`' . MYSQL_PREFIX . 'event`.`title`,`' . MYSQL_PREFIX . 'event`.`unread`,`' . MYSQL_PREFIX . 'event`.`favorite`,`' . MYSQL_PREFIX . 'event`.`feed`,';
-if ($articleDisplayMode == 'summary') $target .= '`' . MYSQL_PREFIX . 'event`.`description`,';
-if ($articleDisplayMode == 'content') $target .= '`' . MYSQL_PREFIX . 'event`.`content`,';
-if ($articleDisplayLink) $target .= '`' . MYSQL_PREFIX . 'event`.`link`,';
-if ($articleDisplayDate) $target .= '`' . MYSQL_PREFIX . 'event`.`pubdate`,';
-if ($articleDisplayAuthor) $target .= '`' . MYSQL_PREFIX . 'event`.`creator`,';
-$target .= '`' . MYSQL_PREFIX . 'event`.`id`';
 
 $pagesArray = array();
 
@@ -191,8 +162,6 @@ $unreadEventsForFolder = 0;
 $hightlighted = 0;
 
 $synchronisationCode = $config['synchronisationCode'];
-
-//$allEvents = $eventManager->getEventCountPerFolder();
 
 /* ---------------------------------------------------------------- */
 // Get all unread event
@@ -229,64 +198,7 @@ $feeds['idMap'] = $feedsIdMap;
 $allFeeds = $feeds;
 $allFeedsPerFolder = $allFeeds['folderMap'];
 
-$results = $db->query('SELECT * FROM categories c ORDER BY name ');
-while ($rows = $results->fetch_array()) {
-
-    $resultsUnreadByFolder = $db->query('SELECT count(*) as unread
-FROM items le 
-    inner join flux lfe on le.feed = lfe.id 
-    inner join categories lfo on lfe.folder = lfo.id  
-where unread = 1 and lfo.id = ' . $rows['id']);
-
-    while ($rowsUnreadByFolder = $resultsUnreadByFolder->fetch_array()) {
-        $unreadEventsByFolder = $rowsUnreadByFolder['unread'];
-    }
-
-    $resultsFeedsByFolder = $db->query('SELECT fe.id as feed_id, fe.name as feed_name, fe.description as feed_description, fe.website as feed_website, fe.url as feed_url, fe.lastupdate as feed_lastupdate, fe.lastSyncInError as feed_lastSyncInError 
-FROM categories f 
-    inner join flux fe on fe.folder = f.id 
-where f.id = ' . $rows['id'] . " order by fe.name");
-
-
-    while ($rowsFeedsByFolder = $resultsFeedsByFolder->fetch_array()) {
-
-        $resultsUnreadByFeed = $db->query('SELECT count(*) as unread FROM categories f inner join flux fe on fe.folder = f.id 
-    inner join items e on e.feed = fe.id  where e.unread = 1 and fe.id = ' . $rowsFeedsByFolder['feed_id']);
-
-        $unreadEventsByFeed = 0;
-
-        while ($rowsUnreadByFeed = $resultsUnreadByFeed->fetch_array()) {
-            $unreadEventsByFeed = $rowsUnreadByFeed['unread'];
-        }
-
-        $feedsByFolder[] = array('id' => $rowsFeedsByFolder['feed_id'],
-            'name' => $rowsFeedsByFolder['feed_name'],
-            'description' => $rowsFeedsByFolder['feed_description'],
-            'website' => $rowsFeedsByFolder['feed_website'],
-            'url' => $rowsFeedsByFolder['feed_url'],
-            'lastupdate' => $rowsFeedsByFolder['feed_lastupdate'],
-            'lastSyncInError' => $rowsFeedsByFolder['feed_lastSyncInError'],
-            'unread' => $unreadEventsByFeed
-        );
-    }
-
-    $folders[] = array(
-        'id' => $rows['id'],
-        'name' => $rows['name'],
-        'parent' => $rows['parent'],
-        'isopen' => $rows['isopen'],
-        'unread' => $unreadEventsByFolder,
-        'feeds' => $feedsByFolder
-    );
-
-    $feedsByFolder = null;
-}
-
-
-//$page = (isset($_GET['page']) ? $_['page'] : 1);
-$page =  1;
-
-$articleDisplayMode = $config['articleDisplayMode'];
+$page = 1;
 
 /* ---------------------------------------------------------------- */
 // Route: Before for logging
@@ -306,44 +218,24 @@ $router->before('GET|POST|PUT|DELETE|PATCH|OPTIONS', '^((?!login).)*$', function
 /* ---------------------------------------------------------------- */
 $router->get('/', function () use (
     $twig, $logger,
-    //$feedState,
-    //$nextPages,
-    //$previousPages,
     $scroll,
-    //$eventManager,
-    $unreadEventsForFolder,
-    $optionFeedIsVerbose,
-    $articlePerPages,
-    $articleDisplayHomeSort,
-    $articleDisplayFolderSort,
-    $articleDisplayAuthor,
-    $articleDisplayLink,
-    $articleDisplayDate,
-    $articleDisplayMode,
-    $target,
-    $displayOnlyUnreadFeedFolder_reverse,
-    $displayOnlyUnreadFeedFolder,
-    $folders,
     $allEvents,
-    //$unread,
     $allFeedsPerFolder,
     $config,
     $db,
     $trans,
-    $itemsObject
+    $itemsObject,
+    $categoryObject
 ) {
 
-
     $action = '';
-
     $numberOfItem = $itemsObject->countAllUnreadItem();
-
     $page = (isset($_GET['page']) ? $_GET['page'] : 1);
-    $pages = ($articlePerPages > 0 ? ceil($numberOfItem / $articlePerPages) : 1);
-    $startArticle = ($page - 1) * $articlePerPages;
+    $pages = ($config['articlePerPages'] > 0 ? ceil($numberOfItem / $config['articlePerPages']) : 1);
+    $startArticle = ($page - 1) * $config['articlePerPages'];
 
-    $offset = ($page - 1) * $articlePerPages;
-    $row_count = $config['articlePerPages'];
+    $offset = ($page - 1) * 25 ; //$config['articlePerPages'];
+    $row_count = 25; //$config['articlePerPages'];
 
 
     echo $twig->render('index.twig',
@@ -351,32 +243,16 @@ $router->get('/', function () use (
             'action' => $action,
             'allEvents' => $allEvents,
             'allFeedsPerFolder' => $allFeedsPerFolder,
-            /*'articleDisplayFolderSort' => $articleDisplayFolderSort,
-            'articleDisplayHomeSort' => $articleDisplayHomeSort,
-            'articleDisplayAuthor' => $articleDisplayAuthor,
-            'articleDisplayLink' => $articleDisplayLink,
-            'articleDisplayDate' => $articleDisplayDate,
-            'articleDisplayMode' => $articleDisplayMode,
-            'articlePerPages' => $articlePerPages,*/
             'config' => $config,
-            //'displayOnlyUnreadFeedFolder_reverse' => $displayOnlyUnreadFeedFolder_reverse,
-            //'displayOnlyUnreadFeedFolder' => $displayOnlyUnreadFeedFolder,
-            //'eventManager' => $eventManager,
-            'events' => $itemsObject->loadAllUnreadItem($offset,$row_count),
-            //'feedState' => $feedState,
-            'folders' => $folders,
-            //'functions' => New Functions(),
-            //'nextPages' => $nextPages,
+            'events' => $itemsObject->loadAllUnreadItem($offset, $row_count),
+            //'folders' => $folders,
+            'folders' => $categoryObject->getFeedsByCategories(),
             'numberOfItem' => $numberOfItem,
-            'optionFeedIsVerbose' => $optionFeedIsVerbose,
-            //'previousPages' => $previousPages,
             'page' => $page,
             'pages' => $pages,
             'startArticle' => $startArticle,
-            //'user' => $_SESSION['user'],
+            'user' => $_SESSION['user'],
             'scroll' => $scroll,
-            'target' => $target,
-            //'unread' => $unread,
             'trans' => $trans
         ]
     );
@@ -396,27 +272,6 @@ $router->get('/login', function () use ($twig) {
 /* ---------------------------------------------------------------- */
 
 $router->post('/login', function () use ($db, $config, $logger) {
-
-    define('RESET_PASSWORD_FILE', 'resetPassword');
-    if (file_exists(RESET_PASSWORD_FILE)) {
-
-        @unlink(RESET_PASSWORD_FILE);
-        if (file_exists(RESET_PASSWORD_FILE)) {
-            $message = 'Unable to remove "' . RESET_PASSWORD_FILE . '"!';
-
-        } else {
-            $resetPassword = $_POST['password'];
-            assert('!empty($resetPassword)');
-            $tmpUser = User::get($_POST['login']);
-            if (false === $tmpUser) {
-                $message = "Unknown user '{$_POST['login']}'! No password reset.";
-            } else {
-                $tmpUser->resetPassword($resetPassword, $config['cryptographicSalt']);
-                $message = "User '{$_POST['login']}' (id={$tmpUser->getId()}) Password reset to '$resetPassword'.";
-            }
-        }
-        error_log($message);
-    }
 
     $salt = $config['cryptographicSalt'];
 
@@ -447,6 +302,77 @@ $router->post('/login', function () use ($db, $config, $logger) {
         header('location: /');
     }
     exit();
+
+
+});
+
+/* ---------------------------------------------------------------- */
+// Route: /password/recover (POST)
+/* ---------------------------------------------------------------- */
+
+$router->post('/password/recover', function () use ($db, $config, $logger) {
+
+    $token = bin2hex(random_bytes(50));
+
+
+    $salt = $config['cryptographicSalt'];
+
+    if ($stmt = $db->prepare("select id,login,password from user where login = ? and password = ?")) {
+        $stmt->bind_param("ss", $_POST['login'], sha1($_POST['password'] . $salt));
+        /* execute query */
+        $stmt->execute();
+
+        /* instead of bind_result: */
+        $result = $stmt->get_result();
+
+        while ($row = $result->fetch_array()) {
+            $_SESSION['user'] = $row['login'];
+            $_SESSION['userid'] = $row['id'];
+            $user = $row['login'];
+        }
+    }
+
+
+    if ($user == false) {
+        $logger->info("wrong login for '" . $_POST['login'] . "'");
+        header('location: /login');
+    } else {
+        $_SESSION['currentUser'] = $user;
+        if (isset($_POST['rememberMe'])) {
+            setcookie('InfluxChocolateCookie', sha1($_POST['password'] . $_POST['login']), time() + 31536000);
+        }
+        header('location: /');
+    }
+
+
+    $mail = new PHPMailer(true);
+
+    try {
+        //Server settings
+        $mail->SMTPDebug = 2;                                       // Enable verbose debug output
+        $mail->isSMTP();                                            // Set mailer to use SMTP
+        $mail->Host       = SMTP_HOSR;  // Specify main and backup SMTP servers
+        $mail->SMTPAuth   = SMTP_AUTH;                                   // Enable SMTP authentication
+        $mail->Username   = SMTP_LOGIN;                     // SMTP username
+        $mail->Password   = SMTP_PASSWORD;                               // SMTP password
+        $mail->SMTPSecure = SMTP_SECURE;                                  // Enable TLS encryption, `ssl` also accepted
+        $mail->Port       = SMTP_PORT;                                    // TCP port to connect to
+
+        //Recipients
+        $mail->setFrom('rss@neurozone.fr', 'no-reply@neurozone.fr');
+        $mail->addAddress('joe@example.net', 'Joe User');
+
+        // Content
+        $mail->isHTML(true);                                  // Set email format to HTML
+        $mail->Subject = 'Reset your password on InFlux';
+        $mail->Body    = "Hi there, click on this <a href=\"new_password.php?token=" . $token . "\">link</a> to reset your password on our site";
+        $mail->AltBody = 'This is the body in plain text for non-HTML mail clients';
+
+        $mail->send();
+        echo 'Message has been sent';
+    } catch (Exception $e) {
+        echo "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
+    }
 
 
 });
@@ -487,29 +413,17 @@ $router->get('/update', function () {
 
 $router->get('/favorites', function () use (
     $twig, $logger,
-    //$feedState,
-    //$nextPages,
-    //$previousPages,
     $scroll,
     //$eventManager,
     $unreadEventsForFolder,
-    $optionFeedIsVerbose,
-    $articlePerPages,
-    $articleDisplayHomeSort,
-    $articleDisplayFolderSort,
-    $articleDisplayAuthor,
-    $articleDisplayLink,
-    $articleDisplayDate,
-    $articleDisplayMode,
-    $target,
-    $displayOnlyUnreadFeedFolder_reverse,
-    $displayOnlyUnreadFeedFolder,
-    $folders,
+    //$target,
+    //$folders,
     $allEvents,
     //$unread,
     $allFeedsPerFolder,
     $config,
-    $db
+    $db,
+    $categoryObject
 ) {
 
     if (!$_SESSION['user']) {
@@ -556,33 +470,21 @@ $router->get('/favorites', function () use (
             //'action' => $action,
             'allEvents' => $allEvents,
             'allFeedsPerFolder' => $allFeedsPerFolder,
-            'articleDisplayFolderSort' => $articleDisplayFolderSort,
-            'articleDisplayHomeSort' => $articleDisplayHomeSort,
-            'articleDisplayAuthor' => $articleDisplayAuthor,
-            'articleDisplayLink' => $articleDisplayLink,
-            'articleDisplayDate' => $articleDisplayDate,
-            'articleDisplayMode' => $articleDisplayMode,
             'articlePerPages' => $articlePerPages,
-            'displayOnlyUnreadFeedFolder_reverse' => $displayOnlyUnreadFeedFolder_reverse,
-            'displayOnlyUnreadFeedFolder' => $displayOnlyUnreadFeedFolder,
             //'eventManager' => $eventManager,
             'events' => $events,
             //'feedState' => $feedState,
-            'folders' => $folders,
+            'folders' => $categoryObject->getFeedsByCategories(),
             //'functions' => New Functions(),
             //'nextPages' => $nextPages,
             'numberOfItem' => $numberOfItem,
-            'optionFeedIsVerbose' => $optionFeedIsVerbose,
-            //'previousPages' => $previousPages,
             'page' => $page,
             'pages' => $pages,
             'startArticle' => $startArticle,
             'user' => $_SESSION['user'],
             'scroll' => $scroll,
             'target' => $target,
-            //'unread' => $unread,
-            //$unreadEventsForFolder,
-            //'wrongLogin' => $wrongLogin,
+
         ]
     );
 
@@ -596,92 +498,6 @@ $router->get('/favorites', function () use (
 // @todo
 
 $router->mount('/article', function () use ($router, $twig, $db, $logger, $trans, $config) {
-
-    /*
-     * Plugin::callHook("index_pre_treatment", array(&$_));
-
-$view = "article";
-$articleConf = array();
-//recuperation de tous les flux
-$allFeeds = $feedManager->getFeedsPerFolder();
-$tpl->assign('allFeeds',$allFeeds);
-$scroll = isset($_['scroll']) ? $_['scroll'] : 0;
-$tpl->assign('scrollpage',$scroll);
-// récupération des variables pour l'affichage
-$articleConf['articlePerPages'] = $configurationManager->get('articlePerPages');
-$articleDisplayLink = $configurationManager->get('articleDisplayLink');
-$articleDisplayDate = $configurationManager->get('articleDisplayDate');
-$articleDisplayAuthor = $configurationManager->get('articleDisplayAuthor');
-$articleDisplayHomeSort = $configurationManager->get('articleDisplayHomeSort');
-$articleDisplayFolderSort = $configurationManager->get('articleDisplayFolderSort');
-$articleDisplayMode = $configurationManager->get('articleDisplayMode');
-$optionFeedIsVerbose = $configurationManager->get('optionFeedIsVerbose');
-
-$tpl->assign('articleDisplayAuthor',$articleDisplayAuthor);
-$tpl->assign('articleDisplayDate',$articleDisplayDate);
-$tpl->assign('articleDisplayLink',$articleDisplayLink);
-$tpl->assign('articleDisplayMode',$articleDisplayMode);
-
-if(isset($_['hightlighted'])) {
-    $hightlighted = $_['hightlighted'];
-    $tpl->assign('hightlighted',$hightlighted);
-}
-
-$tpl->assign('time',$_SERVER['REQUEST_TIME']);
-
-$target = '`'.MYSQL_PREFIX.'event`.`title`,`'.MYSQL_PREFIX.'event`.`unread`,`'.MYSQL_PREFIX.'event`.`favorite`,`'.MYSQL_PREFIX.'event`.`feed`,';
-if($articleDisplayMode=='summary') $target .= '`'.MYSQL_PREFIX.'event`.`description`,';
-if($articleDisplayMode=='content') $target .= '`'.MYSQL_PREFIX.'event`.`content`,';
-if($articleDisplayLink) $target .= '`'.MYSQL_PREFIX.'event`.`link`,';
-if($articleDisplayDate) $target .= '`'.MYSQL_PREFIX.'event`.`pubdate`,';
-if($articleDisplayAuthor) $target .= '`'.MYSQL_PREFIX.'event`.`creator`,';
-$target .= '`'.MYSQL_PREFIX.'event`.`id`';
-
-$nblus = isset($_['nblus']) ? $_['nblus'] : 0;
-$articleConf['startArticle'] = ($scroll*$articleConf['articlePerPages'])-$nblus;
-if ($articleConf['startArticle'] < 0) $articleConf['startArticle']=0;
-$action = $_['action'];
-$tpl->assign('action',$action);
-
-$filter = array();
-Plugin::callHook("article_pre_action", array(&$_,&$filter,&$articleConf));
-switch($action){
-
-case 'selectedFeed':
-        $currentFeed = $feedManager->getById($_['feed']);
-        $allowedOrder = array('date'=>'pubdate DESC','older'=>'pubdate','unread'=>'unread DESC,pubdate DESC');
-        $order = (isset($_['order'])?$allowedOrder[$_['order']]:$allowedOrder['unread']);
-        $events = $currentFeed->getEvents($articleConf['startArticle'],$articleConf['articlePerPages'],$order,$target,$filter);
-    break;
-
-    case 'selectedFolder':
-        $currentFolder = $folderManager->getById($_['folder']);
-        if($articleDisplayFolderSort) {$order = '`'.MYSQL_PREFIX.'event`.`pubdate` desc';} else {$order = '`'.MYSQL_PREFIX.'event`.`pubdate` asc';}
-        $events = $currentFolder->getEvents($articleConf['startArticle'],$articleConf['articlePerPages'],$order,$target,$filter);
-    break;
-
-    case 'favorites':
-        $filter['favorite'] = 1;
-        //$events = $eventManager->loadAllOnlyColumn($target,$filter,'pubdate DESC',$articleConf['startArticle'].','.$articleConf['articlePerPages']);
-    break;
-
-    case 'unreadEvents':
-    default:
-        $filter['unread'] = 1;
-        if($articleDisplayHomeSort) {$order = 'pubdate desc';} else {$order = 'pubdate asc';}
-        if($optionFeedIsVerbose) {
-            $events = $eventManager->loadAllOnlyColumn($target,$filter,$order,$articleConf['startArticle'].','.$articleConf['articlePerPages']);
-        } else {
-            $events = $eventManager->getEventsNotVerboseFeed($articleConf['startArticle'],$articleConf['articlePerPages'],$order,$target);
-        }
-        break;
-}
-$tpl->assign('events',$events);
-$tpl->assign('scroll',$scroll);
-$view = "article";
-Plugin::callHook("index_post_treatment", array(&$events));
-$html = $tpl->draw($view);
-     */
 
     /* ---------------------------------------------------------------- */
     // Route: /article
@@ -717,7 +533,7 @@ $html = $tpl->draw($view);
     // Route: /article/flux/{id}
     /* ---------------------------------------------------------------- */
 
-    $router->post('/flux', function () use ($twig, $db, $logger, $trans, $config) {
+    $router->post('/flux', function () use ($twig, $db, $logger, $config) {
 
         $scroll = $_POST['scroll'];
         $nblus = isset($_POST['nblus']) ? $_POST['nblus'] : 0;
@@ -779,10 +595,8 @@ $html = $tpl->draw($view);
 
         echo $twig->render('article.twig',
             [
-
                 'events' => $events,
                 'scroll' => $scroll,
-
             ]
         );
 
@@ -808,7 +622,7 @@ $html = $tpl->draw($view);
 // Route: /settings
 /* ---------------------------------------------------------------- */
 
-$router->mount('/settings', function () use ($router, $twig, $trans, $logger, $config, $db, $cookiedir,$folders,$fluxObject) {
+$router->mount('/settings', function () use ($router, $twig, $trans, $logger, $config, $db, $cookiedir, $categoryObject, $fluxObject) {
 
     $router->get('/', function () use ($twig, $cookiedir) {
 
@@ -816,18 +630,9 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
 
     });
 
-    /* ---------------------------------------------------------------- */
-    // Route: /settings/plugin/{name}/state/{state}
-    /* ---------------------------------------------------------------- */
+    $router->get('/settings/user', function () use ($twig, $cookiedir) {
 
-    $router->get('/plugin/{name}/state/{state}', function ($name, $state) {
-
-        if ($state == '0') {
-            Plugin::enabled($name);
-        } else {
-            Plugin::disabled($name);
-        }
-        header('location: /settings/plugins');
+        header('location: /settings/manage');
 
     });
 
@@ -835,7 +640,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
     // Route: /settings/{option}
     /* ---------------------------------------------------------------- */
 
-    $router->get('/{option}', function ($option) use ($twig, $trans, $logger, $config, $cookiedir,$db,$folders) {
+    $router->get('/{option}', function ($option) use ($twig, $trans, $logger, $config, $cookiedir, $db, $categoryObject) {
 
         //$serviceUrl', rtrim($_SERVER['HTTP_HOST'] . $cookiedir, '/'));
 
@@ -861,12 +666,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
             $feeds['id'] = $rows['id'];
         }
 
-        //$feeds', $feedManager->populate('name'));
-        //$folders = $folderManager->populate('name');
-
-
         $logger->info('Section: ' . $option);
-
 
         echo $twig->render('settings.twig',
             [
@@ -887,8 +687,9 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
                 'optionFeedIsVerbos' => $config['optionFeedIsVerbose'],
                 'otpEnabled' => false,
                 'currentTheme' => $config['theme'],
-                'folders' => $folders,
-                'feeds' => $feeds
+                'folders' => $categoryObject->getFeedsByCategories(),
+                'feeds' => $feeds,
+                $config
             ]
         );
 
@@ -935,7 +736,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
             }
 
             if (!isset($synchronisationCustom['no_normal_synchronize'])) {
-               // $feedManager->synchronize($feeds, $syncTypeStr, $commandLine, $configurationManager, $start);
+                // $feedManager->synchronize($feeds, $syncTypeStr, $commandLine, $configurationManager, $start);
             }
         } else {
             echo _t('YOU_MUST_BE_CONNECTED_ACTION');
@@ -1081,9 +882,9 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
                 (isset($_POST['newUrlCategory']) ? $_POST['newUrlCategory'] : 1)
             );
             $newFeed->save();
-            $enableCache = ($configurationManager->get('synchronisationEnableCache') == '') ? 0 : $configurationManager->get('synchronisationEnableCache');
-            $forceFeed = ($configurationManager->get('synchronisationForceFeed') == '') ? 0 : $configurationManager->get('synchronisationForceFeed');
-            $newFeed->parse(time(), $_, $enableCache, $forceFeed);
+            //$enableCache = ($configurationManager->get('synchronisationEnableCache') == '') ? 0 : $configurationManager->get('synchronisationEnableCache');
+            //$forceFeed = ($configurationManager->get('synchronisationForceFeed') == '') ? 0 : $configurationManager->get('synchronisationForceFeed');
+            //$newFeed->parse(time(), $_, $enableCache, $forceFeed);
             //Plugin::callHook("action_after_addFeed", array(&$newFeed));
         } else {
             //$logger = new Logger('settings');
@@ -1099,19 +900,16 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
 
     $router->get('/feed/remove/{id}', function ($id) use ($twig, $trans, $logger, $config) {
 
-        if (!$_SESSION['user']) {
-            header('location: /login');
-        }
 
         if (isset($id)) {
-            $feedManager->delete(array('id' => $id));
-            $eventManager->delete(array('feed' => $id));
-            Plugin::callHook("action_after_removeFeed", array($id));
+            //$feedManager->delete(array('id' => $id));
+            //$eventManager->delete(array('feed' => $id));
+            //Plugin::callHook("action_after_removeFeed", array($id));
         }
         header('location: /settings');
     });
 
-    $router->post('/feed/rename', function () use ($logger,$fluxObject) {
+    $router->post('/feed/rename', function () use ($logger, $fluxObject) {
 
         // data:{id:feed,name:feedNameValue,url:feedUrlValue}
 
@@ -1173,14 +971,12 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
 
     $router->get('/folder/remove/{id}', function ($id) use ($twig, $db, $logger, $trans, $config) {
 
-        if (!$_SESSION['user']) {
-            header('location: /login');
-        }
+
 
         if (isset($id) && is_numeric($id) && $id > 0) {
-            $eventManager->customQuery('DELETE FROM `' . MYSQL_PREFIX . 'items` WHERE `' . MYSQL_PREFIX . 'event`.`feed` in (SELECT `' . MYSQL_PREFIX . 'feed`.`id` FROM `' . MYSQL_PREFIX . 'feed` WHERE `' . MYSQL_PREFIX . 'feed`.`folder` =\'' . intval($_['id']) . '\') ;');
-            $feedManager->delete(array('folder' => $id));
-            $folderManager->delete(array('id' => $id));
+            //$eventManager->customQuery('DELETE FROM `' . MYSQL_PREFIX . 'items` WHERE `' . MYSQL_PREFIX . 'event`.`feed` in (SELECT `' . MYSQL_PREFIX . 'feed`.`id` FROM `' . MYSQL_PREFIX . 'feed` WHERE `' . MYSQL_PREFIX . 'feed`.`folder` =\'' . intval($_['id']) . '\') ;');
+            //$feedManager->delete(array('folder' => $id));
+            //$folderManager->delete(array('id' => $id));
         }
         header('location: /settings');
     });
@@ -1479,20 +1275,18 @@ $router->get('/feed/{id}', function ($id) use (
     $logger,
     $trans,
     $scroll,
-    $target,
-    $displayOnlyUnreadFeedFolder_reverse,
-    $displayOnlyUnreadFeedFolder,
-    $folders,
+    //$target,
     $allEvents,
     $allFeedsPerFolder,
     $config,
     $db,
     $itemsObject,
-    $fluxObject
+    $fluxObject,
+    $categoryObject
 ) {
 
     $fluxObject->setId($id);
-    $flux = $fluxObject->loadInfoPerFlux();
+    $flux = $fluxObject->getFluxById();
     $itemsObject->setFeed($id);
     $numberOfItem = $itemsObject->countUnreadItemPerFlux();
 
@@ -1509,132 +1303,19 @@ $router->get('/feed/{id}', function ($id) use (
             'action' => 'feed',
             'allEvents' => $allEvents,
             'allFeedsPerFolder' => $allFeedsPerFolder,
-            'displayOnlyUnreadFeedFolder_reverse' => $displayOnlyUnreadFeedFolder_reverse,
-            'displayOnlyUnreadFeedFolder' => $displayOnlyUnreadFeedFolder,
-            'events' => $itemsObject->loadUnreadItemPerFlux($offset,$row_count),
+            'events' => $itemsObject->loadUnreadItemPerFlux($offset, $row_count),
             'feed' => $flux,
-            'folders' => $folders,
+            'folders' => $categoryObject->getFeedsByCategories(),
             'numberOfItem' => $numberOfItem,
             'page' => $page,
             'pages' => $pages,
             'startArticle' => $startArticle,
             'user' => $_SESSION['user'],
             'scroll' => $scroll,
-            'target' => $target,
+            //'target' => $target,
             'trans' => $trans,
             'config' => $config
 
-        ]
-    );
-
-});
-
-$router->get('/folder/favorites', function ($id) use (
-    $twig, $logger,
-    //$feedState,
-    //$nextPages,
-    //$previousPages,
-    $scroll,
-    //$eventManager,
-    $unreadEventsForFolder,
-    $optionFeedIsVerbose,
-    $articlePerPages,
-    $articleDisplayHomeSort,
-    $articleDisplayFolderSort,
-    $articleDisplayAuthor,
-    $articleDisplayLink,
-    $articleDisplayDate,
-    $articleDisplayMode,
-    $target,
-    $trans,
-    $displayOnlyUnreadFeedFolder_reverse,
-    $displayOnlyUnreadFeedFolder,
-    $folders,
-    $allEvents,
-    //$unread,
-    $allFeedsPerFolder,
-    $config,
-    $db,
-    $itemsObject
-) {
-
-    //$currentFeed = $feedManager->getById($id);
-    //var_dump($currentFeed);
-
-    /*
-    $resultsNbFavorites = $db->query('SELECT count(*) as nb_items FROM items le inner join flux lf on lf.id = le.feed where le.feed = ' . $id);
-    $numberOfItem = 0;
-
-    while ($rows = $resultsNbFavorites->fetch_array()) {
-        $numberOfItem = $rows['nb_items'];
-    }
-    */
-
-    $itemsObject->setFeed($id);
-    $numberOfItem = $itemsObject->countUnreadItemPerFlux();
-    $page = (isset($_GET['page']) ? $_GET['page'] : 1);
-    $pages = ceil($numberOfItem / $articlePerPages);
-    $startArticle = ($page - 1) * $articlePerPages;
-    //$events = $eventManager->loadAllOnlyColumn($target, array('favorite' => 1), 'pubdate DESC', $startArticle . ',' . $articlePerPages);
-
-    $results = $db->query('SELECT le.guid,le.title,le.creator,le.content,le.description,le.link,le.unread,le.feed,le.favorite,le.pubdate,le.syncId, lf.name as feed_name
-    FROM items le inner join flux lf on lf.id = le.feed where le.feed = ' . $id . ' ORDER BY pubdate desc,unread desc LIMIT  ' . ($page - 1) * $articlePerPages . ',' . $config['articlePerPages']);
-
-    while ($rows = $results->fetch_array()) {
-
-        $events[] = array(
-            'id' => $rows['guid'],
-            'guid' => $rows['guid'],
-            'title' => $rows['title'],
-            'creator' => $rows['creator'],
-            'content' => $rows['content'],
-            'description' => $rows['description'],
-            'link' => $rows['link'],
-            'unread' => $rows['unread'],
-            'feed' => $rows['feed'],
-            'favorite' => $rows['favorite'],
-            'pubdate' => date('Y-m-d H:i:s', $rows['pubdate']),
-            'syncId' => $rows['syncId'],
-            'feed_name' => $rows['feed_name'],
-        );
-
-    }
-
-    $events = $events;
-
-    echo $twig->render('index.twig',
-        [
-            'action' => 'folder',
-            'allEvents' => $allEvents,
-            'allFeedsPerFolder' => $allFeedsPerFolder,
-            'articleDisplayFolderSort' => $articleDisplayFolderSort,
-            'articleDisplayHomeSort' => $articleDisplayHomeSort,
-            'articleDisplayAuthor' => $articleDisplayAuthor,
-            'articleDisplayLink' => $articleDisplayLink,
-            'articleDisplayDate' => $articleDisplayDate,
-            'articleDisplayMode' => $articleDisplayMode,
-            'articlePerPages' => $articlePerPages,
-            'displayOnlyUnreadFeedFolder_reverse' => $displayOnlyUnreadFeedFolder_reverse,
-            'displayOnlyUnreadFeedFolder' => $displayOnlyUnreadFeedFolder,
-            //'eventManager' => $eventManager,
-            'events' => $events,
-            //'feedState' => $feedState,
-            'folders' => $folders,
-            //'functions' => New Functions(),
-            //'nextPages' => $nextPages,
-            'numberOfItem' => $numberOfItem,
-            'optionFeedIsVerbose' => $optionFeedIsVerbose,
-            //'previousPages' => $previousPages,
-            'page' => $page,
-            'pages' => $pages,
-            'startArticle' => $startArticle,
-            'user' => $_SESSION['user'],
-            'scroll' => $scroll,
-            'target' => $target,
-            'trans' => $trans,
-            //'unread' => $unread,
-            //$unreadEventsForFolder,
-            //'wrongLogin' => $wrongLogin,
         ]
     );
 

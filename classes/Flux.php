@@ -82,7 +82,8 @@ class Flux
         return "200";
     }
 
-    public function loadInfoPerFlux()
+    //public function loadInfoPerFlux()
+    public function getFluxById()
     {
         $resultFlux = $this->db->query("select * from flux where id = " . $this->id);
         while ($rows = $resultFlux->fetch_array()) {

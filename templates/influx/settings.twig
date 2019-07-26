@@ -227,16 +227,6 @@
 
                         <h3>{{ trans.PREFERENCES }}</h3>
                         <fieldset>
-                            <legend>{{ trans.ALLOW_ANONYMOUS_READ }}</legend>
-                            <input type="radio" {% if articleDisplayAnonymous == '1' %} checked="checked" {% endif %}
-                                   value="1" id="articleDisplayAnonymousYes" name="articleDisplayAnonymous"/><label
-                                    for="articleDisplayAnonymousYes">{{ trans.YES }}</label>
-                            <input type="radio" {% if articleDisplayAnonymous == '0' %} checked="checked" {% endif %}
-                                   value="0" id="articleDisplayAnonymousNo" name="articleDisplayAnonymous"/><label
-                                    for="articleDisplayAnonymousNo">{{ trans.NO }}</label>
-                            <h4>{{ trans.ALLOW_ANONYMOUS_READ_DESC }}</h4>
-                        </fieldset>
-                        <fieldset>
                             <legend><label for="articlePerPages">{{ trans.EVENT_NUMBER_PER_PAGES }}</label></legend>
                             <input type="text" value="{{ config.articlePerPages }}" id="articlePerPages"
                                    name="articlePerPages" size="4"/>
@@ -260,35 +250,6 @@
                                    value="0"
                                    id="articleDisplayFolderSorttNo" name="articleDisplayFolderSort"/><label
                                     for="articleDisplayFolderSortNo">{{ trans.NO }}</label>
-                        </fieldset>
-                        <fieldset>
-                            <legend>{{ trans.SHOW_EVENT_LINK }}</legend>
-                            <input type="radio" {% if articleDisplayLink=='1' %} checked="checked" {% endif %}value="1"
-                                   id="articleDisplayLinkYes" name="articleDisplayLink"/><label
-                                    for="articleDisplayLinkYes">{{ trans.YES }}</label>
-                            <input type="radio" {% if articleDisplayLink=='0' %} checked="checked" {% endif %} value="0"
-                                   id="articleDisplayLinkNo" name="articleDisplayLink"/><label
-                                    for="articleDisplayLinkNo">{{ trans.NO }}</label>
-                        </fieldset>
-                        <fieldset>
-                            <legend>{{ trans.SHOW_EVENT_DATE }}</legend>
-                            <input type="radio" {% if articleDisplayDate=='1' %} checked="checked" {% endif %} value="1"
-                                   id="articleDisplayDateYes" name="articleDisplayDate"/><label
-                                    for="articleDisplayDateYes">{{ trans.YES }}</label>
-                            <input type="radio" {% if articleDisplayDate=='0' %} checked="checked" {% endif %} value="0"
-                                   id="articleDisplayDateNo" name="articleDisplayDate"/><label
-                                    for="articleDisplayDateNo">{{ trans.NO }}</label>
-                        </fieldset>
-                        <fieldset>
-                            <legend>{{ trans.SHOW_EVENT_AUTHOR }}</legend>
-                            <input type="radio" {% if articleDisplayAuthor=='1' %} checked="checked" {% endif %}
-                                   value="1"
-                                   id="articleDisplayAuthorYes" name="articleDisplayAuthor"/><label
-                                    for="articleDisplayAuthorYes">{{ trans.YES }}</label>
-                            <input type="radio" {% if articleDisplayAuthor=='0' %} checked="checked" {% endif %}
-                                   value="0"
-                                   id="articleDisplayAuthorNo" name="articleDisplayAuthor"/><label
-                                    for="articleDisplayAuthorNo">{{ trans.NO }}</label>
                         </fieldset>
                         <fieldset>
                             <legend>{{ trans.SHOW_EVENT_CONTENT }}</legend>
