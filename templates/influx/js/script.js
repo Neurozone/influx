@@ -433,8 +433,8 @@ function renameFeed(element,feed){
     $(element).html(_t('SAVE'));
     $(element).attr('style','background-color:#0C87C9;');
     $(element).attr('onclick','saveRenameFeed(this,'+feed+',"'+url+'")');
-    feedNameCase.replaceWith('<input type="text" name="feedName" value="'+feedNameValue+'" size="25" />');
-    feedUrlCase.replaceWith('<input type="text" name="feedUrl" value="'+feedUrlValue+'" size="25" />');
+    feedNameCase.replaceWith('<input type="text" name="feedName" value="'+feedNameValue+'" size="30" />');
+    feedUrlCase.replaceWith('<input type="text" name="feedUrl" value="'+feedUrlValue+'" size="30" />');
 }
 
 function saveRenameFeed(element,feed,url){

@@ -57,16 +57,16 @@
                 <ul class="clear nochip">
                     {% set feedsForFolder="" %}
                     {% for folder in folders %}
-                        {% set feedsForFolder = folder.feed %}
+                        {% set feedsForFolder = folder.feeds %}
                         <li>
-                            <h1 class="folder left"><span>{{ folder.name }}</span> ({function="count($feedsForFolder)"})
+                            <h1 class="folder left"><span>{{ folder.name }}</span>
                                 <button onclick="renameFolder(this,{{ folder.id }})">{{ trans.RENAME }}</button>
                                 <button onclick="if(confirm('{{ trans.CONFIRM_DELETE_FOLDER }}\n\n{{ folder.name }}'))window.location='/settings/folder/remove/{{ folder.id }}'">{{ trans.DELETE }}</button>
                                 <div class="clear"></div>
                             </h1>
                             <div class="clear"></div>
                             <ul class="feedsList">
-                                {% for feed in folder %}
+                                {% for feed in folder.feeds %}
                                     <li class="feedListItem{% if feed.LastSyncInError == 1 %} errorSync{% endif %}">
                             <span class="feedTitle js-feedTitle" {% if feed.LastSyncInError == 1 %} title="{{ trans.SYNCHRONISATION_ERROR }}" {% endif %}>
                                     <a{% if folder.LastSyncInError == 1 %} class="inError"{% endif %} href="settings/feed/{$value2->getId();}"
@@ -81,29 +81,7 @@
                                                 {% endfor %}
                                             </select>
 
-                                            {% if optionFeedIsVerbose == 0 %}
-                                                {% if feed.isverbose == 0 %}
-                                                    <input class="feedVerbose"
-                                                           onclick="toggleFeedVerbose(this,{{ feed.isverbose }},{{ feed.id }})"
-                                                           type="checkbox" title="{{ trans.HIDE_FEED_IS_VERBOSE }}">
-                                                {% else %}
-                                                    <input class="feedVerbose"
-                                                           onclick="toggleFeedVerbose(this,{{ feed.isverbose }},{{ feed.id }})"
-                                                           type="checkbox" title="{{ trans.HIDE_FEED_IS_VERBOSE }}"
-                                                           checked>
-                                                {% endif %}
-                                            {% else %}
-                                                {% if feed.isverbose == 0 %}
-                                                    <input class="feedVerbose" style="display: none;"
-                                                           onclick="toggleFeedVerbose(this,{{ feed.isverbose }},{{ feed.id }})"
-                                                           type="checkbox" title="{{ trans.HIDE_FEED_IS_VERBOSE }}">
-                                                {% else %}
-                                                    <input class="feedVerbose" style="display: none;"
-                                                           onclick="toggleFeedVerbose(this,{{ feed.isverbose }},{{ feed.id }})"
-                                                           type="checkbox" title="{{ trans.HIDE_FEED_IS_VERBOSE }}"
-                                                           checked>
-                                                {% endif %}
-                                            {% endif %}
+
                                         </div>
                                         <div class="feedButtons">
                                             <button class="feedRename"
