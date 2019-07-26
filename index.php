@@ -13,6 +13,7 @@ use Celd\Opml\Importer;
 use Celd\Opml\Model\FeedList;
 use Celd\Opml\Model\Feeed;
 
+
 $stream = new StreamHandler(__DIR__ . '/logs/influx.log', Logger::DEBUG);
 $logger = new Logger('influxLogger');
 $logger->pushHandler($stream);
@@ -121,6 +122,18 @@ $trans = $l_trans;
 //
 /* ---------------------------------------------------------------- */
 
+/*
+spl_autoload_register(function ($class_name) {
+    require_once dirname(__FILE__) . DIRECTORY_SEPARATOR . 'classes' . DIRECTORY_SEPARATOR . $class_name . '.php';
+});
+*/
+spl_autoload_register(function($className) {
+    include_once $_SERVER['DOCUMENT_ROOT'] . '/classes/' . $className . '.php';
+});
+
+$fluxObject = new Flux($db,$logger);
+$itemsObject = new Items($db,$logger);
+
 $cookiedir = '';
 if (dirname($_SERVER['SCRIPT_NAME']) != '/') {
     $cookiedir = dirname($_SERVER["SCRIPT_NAME"]) . '/';
@@ -166,54 +179,17 @@ $pagesArray = array();
 
 $wrongLogin = !empty($wrongLogin);
 $filter = array('unread' => 1);
-/*
- * if ($optionFeedIsVerbose) {
-    $numberOfItem = $eventManager->rowCount($filter);
-} else {
-    $numberOfItem = $eventManager->getEventCountNotVerboseFeed();
-}
 
-$page = (isset($_['page']) ? $_['page'] : 1);
-$pages = ($articlePerPages > 0 ? ceil($numberOfItem / $articlePerPages) : 1);
-$startArticle = ($page - 1) * $articlePerPages;
-
-
-if ($articleDisplayHomeSort) {
-    $order = 'pubdate desc';
-} else {
-    $order = 'pubdate asc';
-}
-if ($optionFeedIsVerbose) {
-    $events = $eventManager->loadAllOnlyColumn($target, $filter, $order, $startArticle . ',' . $articlePerPages);
-} else {
-    $events = $eventManager->getEventsNotVerboseFeed($startArticle, $articlePerPages, $order, $target);
-}
-
-
-*/
 $paginationScale = $config['paginationScale'];
 if (empty($paginationScale)) {
 
     $paginationScale = 5;
 }
-/*
-for ($i = ($page - $paginationScale <= 0 ? 1 : $page - $paginationScale); $i < ($page + $paginationScale > $pages + 1 ? $pages + 1 : $page + $paginationScale); $i++) {
-    $pagesArray[] = $i;
-}
-*/
-
-/*
-$previousPages = $page - $paginationScale < 0 ? -1 : $page - $paginationScale - 1;
-$nextPages = $page + $paginationScale > $pages + 1 ? -1 : $page + $paginationScale;
-*/
 
 $scroll = false;
 $unreadEventsForFolder = 0;
 $hightlighted = 0;
-//recuperation de tous les flux par dossier
 
-//Recuperation de tous les non Lu
-//$unread = $feedManager->countUnreadEvents();
 $synchronisationCode = $config['synchronisationCode'];
 
 //$allEvents = $eventManager->getEventCountPerFolder();
@@ -307,9 +283,8 @@ where f.id = ' . $rows['id'] . " order by fe.name");
 }
 
 
-$page = (isset($_GET['page']) ? $_['page'] : 1);
-
-$events = '';
+//$page = (isset($_GET['page']) ? $_['page'] : 1);
+$page =  1;
 
 $articleDisplayMode = $config['articleDisplayMode'];
 
@@ -354,70 +329,40 @@ $router->get('/', function () use (
     $allFeedsPerFolder,
     $config,
     $db,
-    $trans
+    $trans,
+    $itemsObject
 ) {
 
 
     $action = '';
 
-    //$filter = array('unread' => 1);
-    $resultsNbUnread = $db->query('SELECT count(*) as nb_items from items where unread = 1');
-    $numberOfItem = 0;
-
-    while ($rows = $resultsNbUnread->fetch_array()) {
-        $numberOfItem = $rows['nb_items'];
-    }
+    $numberOfItem = $itemsObject->countAllUnreadItem();
 
     $page = (isset($_GET['page']) ? $_GET['page'] : 1);
     $pages = ($articlePerPages > 0 ? ceil($numberOfItem / $articlePerPages) : 1);
     $startArticle = ($page - 1) * $articlePerPages;
-    $order = 'pubdate desc';
 
+    $offset = ($page - 1) * $articlePerPages;
+    $row_count = $config['articlePerPages'];
 
-    $results = $db->query('SELECT le.guid,le.title,le.creator,le.content,le.description,le.link,le.unread,le.feed,le.favorite,le.pubdate,le.syncId, lf.name as feed_name
-    FROM items le inner join flux lf on lf.id = le.feed where unread = 1 ORDER BY pubdate desc,unread desc LIMIT  ' . ($page - 1) * $articlePerPages . ',' . $config['articlePerPages']);
-
-    while ($rows = $results->fetch_array()) {
-
-        $events[] = array(
-            'id' => $rows['guid'],
-            'guid' => $rows['guid'],
-            'title' => $rows['title'],
-            'creator' => $rows['creator'],
-            'content' => $rows['content'],
-            'description' => $rows['description'],
-            'link' => $rows['link'],
-            'unread' => $rows['unread'],
-            'feed' => $rows['feed'],
-            'favorite' => $rows['favorite'],
-            'pubdate' => date('Y-m-d H:i:s', $rows['pubdate']),
-            'syncId' => $rows['syncId'],
-            'feed_name' => $rows['feed_name'],
-        );
-
-    }
-
-
-    $html = '';
-
-    //var_dump($events);
 
     echo $twig->render('index.twig',
         [
             'action' => $action,
             'allEvents' => $allEvents,
             'allFeedsPerFolder' => $allFeedsPerFolder,
-            'articleDisplayFolderSort' => $articleDisplayFolderSort,
+            /*'articleDisplayFolderSort' => $articleDisplayFolderSort,
             'articleDisplayHomeSort' => $articleDisplayHomeSort,
             'articleDisplayAuthor' => $articleDisplayAuthor,
             'articleDisplayLink' => $articleDisplayLink,
             'articleDisplayDate' => $articleDisplayDate,
             'articleDisplayMode' => $articleDisplayMode,
-            'articlePerPages' => $articlePerPages,
-            'displayOnlyUnreadFeedFolder_reverse' => $displayOnlyUnreadFeedFolder_reverse,
-            'displayOnlyUnreadFeedFolder' => $displayOnlyUnreadFeedFolder,
+            'articlePerPages' => $articlePerPages,*/
+            'config' => $config,
+            //'displayOnlyUnreadFeedFolder_reverse' => $displayOnlyUnreadFeedFolder_reverse,
+            //'displayOnlyUnreadFeedFolder' => $displayOnlyUnreadFeedFolder,
             //'eventManager' => $eventManager,
-            'events' => $events,
+            'events' => $itemsObject->loadAllUnreadItem($offset,$row_count),
             //'feedState' => $feedState,
             'folders' => $folders,
             //'functions' => New Functions(),
@@ -435,9 +380,6 @@ $router->get('/', function () use (
             'trans' => $trans
         ]
     );
-
-
-    $logger->info($html);
 
 });
 
@@ -866,7 +808,7 @@ $html = $tpl->draw($view);
 // Route: /settings
 /* ---------------------------------------------------------------- */
 
-$router->mount('/settings', function () use ($router, $twig, $trans, $logger, $config, $db, $cookiedir,$folders) {
+$router->mount('/settings', function () use ($router, $twig, $trans, $logger, $config, $db, $cookiedir,$folders,$fluxObject) {
 
     $router->get('/', function () use ($twig, $cookiedir) {
 
@@ -959,8 +901,8 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
     $router->get('/synchronize', function ($option) use ($twig, $trans, $logger, $config, $cookiedir) {
 
         if (isset($myUser) && $myUser != false) {
-            $syncCode = $conf['synchronisationCode'];
-            $syncGradCount = $conf['syncGradCount'];
+            $syncCode = $config['synchronisationCode'];
+            $syncGradCount = $config['syncGradCount'];
             if (!(isset($_['code']) && $conf['synchronisationCode'] != null && $_GET['code'] == $conf['synchronisationCode'])) {
                 die(_t('YOU_MUST_BE_CONNECTED_ACTION'));
             }
@@ -984,16 +926,16 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
                 $syncTypeStr = _t('SYNCHRONISATION_TYPE') . ' : ' . _t($synchronisationCustom['type']);
             } elseif ('graduate' == $synchronisationType) {
                 // sélectionne les 10 plus vieux flux
-                $feeds = $feedManager->loadAll(null, 'lastupdate', $syncGradCount);
+                //$feeds = $feedManager->loadAll(null, 'lastupdate', $syncGradCount);
                 $syncTypeStr = _t('SYNCHRONISATION_TYPE') . ' : ' . _t('GRADUATE_SYNCHRONISATION');
             } else {
                 // sélectionne tous les flux, triés par le nom
-                $feeds = $feedManager->populate('name');
+                //$feeds = $feedManager->populate('name');
                 $syncTypeStr = _t('SYNCHRONISATION_TYPE') . ' : ' . _t('FULL_SYNCHRONISATION');
             }
 
             if (!isset($synchronisationCustom['no_normal_synchronize'])) {
-                $feedManager->synchronize($feeds, $syncTypeStr, $commandLine, $configurationManager, $start);
+               // $feedManager->synchronize($feeds, $syncTypeStr, $commandLine, $configurationManager, $start);
             }
         } else {
             echo _t('YOU_MUST_BE_CONNECTED_ACTION');
@@ -1169,16 +1111,33 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
         header('location: /settings');
     });
 
-    $router->get('/feed/rename/{id}', function ($id) use ($twig, $trans, $logger, $config) {
+    $router->post('/feed/rename', function () use ($logger,$fluxObject) {
 
-        if (!$_SESSION['user']) {
-            header('location: /login');
-        }
+        // data:{id:feed,name:feedNameValue,url:feedUrlValue}
 
-        if (isset($id)) {
-            $feedManager->change(array('name' => $_['name'], 'url' => Functions::clean_url($_['url'])), array('id' => $_['id']));
+        $fluxObject->setId($_POST['id']);
+        $fluxObject->setName($_POST['name']);
+        $fluxObject->setUrl($_POST['url']);
+
+        return $fluxObject->rename();
+
+        /*
+        $q = "UPDATE flux set name = '" . $name . "', url = '" . $url . "', lastupdate = " . time() . " where id = " . $id;
+
+        $logger->info($q);
+
+        $return = $db->query($q);
+
+        if ($db->errno) {
+            echo "\t\tFailure: \t$db->error\n";
+            $logger->info("\t\tFailure: \t$db->error\n");
+            $logger->error($q);
+
+            http_response_code(404);
+
         }
-        header('location: /settings');
+        */
+
     });
 
     $router->get('/feed/folder/{id}', function ($id) use ($twig, $trans, $logger, $config, $db) {
@@ -1483,6 +1442,7 @@ $router->mount('/qrcode', function () use ($router, $twig, $db, $logger, $trans,
             header('location: /login');
         }
 
+        /*
         Functions::chargeVarRequest('label', 'user', 'key', 'issuer', 'algorithm', 'digits', 'period');
         if (empty($key)) {
             $key = "**********";
@@ -1503,6 +1463,7 @@ $router->mount('/qrcode', function () use ($router, $twig, $db, $logger, $trans,
     $router->get('/text', function () use ($twig, $trans, $logger, $config) {
 
         $qrCode = substr($_SERVER['QUERY_STRING'], 1 + strlen($methode));
+        */
 
     });
 
@@ -1517,110 +1478,43 @@ $router->get('/feed/{id}', function ($id) use (
     $twig,
     $logger,
     $trans,
-    //$feedState,
-    //$nextPages,
-    //$previousPages,
     $scroll,
-    //$eventManager,
-    $unreadEventsForFolder,
-    $optionFeedIsVerbose,
-    $articlePerPages,
-    $articleDisplayHomeSort,
-    $articleDisplayFolderSort,
-    $articleDisplayAuthor,
-    $articleDisplayLink,
-    $articleDisplayDate,
-    $articleDisplayMode,
     $target,
     $displayOnlyUnreadFeedFolder_reverse,
     $displayOnlyUnreadFeedFolder,
     $folders,
     $allEvents,
-    //$unread,
     $allFeedsPerFolder,
     $config,
-    $db
+    $db,
+    $itemsObject,
+    $fluxObject
 ) {
 
-    $resultsNbFavorites = $db->query('SELECT count(*) as nb_items FROM items le inner join flux lf on lf.id = le.feed where le.feed = ' . $id);
-    $numberOfItem = 0;
+    $fluxObject->setId($id);
+    $flux = $fluxObject->loadInfoPerFlux();
+    $itemsObject->setFeed($id);
+    $numberOfItem = $itemsObject->countUnreadItemPerFlux();
 
-    while ($rows = $resultsNbFavorites->fetch_array()) {
-        $numberOfItem = $rows['nb_items'];
-    }
-
-    //$numberOfItem = $eventManager->rowCount(array('favorite' => 1));
     $page = (isset($_GET['page']) ? $_GET['page'] : 1);
-    $pages = ceil($numberOfItem / $articlePerPages);
-    $startArticle = ($page - 1) * $articlePerPages;
-    //$events = $eventManager->loadAllOnlyColumn($target, array('favorite' => 1), 'pubdate DESC', $startArticle . ',' . $articlePerPages);
+    $pages = ceil($numberOfItem / $config['articlePerPages']);
+    $startArticle = ($page - 1) * $config['articlePerPages'];
 
-    $results = $db->query('SELECT le.guid,le.title,le.creator,le.content,le.description,le.link,le.unread,le.feed,le.favorite,le.pubdate,le.syncId, lf.name as feed_name
-    FROM items le inner join flux lf on lf.id = le.feed where le.feed = ' . $id . ' ORDER BY pubdate desc,unread desc LIMIT  ' . ($page - 1) * $articlePerPages . ',' . $config['articlePerPages']);
+    $offset = ($page - 1) * $config['articlePerPages'];
 
-    while ($rows = $results->fetch_array()) {
-
-        $events[] = array(
-            'id' => $rows['guid'],
-            'guid' => $rows['guid'],
-            'title' => $rows['title'],
-            'creator' => $rows['creator'],
-            'content' => $rows['content'],
-            'description' => $rows['description'],
-            'link' => $rows['link'],
-            'unread' => $rows['unread'],
-            'feed' => $rows['feed'],
-            'favorite' => $rows['favorite'],
-            'pubdate' => date('Y-m-d H:i:s', $rows['pubdate']),
-            'syncId' => $rows['syncId'],
-            'feed_name' => $rows['feed_name'],
-        );
-
-    }
-
-    $resultFlux = $db->query("select * from flux where id = " . $id);
-    while ($rows = $resultFlux->fetch_array()) {
-
-        $flux = array(
-            'id' => $rows['id'],
-            'name' => $rows['name'],
-            'description' => $rows['description'],
-            'website' => $rows['website'],
-            'url' => $rows['url'],
-            'lastupdate' => $rows['lastupdate'],
-            'folder' => $rows['folder'],
-            'isverbose' => $rows['isverbose'],
-            'lastSyncInError' => $rows['lastSyncInError'],
-        );
-
-    }
-
-    //$order = 'unread';
-    //$feed =  $id;
+    $row_count = $config['articlePerPages'];
 
     echo $twig->render('index.twig',
         [
             'action' => 'feed',
             'allEvents' => $allEvents,
             'allFeedsPerFolder' => $allFeedsPerFolder,
-            'articleDisplayFolderSort' => $articleDisplayFolderSort,
-            'articleDisplayHomeSort' => $articleDisplayHomeSort,
-            'articleDisplayAuthor' => $articleDisplayAuthor,
-            'articleDisplayLink' => $articleDisplayLink,
-            'articleDisplayDate' => $articleDisplayDate,
-            'articleDisplayMode' => $articleDisplayMode,
-            'articlePerPages' => $articlePerPages,
             'displayOnlyUnreadFeedFolder_reverse' => $displayOnlyUnreadFeedFolder_reverse,
             'displayOnlyUnreadFeedFolder' => $displayOnlyUnreadFeedFolder,
-            //'eventManager' => $eventManager,
-            'events' => $events,
+            'events' => $itemsObject->loadUnreadItemPerFlux($offset,$row_count),
             'feed' => $flux,
             'folders' => $folders,
-            //'functions' => New Functions(),
-            //'nextPages' => $nextPages,
             'numberOfItem' => $numberOfItem,
-            'optionFeedIsVerbose' => $optionFeedIsVerbose,
-            //'previousPages' => $previousPages,
             'page' => $page,
             'pages' => $pages,
             'startArticle' => $startArticle,
@@ -1628,15 +1522,14 @@ $router->get('/feed/{id}', function ($id) use (
             'scroll' => $scroll,
             'target' => $target,
             'trans' => $trans,
-            //'unread' => $unread,
-            //$unreadEventsForFolder,
-            //'wrongLogin' => $wrongLogin,
+            'config' => $config
+
         ]
     );
 
 });
 
-$router->get('/folder/{id}', function ($id) use (
+$router->get('/folder/favorites', function ($id) use (
     $twig, $logger,
     //$feedState,
     //$nextPages,
@@ -1661,20 +1554,24 @@ $router->get('/folder/{id}', function ($id) use (
     //$unread,
     $allFeedsPerFolder,
     $config,
-    $db
+    $db,
+    $itemsObject
 ) {
 
     //$currentFeed = $feedManager->getById($id);
     //var_dump($currentFeed);
 
+    /*
     $resultsNbFavorites = $db->query('SELECT count(*) as nb_items FROM items le inner join flux lf on lf.id = le.feed where le.feed = ' . $id);
     $numberOfItem = 0;
 
     while ($rows = $resultsNbFavorites->fetch_array()) {
         $numberOfItem = $rows['nb_items'];
     }
+    */
 
-    //$numberOfItem = $eventManager->rowCount(array('favorite' => 1));
+    $itemsObject->setFeed($id);
+    $numberOfItem = $itemsObject->countUnreadItemPerFlux();
     $page = (isset($_GET['page']) ? $_GET['page'] : 1);
     $pages = ceil($numberOfItem / $articlePerPages);
     $startArticle = ($page - 1) * $articlePerPages;

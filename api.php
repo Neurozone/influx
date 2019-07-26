@@ -26,7 +26,17 @@ $router = new \Bramus\Router\Router();
 
 $router->mount('/api', function () use ($router, $db, $logger) {
 
-    $router->get('/feed', function() { /* ... */ });
+    $router->get('/version', function() {
+
+    });
+
+    $router->get('/version', function() {
+
+    });
+
+    $router->get('/feed', function() {
+
+    });
 
     $router->get('/feed/{id}/unread', function() {
 

@@ -443,13 +443,13 @@ function saveRenameFeed(element,feed,url){
     var feedNameValue = feedNameCase.val();
     var feedUrlCase = feedLine.children('.js-feedTitle:first').children('input[name="feedUrl"]');
     var feedUrlValue = feedUrlCase.val();
-    $(element).html('Renomemr');
+    $(element).html('Renommer');
     $(element).attr('style','background-color:#F16529;');
     $(element).attr('onclick','renameFeed(this,'+feed+')');
     feedNameCase.replaceWith('<a href="'+url+'">'+feedNameValue+'</a>');
     feedUrlCase.replaceWith('<a class="underlink" href="'+feedUrlValue+'">'+feedUrlValue+'</a>');
     $.ajax({
-        url: "/action/renameFeed",
+        url: "/settings/feed/rename",
         type: 'post',
         data:{id:feed,name:feedNameValue,url:feedUrlValue}
     });

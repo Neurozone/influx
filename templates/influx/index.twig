@@ -34,7 +34,7 @@
                 Tout marquer comme lu
             </button>
             <div class="readingFolderButton"
-                 onclick="toggleUnreadFeedFolder(this, {{ displayOnlyUnreadFeedFolder_reverse }}) ;"
+                 onclick="toggleUnreadFeedFolder(this, {{ config.displayOnlyUnreadFeedFolder_reverse }}) ;"
                  title="Afficher uniquement non lus"><i class="icon-resize-full"></i></div>
 
             <ul class="feeds clear">
@@ -45,7 +45,7 @@
                     <!-- DOSSIER -->
                     <li>
                         <h1 class="folder{% if folder.unread == 0 %}hidefeed{% endif %}"
-                                {% if (displayOnlyUnreadFeedFolder == true) and (folder.unread == 0) %}
+                                {% if (config.displayOnlyUnreadFeedFolder == true) and (folder.unread == 0) %}
                             style="display:none"
                                 {% endif %}>
 
@@ -70,13 +70,10 @@
                         </h1>
                         <!-- FLUX DU DOSSIER -->
                         <ul {% if folder.isopen == 0 %}style="display:none" {% endif %}>
-
                             {% for feed in folder.feeds %}
-
-                                {% if displayOnlyUnreadFeedFolder == true %}
+                                {% if config.displayOnlyUnreadFeedFolder == true %}
                                     <!-- Affichage des feeds ayant des articles non lus -->
                                     {% if feed.unread > 0 %}
-
                                         {% if feed.lastSyncInError == 0 %}
                                             <li>
                                         {% else %}

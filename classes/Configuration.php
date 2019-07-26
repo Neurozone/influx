@@ -6,6 +6,9 @@ namespace Influx;
 class Configuration
 {
 
+    private $name;
+    private $value;
+    private $db;
 
     function __construct()
     {
@@ -22,27 +25,27 @@ class Configuration
         $result_configuration = $this->db->query($query_configuration);
 
         while ($row = $result_configuration->fetch_array()) {
-            $config[$row['key']] = $row['value'];
+            $config[$row['name']] = $row['value'];
         }
 
         return $config;
     }
 
-    public function get($key)
+    public function get($name)
     {
-        $query_configuration = "select value from leed_configuration where key = '" . $key . "'";
+        $query_configuration = "select value from leed_configuration where name = '" . $name . "'";
         $result_configuration = $this->db->query($query_configuration);
 
         while ($row = $result_configuration->fetch_array()) {
             $config = $row['value'];
         }
 
-        return $config
+        return $config;
     }
 
-    public function put($key, $value)
+    public function put($name, $value)
     {
-        $query_configuration = "update configuration set value = '" . $value . "' where key = '" . $key . "'";
+        $query_configuration = "update configuration set value = '" . $value . "' where name = '" . $name . "'";
         $this->db->query($query_configuration);
     }
 
@@ -51,10 +54,10 @@ class Configuration
         return substr(sha1(rand(0, 30) . time() . rand(0, 30)), 0, 10);
     }
 
-    public function add($key, $value)
+    public function add($name, $value)
     {
 
-        $query_configuration = "insert into configuration values('" . $key . "', '" . $value . "')";
+        $query_configuration = "insert into configuration values('" . $name . "', '" . $value . "')";
         $this->db->query($query_configuration);
     }
 
@@ -69,14 +72,14 @@ class Configuration
         return $this->id;
     }
 
-    function getKey()
+    function getName()
     {
         return $this->key;
     }
 
-    function setKey($key)
+    function setName($name)
     {
-        $this->key = $key;
+        $this->name = $name;
     }
 
     function getValue()

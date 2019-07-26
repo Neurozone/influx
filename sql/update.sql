@@ -26,3 +26,6 @@ CREATE TABLE `configuration` (
        PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 insert into configuration (name, value) select `key`,`value` from conf;
+
+alter table user add column email varchar(225) NOT NULL AFTER password;
+alter table user add column salt varchar(225) NOT NULL AFTER email;
