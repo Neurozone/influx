@@ -81,6 +81,7 @@ function maj(data){
         }
 }
 
+/*
 function _t(key,args){
     var value = i18n[key];
     if(typeof(value)!=='undefined'){
@@ -94,6 +95,8 @@ function _t(key,args){
     }
     return value;
 }
+*/
+
 
 $(document).keydown(function (e) {
     switch(true) {
@@ -412,12 +415,13 @@ function saveRenameFolder(element,folder){
     var folderLine = $(element).parent();
     var folderNameCase = $('span',folderLine);
     var value = $('input',folderNameCase).val();
-    $(element).html(_t('RENAME'));
+    $(element).html('Rename');
     $(element).attr('style','background-color:#F16529;');
     $(element).attr('onclick','renameFolder(this,'+folder+')');
     folderNameCase.replaceWith('<span>'+value+'</span>');
     $.ajax({
-        url: "./action.php?action=renameFolder",
+        url: "/settings/category/rename",
+        type: 'post',
         data:{id:folder,name:value}
     });
 }
@@ -767,16 +771,16 @@ function markAllAsRead(el) {
         case 'folder':
             infoLink = el.siblings('.folderLink');
             translation = 'READ_ALL_FOLDER_CONFIRM';
-            action = 'readFolder&folder';
+            action = 'readFolder';
             break;
         case 'feed':
             infoLink = el.siblings('.feedLink');
             translation = 'CONFIRM_MARK_FEED_AS_READ';
-            action = 'readAll&feed';
+            action = 'readAll';
             break;
     }
-    if(confirm(_t( translation ) + '\n\n' + infoLink.html())) {
-        window.location = 'action.php?action=' + action + '=' + infoLink.data('id');
+    if(confirm("Mark as Read") + '\n\n' + infoLink.html()) {
+        window.location = '/action/' + action + '/' + infoLink.data('id');
     }
 }
 

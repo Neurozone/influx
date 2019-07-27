@@ -12,20 +12,17 @@ use Monolog\Handler\StreamHandler;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-//use Celd\Opml\Importer;
-//use Celd\Opml\Model\FeedList;
-//use Celd\Opml\Model\Feeed;
+
 
 $stream = new StreamHandler(__DIR__ . '/logs/influx.log', Logger::DEBUG);
 $logger = new Logger('influxLogger');
 $logger->pushHandler($stream);
-$logger->info('Influx started');
 
 $templatePath = __DIR__ . '/templates/influx';
 
 $loader = new \Twig\Loader\FilesystemLoader($templatePath);
-$twig = new \Twig\Environment($loader, [__DIR__ . '/cache' => 'cache', 'debug' => true,]);
-//$twig->addExtension(new Umpirsky\Twig\Extension\PhpFunctionExtension());
+$twig = new \Twig\Environment($loader, ['cache' => __DIR__ . '/cache' , 'debug' => true,]);
+
 $twig->addExtension(new \Twig\Extension\DebugExtension());
 
 // Create Router instance
@@ -111,6 +108,7 @@ $fluxObject = new Flux($db, $logger);
 $itemsObject = new Items($db, $logger);
 $userObject = new User($db,$logger);
 $categoryObject = new Category($db,$logger);
+$opmlObject = new Opml($db,$logger);
 
 /* ---------------------------------------------------------------- */
 // i18n
@@ -204,11 +202,12 @@ $page = 1;
 // Route: Before for logging
 /* ---------------------------------------------------------------- */
 
-$router->before('GET|POST|PUT|DELETE|PATCH|OPTIONS', '^((?!login).)*$', function () use ($logger) {
+$router->before('GET|POST|PUT|DELETE|PATCH|OPTIONS', '*', function () use ($logger) {
     $logger->info($_SERVER['REQUEST_URI']);
     $logger->info(getClientIP());
+    $logger->info("before");
 
-    if (!$_SESSION['user']) {
+    if (!isset($_SESSION['user'])) {
         header('location: /login');
     }
 });
@@ -438,12 +437,12 @@ $router->get('/favorites', function () use (
     }
     //$numberOfItem = $eventManager->rowCount(array('favorite' => 1));
     $page = (isset($_GET['page']) ? $_GET['page'] : 1);
-    $pages = ceil($numberOfItem / $articlePerPages);
-    $startArticle = ($page - 1) * $articlePerPages;
+    $pages = ceil($numberOfItem / $config['articlePerPages']);
+    $startArticle = ($page - 1) * $config['articlePerPages'];
     //$events = $eventManager->loadAllOnlyColumn($target, array('favorite' => 1), 'pubdate DESC', $startArticle . ',' . $articlePerPages);
 
     $results = $db->query('SELECT le.guid,le.title,le.creator,le.content,le.description,le.link,le.unread,le.feed,le.favorite,le.pubdate,le.syncId, lf.name as feed_name
-    FROM items le inner join flux lf on lf.id = le.feed where favorite = 1 ORDER BY pubdate desc,unread desc LIMIT  ' . ($page - 1) * $articlePerPages . ',' . $config['articlePerPages']);
+    FROM items le inner join flux lf on lf.id = le.feed where favorite = 1 ORDER BY pubdate desc,unread desc LIMIT  ' . ($page - 1) * $config['articlePerPages'] . ',' . $config['articlePerPages']);
 
     while ($rows = $results->fetch_array()) {
 
@@ -470,7 +469,7 @@ $router->get('/favorites', function () use (
             //'action' => $action,
             'allEvents' => $allEvents,
             'allFeedsPerFolder' => $allFeedsPerFolder,
-            'articlePerPages' => $articlePerPages,
+            //'articlePerPages' => $articlePerPages,
             //'eventManager' => $eventManager,
             'events' => $events,
             //'feedState' => $feedState,
@@ -482,8 +481,7 @@ $router->get('/favorites', function () use (
             'pages' => $pages,
             'startArticle' => $startArticle,
             'user' => $_SESSION['user'],
-            'scroll' => $scroll,
-            'target' => $target,
+            'scroll' => $scroll
 
         ]
     );
@@ -622,7 +620,7 @@ $router->mount('/article', function () use ($router, $twig, $db, $logger, $trans
 // Route: /settings
 /* ---------------------------------------------------------------- */
 
-$router->mount('/settings', function () use ($router, $twig, $trans, $logger, $config, $db, $cookiedir, $categoryObject, $fluxObject) {
+$router->mount('/settings', function () use ($router, $twig, $trans, $logger, $config, $db, $cookiedir, $categoryObject, $fluxObject,$opmlObject) {
 
     $router->get('/', function () use ($twig, $cookiedir) {
 
@@ -636,64 +634,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
 
     });
 
-    /* ---------------------------------------------------------------- */
-    // Route: /settings/{option}
-    /* ---------------------------------------------------------------- */
 
-    $router->get('/{option}', function ($option) use ($twig, $trans, $logger, $config, $cookiedir, $db, $categoryObject) {
-
-        //$serviceUrl', rtrim($_SERVER['HTTP_HOST'] . $cookiedir, '/'));
-
-        // gestion des thèmes
-        $themesDir = 'templates/';
-        $dirs = scandir($themesDir);
-        foreach ($dirs as $dir) {
-            if (is_dir($themesDir . $dir) && !in_array($dir, array(".", ".."))) {
-                $themeList[] = $dir;
-            }
-        }
-        sort($themeList);
-
-        $results = $db->query('SELECT * FROM categories c ORDER BY name ');
-
-        /*
-        while ($rows = $results->fetch_array()) {
-            $folders['id'] = $rows['id'];
-        }*/
-
-        $resultsFlux = $db->query('SELECT * FROM flux f ORDER BY name ');
-        while ($rows = $resultsFlux->fetch_array()) {
-            $feeds['id'] = $rows['id'];
-        }
-
-        $logger->info('Section: ' . $option);
-
-        echo $twig->render('settings.twig',
-            [
-                'action' => 'folder',
-                'section' => $option,
-                'trans' => $trans,
-                'themeList' => $themeList,
-                'synchronisationType' => $config['synchronisationType'],
-                'synchronisationEnableCache' => $config['synchronisationEnableCache'],
-                'synchronisationForceFeed' => $config['synchronisationForceFeed'],
-                'articleDisplayAnonymous' => $config['articleDisplayAnonymous'],
-                'articleDisplayLink' => $config['articleDisplayLink'],
-                'articleDisplayDate' => $config['articleDisplayDate'],
-                'articleDisplayAuthor' => $config['articleDisplayAuthor'],
-                'articleDisplayHomeSort' => $config['articleDisplayHomeSort'],
-                'articleDisplayFolderSort' => $config['articleDisplayFolderSort'],
-                'articleDisplayMode' => $config['articleDisplayMode'],
-                'optionFeedIsVerbos' => $config['optionFeedIsVerbose'],
-                'otpEnabled' => false,
-                'currentTheme' => $config['theme'],
-                'folders' => $categoryObject->getFeedsByCategories(),
-                'feeds' => $feeds,
-                $config
-            ]
-        );
-
-    });
 
     /* ---------------------------------------------------------------- */
     // Route: /settings/synchronize
@@ -870,26 +811,24 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
     // Route: /settings/feed/add
     /* ---------------------------------------------------------------- */
 
-    $router->post('/feed/add', function () use ($twig, $trans, $logger, $config) {
+    $router->post('/feed/add', function () use ($twig, $trans, $logger, $config, $fluxObject) {
 
 
-        $newFeed = new Feed();
-        $newFeed->setUrl(Functions::clean_url($_POST['newUrl']));
+        $cat = isset($_POST['newUrlCategory']) ? $_POST['newUrlCategory'] : 1;
 
-        if ($newFeed->notRegistered()) {
-            $newFeed->getInfos();
-            $newFeed->setFolder(
-                (isset($_POST['newUrlCategory']) ? $_POST['newUrlCategory'] : 1)
-            );
-            $newFeed->save();
-            //$enableCache = ($configurationManager->get('synchronisationEnableCache') == '') ? 0 : $configurationManager->get('synchronisationEnableCache');
-            //$forceFeed = ($configurationManager->get('synchronisationForceFeed') == '') ? 0 : $configurationManager->get('synchronisationForceFeed');
-            //$newFeed->parse(time(), $_, $enableCache, $forceFeed);
-            //Plugin::callHook("action_after_addFeed", array(&$newFeed));
+        $sp = new SimplePie();
+
+        $fluxObject->setUrl($_POST['newUrl']);
+
+        if ($fluxObject->notRegistered()) {
+
+            //$fluxObject->getInfos();
+            $fluxObject->setFolder((isset($_POST['newUrlCategory']) ? $_POST['newUrlCategory'] : 1));
+            $fluxObject->add($sp);
+
         } else {
-            //$logger = new Logger('settings');
+
             $logger->info($trans['FEED_ALREADY_STORED']);
-            //$logger->save();
         }
         header('location: /settings/manage');
     });
@@ -898,16 +837,18 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
     // Route: /settings/feed/remove/{id}
     /* ---------------------------------------------------------------- */
 
-    $router->get('/feed/remove/{id}', function ($id) use ($twig, $trans, $logger, $config) {
+    $router->get('/feed/remove/{id}', function ($id) use ($twig, $trans, $logger, $config,$fluxObject) {
 
 
-        if (isset($id)) {
-            //$feedManager->delete(array('id' => $id));
-            //$eventManager->delete(array('feed' => $id));
-            //Plugin::callHook("action_after_removeFeed", array($id));
-        }
-        header('location: /settings');
+        $fluxObject->setId($id);
+        $logger->info($fluxObject->getId($id));
+        $fluxObject->remove();
+        header('location: /settings/manage');
     });
+
+    /* ---------------------------------------------------------------- */
+    // Route: /settings/feed/rename (POST)
+    /* ---------------------------------------------------------------- */
 
     $router->post('/feed/rename', function () use ($logger, $fluxObject) {
 
@@ -918,23 +859,6 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
         $fluxObject->setUrl($_POST['url']);
 
         return $fluxObject->rename();
-
-        /*
-        $q = "UPDATE flux set name = '" . $name . "', url = '" . $url . "', lastupdate = " . time() . " where id = " . $id;
-
-        $logger->info($q);
-
-        $return = $db->query($q);
-
-        if ($db->errno) {
-            echo "\t\tFailure: \t$db->error\n";
-            $logger->info("\t\tFailure: \t$db->error\n");
-            $logger->error($q);
-
-            http_response_code(404);
-
-        }
-        */
 
     });
 
@@ -951,25 +875,26 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
         header('location: /settings');
     });
 
-    $router->post('/folder/add', function () use ($twig, $db, $logger, $trans, $config) {
+    /* ---------------------------------------------------------------- */
+    // Route: /settings/category/add (POST)
+    /* ---------------------------------------------------------------- */
 
-        if (!$_SESSION['user']) {
-            header('location: /login');
-        }
+    $router->post('/category/add', function () use ($twig, $db, $logger, $trans, $config,$categoryObject) {
 
-        if (isset($_POST['newFolder'])) {
-            $folder = new Folder();
-            if ($folder->rowCount(array('name' => $_POST['newFolder'])) == 0) {
-                $folder->setParent(-1);
-                $folder->setIsopen(0);
-                $folder->setName($_POST['newFolder']);
-                $folder->save();
-            }
+        $name = $_POST['categoryName'];
+        $categoryObject->setName($name);
+        if(isset($_POST['categoryName']) && !$categoryObject->exist()) {
+
+            $categoryObject->add();
         }
-        header('location: /settings');
+        header('location: /settings/manage');
     });
 
-    $router->get('/folder/remove/{id}', function ($id) use ($twig, $db, $logger, $trans, $config) {
+    /* ---------------------------------------------------------------- */
+    // Route: /settings/category/remove/{id}
+    /* ---------------------------------------------------------------- */
+
+    $router->get('/category/remove/{id}', function ($id) use ($twig, $db, $logger, $trans, $config) {
 
 
 
@@ -978,68 +903,43 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
             //$feedManager->delete(array('folder' => $id));
             //$folderManager->delete(array('id' => $id));
         }
-        header('location: /settings');
+        header('location: /settings/manage');
     });
 
-    $router->get('/folder/rename/{id}', function ($id) use ($twig, $db, $logger, $trans, $config) {
+    /* ---------------------------------------------------------------- */
+    // Route: /settings/category/rename (POST)
+    /* ---------------------------------------------------------------- */
 
-        if (!$_SESSION['user']) {
-            header('location: /login');
+    $router->post('/category/rename', function () use ($twig, $db, $logger, $trans, $config,$categoryObject) {
+
+        $id = $_POST['id'];
+        $name = $_POST['name'];
+        $categoryObject->setId($id);
+        $categoryObject->setName($name);
+
+        $logger->info(" avant le if rename");
+
+        if(isset($_POST['id']) && $categoryObject->exist()) {
+
+            $logger->info(" on rentre dans le if rename");
+            $categoryObject->rename();
         }
+        header('location: /settings/manage');
 
-
-        header('location: /settings');
     });
 
-    $router->get('/feeds/export', function ($id) use ($twig, $db, $logger, $trans, $config) {
+    $router->get('/feeds/export', function () use ($twig, $db, $logger, $trans, $config, $opmlObject) {
 
-        if (!$_SESSION['user']) {
-            header('location: /login');
-        }
+        header('Content-Disposition: attachment;filename=export_opml.opml');
+        header('Content-Type: text/xml');
 
-        $feedList = new FeedList();
+        echo $opmlObject->export();
 
-
-        $importer = new Importer();
-        echo $importer->export($feedList);
-
-        /*
-         * if (isset($_POST['exportButton'])) {
-            $opml = new Opml();
-            $xmlStream = $opml->export();
-
-            header('Content-Description: File Transfer');
-            header('Content-Type: application/octet-stream');
-            header('Content-Disposition: attachment; filename=leed-' . date('d-m-Y') . '.opml');
-            header('Content-Transfer-Encoding: binary');
-            header('Expires: 0');
-            header('Cache-Control: must-revalidate');
-            header('Pragma: public');
-            header('Content-Length: ' . strlen($xmlStream));
-
-        ob_clean();
-        flush();
-        echo $xmlStream;
-    }
-        break;
-         *
-         */
-
-        /*
-        if (isset($id) && is_numeric($id) && $id > 0) {
-            $eventManager->customQuery('DELETE FROM `' . MYSQL_PREFIX . 'event` WHERE `' . MYSQL_PREFIX . 'event`.`feed` in (SELECT `' . MYSQL_PREFIX . 'feed`.`id` FROM `' . MYSQL_PREFIX . 'feed` WHERE `' . MYSQL_PREFIX . 'feed`.`folder` =\'' . intval($_['id']) . '\') ;');
-            $feedManager->delete(array('folder' => $id));
-            $folderManager->delete(array('id' => $id));
-        }*/
-
-        header('location: /settings');
     });
 
-    $router->get('/feeds/import', function ($id) use ($twig, $db, $logger, $trans, $config) {
+    $router->get('/feeds/import', function () use ($twig, $db, $logger, $trans, $config) {
 
-        if (!$_SESSION['user']) {
-            header('location: /login');
-        }
+
 
         /*
          * // On ne devrait pas mettre de style ici.
@@ -1105,8 +1005,65 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
          *
          */
 
+        echo $twig->render('settings.twig',
+            [
+                'action' => 'folder',
+                'section' => 'feeds/import',
+                'trans' => $trans,
+                'otpEnabled' => false,
+                'currentTheme' => $config['theme'],
+                'config' => $config
+            ]
+        );
 
-        header('location: /settings');
+    });
+
+    /* ---------------------------------------------------------------- */
+    // Route: /settings/{option}
+    /* ---------------------------------------------------------------- */
+
+    $router->get('/{option}', function ($option) use ($twig, $trans, $logger, $config, $cookiedir, $db, $categoryObject) {
+
+        //$serviceUrl', rtrim($_SERVER['HTTP_HOST'] . $cookiedir, '/'));
+
+        // gestion des thèmes
+        $themesDir = 'templates/';
+        $dirs = scandir($themesDir);
+        foreach ($dirs as $dir) {
+            if (is_dir($themesDir . $dir) && !in_array($dir, array(".", ".."))) {
+                $themeList[] = $dir;
+            }
+        }
+        sort($themeList);
+
+        $results = $db->query('SELECT * FROM categories c ORDER BY name ');
+
+        /*
+        while ($rows = $results->fetch_array()) {
+            $folders['id'] = $rows['id'];
+        }*/
+
+        $resultsFlux = $db->query('SELECT * FROM flux f ORDER BY name ');
+        while ($rows = $resultsFlux->fetch_array()) {
+            $feeds['id'] = $rows['id'];
+        }
+
+        $logger->info('Section: ' . $option);
+
+        echo $twig->render('settings.twig',
+            [
+                'action' => 'folder',
+                'section' => $option,
+                'trans' => $trans,
+                'themeList' => $themeList,
+                'otpEnabled' => false,
+                'currentTheme' => $config['theme'],
+                'folders' => $categoryObject->getFeedsByCategories(),
+                'feeds' => $feeds,
+                'config' => $config
+            ]
+        );
+
     });
 
 });
@@ -1117,24 +1074,18 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
 // Route: /action/readAll
 /* ---------------------------------------------------------------- */
 
-/*
-$router->get('/action/{readAll}', function () use ($twig, $db,$logger,$trans,$config) {
 
-    if (!$_SESSION['user']) {
-        header('location: /login');
-    }
+$router->get('/action/readAll/{id}', function ($id) use ($twig, $db,$logger,$trans,$config, $fluxObject) {
 
-    $whereClause = array();
-    $whereClause['unread'] = '1';
-    if (isset($_['feed'])) $whereClause['feed'] = $_['feed'];
-    if (isset($_['last-event-id'])) $whereClause['id'] = '<= ' . $_['last-event-id'];
-    $eventManager->change(array('unread' => '0'), $whereClause);
-    if (!Functions::isAjaxCall()) {
-        header('location: ./index.php');
-    }
+    $fluxObject->setId($id);
+    $fluxObject->markAllRead();
+
+
+    header('location: /');
+
 
 });
-*/
+
 /* ---------------------------------------------------------------- */
 // Route: /action/readContent/{id}
 /* ---------------------------------------------------------------- */
@@ -1213,6 +1164,7 @@ $router->get('/action/updateConfiguration', function () use ($twig, $db, $logger
         header('location: /login');
     }
 
+    /*
     $whereClause = array();
     $whereClause['unread'] = '1';
     if (isset($_['feed'])) $whereClause['feed'] = $_['feed'];
@@ -1221,6 +1173,7 @@ $router->get('/action/updateConfiguration', function () use ($twig, $db, $logger
     if (!Functions::isAjaxCall()) {
         header('location: ./index.php');
     }
+    */
 
 });
 

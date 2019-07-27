@@ -15,12 +15,43 @@ class Flux
     private $logger;
     private $db;
 
-    function __construct($db,$logger)
+    function __construct($db, $logger)
     {
         $this->db = $db;
         $this->db->set_charset('utf8mb4');
         $this->db->query('SET NAMES utf8mb4');
         $this->logger = $logger;
+    }
+
+    public function getInfos()
+    {
+        $xml = simplexml_load_file($this->url);
+        if ($xml != false) {
+            $n = $xml->xpath('channel/title');
+            $this->setName($n[0]);
+            $d = $xml->xpath('channel/description');
+            $this->description = $d[0];
+            $w = $xml->xpath('channel/link');
+            $this->website = $w[0];
+        }
+    }
+
+    public function notRegistered()
+    {
+
+        $cn = 0;
+
+        $resultFlux = $this->db->query("select count(url) as cn from flux where url = '" . $this->getUrl() . "'");
+        while ($rows = $resultFlux->fetch_array()) {
+            $cn = $rows['cn'];
+        }
+
+        if ($cn > 0) {
+            return false;
+        } else {
+            return true;
+        }
+
     }
 
     public function rename()
@@ -42,10 +73,9 @@ class Flux
         return "200";
     }
 
-    // @todo
-    public function add()
+    public function markAllRead()
     {
-        $q = "UPDATE flux set name = '" . $this->db->real_escape_string($this->getName()) . "', url = '" . $this->db->real_escape_string($this->getUrl()) . "', lastupdate = " . time() . " where id = " . $this->getId();
+        $q = "UPDATE items set unread = 0 where feed = " . $this->getId();
 
         $this->logger->info($q);
 
@@ -62,14 +92,41 @@ class Flux
         return "200";
     }
 
-    // @todo
-    public function remove()
+    public function add($sp)
     {
-        $q = "UPDATE flux set name = '" . $this->db->real_escape_string($this->getName()) . "', url = '" . $this->db->real_escape_string($this->getUrl()) . "', lastupdate = " . time() . " where id = " . $this->getId();
+        $sp->set_feed_url($this->url);
+        $success = $sp->init();
+        $sp->handle_content_type();
+
+        $link = $sp->get_link();
+        $title = $sp->get_title();
+        $desc = $sp->get_description();
+
+        $q = "INSERT INTO flux(name, description, website, url,lastUpdate,folder,isverbose) 
+                VALUES ('" . $title . "', '" . $d . "', '" . $link . "', '" . $this->getUrl() . "', 0," . $this->getFolder() . ", 1)";
 
         $this->logger->info($q);
 
         $return = $this->db->query($q);
+
+        if ($this->db->errno) {
+            $this->logger->info("\t\tFailure: \t$this->db->error\n");
+            $this->logger->error($q);
+
+            return "\t\tFailure: \t$this->db->error\n";
+
+        }
+
+        return "200";
+    }
+
+    public function remove()
+    {
+        $q = "DELETE FROM flux where id = " . $this->getId();
+
+        $this->logger->info($q);
+
+        $this->db->query($q);
 
         if ($this->db->errno) {
             $this->logger->info("\t\tFailure: \t$this->db->error\n");
@@ -111,7 +168,9 @@ class Flux
     public function getId()
     {
         return $this->id;
-    }/**
+    }
+
+    /**
      * @param mixed $id
      */
     public function setId($id)
@@ -246,8 +305,6 @@ class Flux
     {
         $this->lastSyncInError = $lastSyncInError;
     }
-
-
 
 
 }

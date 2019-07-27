@@ -22,8 +22,7 @@
                 <form action="/settings/feed/add" method="POST">
                     <section class="addBloc">
                         <h3>{{ trans.ADD_FEED }}</h3>
-                        <p>{{ trans.FEED_RSS_LINK }} : <input type="text" name="newUrl"
-                                                              placeholder="http://monflux.com/rss"/>&nbsp;
+                        <p>{{ trans.FEED_RSS_LINK }} : <input type="text" name="newUrl" placeholder="http://monflux.com/rss"/>&nbsp;
                             <select name="newUrlCategory">
                                 {% for folder in folders %}
                                     <option {% if folder.id == 1 %}selected="selected"{% endif %}
@@ -38,8 +37,8 @@
 
                 <section class="addBloc">
                     <h3>{{ trans.ADD_FOLDER }}</h3>
-                    <form method="POST" action="settings/folder/add">
-                        {{ trans.NEW_FOLDER }} <input type="text" name="newFolder">
+                    <form method="POST" action="/settings/category/add">
+                        {{ trans.NEW_FOLDER }} <input type="text" name="categoryName">
                         <button>{{ trans.ADD }}</button>
                     </form>
                 </section>
@@ -69,8 +68,7 @@
                                 {% for feed in folder.feeds %}
                                     <li class="feedListItem{% if feed.LastSyncInError == 1 %} errorSync{% endif %}">
                             <span class="feedTitle js-feedTitle" {% if feed.LastSyncInError == 1 %} title="{{ trans.SYNCHRONISATION_ERROR }}" {% endif %}>
-                                    <a{% if folder.LastSyncInError == 1 %} class="inError"{% endif %} href="settings/feed/{$value2->getId();}"
-                                                                                                      data-feed-id="{{ feed.id }}">{{ feed.name }}</a>
+                                    <a{% if folder.LastSyncInError == 1 %} class="inError"{% endif %} href="/settings/feed/{{ feed.id }}" data-feed-id="{{ feed.id }}">{{ feed.name }}</a>
                                 <a href="{{ feed.url }}" class="underlink">{{ feed.url }}</a>
                                     </span>
                                         <div class="feedAction">
@@ -87,7 +85,7 @@
                                             <button class="feedRename"
                                                     onclick="renameFeed(this,{{ feed.id }})">{{ trans.RENAME }}</button>
                                             <button class="feedDelete"
-                                                    onclick="if(confirm('{{ trans.CONFIRM_DELETE_FEED }}\n\n'+getFeedName({{ feed.id }}))){window.location='settings/feed/remove/{{ feed.id }}';}">{{ trans.DELETE }}</button>
+                                                    onclick="if(confirm('{{ trans.CONFIRM_DELETE_FEED }}\n\n'+getFeedName({{ feed.id }}))){window.location='/settings/feed/remove/{{ feed.id }}';}">{{ trans.DELETE }}</button>
                                         </div>
                                     </li>
                                 {% endfor %}
@@ -110,11 +108,10 @@
         {% if section == 'preferences' %}
             <section class="preferenceBloc">
                 <h2>{{ trans.PREFERENCES }} :</h2>
-                <form method="POST" action="settings/configuration/update">
+                <form method="POST" action="/settings/configuration/update">
                     <section>
                         <h3>{{ trans.GENERALITY }}</h3>
-                        <p><label for="root">{{ trans.PROJECT_ROOT }} :</label> <input type="text" id="root" name="root"
-                                                                                       value="{{ config.root }}">
+                        <p><label for="root">{{ trans.PROJECT_ROOT }} :</label> <input type="text" id="root" name="root" value="{{ config.root }}">
                         </p>
                         <h4>{{ trans.LET_SLASH_AT_END }}</h4>
                         <p>{{ trans.INSTALL_LANGUAGE }} :
@@ -143,7 +140,6 @@
                             </select></p>
                     </section>
 
-
                     <section>
                         <h3>{{ trans.USER }}</h3>
                         <p><label for="login">{{ trans.LOGIN }} :</label> <input type="text" id="login" name="login"
@@ -169,11 +165,8 @@
                                    value="0"
                                    id="otpEnabledNo" name="otpEnabled"/><label for="otpEnabledNo">{{ trans.NO }}</label>
                             <p>{{ trans.OTP_SETTINGS_DESC }}myUser->getOtpKey(.</p>
-                            <p><label for="otpSecret">{{ trans.OTP_SECRET }} :</label> <input type="text" id="otpSecret"
-                                                                                              name="otpSecret"
-                                                                                              autocomplete="off"
-                                                                                              placeholder="{{ trans.OTP_DISABLED_EMPTY }}"
-                                                                                              value="{$myUser->getOtpSecret()}">
+                            <p><label for="otpSecret">{{ trans.OTP_SECRET }} :</label>
+                                <input type="text" id="otpSecret" name="otpSecret" autocomplete="off" placeholder="{{ trans.OTP_DISABLED_EMPTY }}" value="{{  user.OtpSecret }}">
                                 <i class="icon-random-otp" data-otp-generate="#otpSecret" data-otp-qrcode="#qrCodeOtp"
                                    title="Random OTP secret"></i>
                             </p>
@@ -182,11 +175,11 @@
 
                     <section>
                         <h3>{{ trans.SYNCHRONISATION }}</h3>
-                        <p><input type="radio" {% if synchronisationType == "auto" %} checked="checked" {% endif %}
+                        <p><input type="radio" {% if config.synchronisationType == "auto" %} checked="checked" {% endif %}
                                   value="auto" id="synchronisationTypeComplete" name="synchronisationType"> <label
                                     for="synchronisationTypeComplete"><strong>
                                     {{ trans.AUTOMATIC_FULL }} :</strong></label> {{ trans.AUTOMATIC_FULL_DESC }}</p>
-                        <p><input type="radio" {% if synchronisationType == 'graduate' %} checked="checked" {% endif %}
+                        <p><input type="radio" {% if config.synchronisationType == 'graduate' %} checked="checked" {% endif %}
                                   value="graduate" id="synchronisationTypeGraduated" name="synchronisationType"> <label
                                     for="synchronisationTypeGraduated"><strong>{{ trans.AUTOMATIC_GRADUATE }}
                                     :</strong></label> {{ trans.AUTOMATIC_GRADUATE_DESC }}</p>
@@ -195,32 +188,7 @@
                         <p><strong>{{ trans.SYNCHRONISATION_CODE }} :</strong>
                             {{ config.synchronisationCode }}
                         </p>
-                        <p><strong>{{ trans.SYNCHRONISATION_OPTION }}</strong>
-                            <fieldset>
-                                <legend>{{ trans.ENABLE_CACHE }}</legend>
-                                <input type="radio" {% if config.synchronisationEnableCache %} checked="checked" {% endif %}
-                                       value="1" id="synchronisationEnableCacheYes"
-                                       name="synchronisationEnableCache"/><label
-                                        for="synchronisationEnableCacheYes">{{ trans.YES }}</label>
-                                <input type="radio" {% if config.synchronisationEnableCache == false %} checked="checked" {% endif %}
-                                       value="0" id="synchronisationEnableCacheNo"
-                                       name="synchronisationEnableCache"/><label
-                                        for="synchronisationEnableCacheNo">{{ trans.NO }}</label>
-                        <p>{{ trans.ENABLE_CACHE_DESC }}</p>
-                        </fieldset>
-                        <fieldset>
-                            <legend>{{ trans.FORCE_INTEGRATION }}</legend>
-                            <input type="radio" {% if synchronisationForceFeed is defined %} checked="checked" {% endif %}
-                                   value="1"
-                                   id="synchronisationForceFeedYes" name="synchronisationForceFeed"/><label
-                                    for="synchronisationForceFeedYes">{{ trans.YES }}</label>
-                            <input type="radio" {% if synchronisationForceFeed is not defined %} checked="checked" {% endif %}
-                                   value="0"
-                                   id="synchronisationForceFeedNo" name="synchronisationForceFeed"/><label
-                                    for="synchronisationForceFeedNo">{{ trans.NO }}</label>
-                            <p>{{ trans.FORCE_INTEGRATION_DESC }}</p>
-                        </fieldset>
-                        </p>
+
                     </section>
 
                     <section>
@@ -233,39 +201,35 @@
                         </fieldset>
                         <fieldset>
                             <legend>{{ trans.SORT_BY_RECENT_EVENT_HOME }}</legend>
-                            <input type="radio" {% if articleDisplayHomeSort %} checked="checked" {% endif %} value="1"
+                            <input type="radio" {% if config.articleDisplayHomeSort %} checked="checked" {% endif %} value="1"
                                    id="articleDisplayHomeSortYes" name="articleDisplayHomeSort"/><label
                                     for="articleDisplayHomeSortYes">{{ trans.YES }}</label>
-                            <input type="radio" {% if not articleDisplayHomeSort %} checked=" checked" {% endif %}
+                            <input type="radio" {% if not config.articleDisplayHomeSort %} checked=" checked" {% endif %}
                                    value="0" id="articleDisplayHomeSortNo" name="articleDisplayHomeSort"/><label
                                     for="articleDisplayHomeSortNo">{{ trans.NO }}</label>
                         </fieldset>
                         <fieldset>
                             <legend>{{ trans.SORT_BY_RECENT_EVENT_FOLDER }}</legend>
-                            <input type="radio" {% if articleDisplayFolderSort %} checked="checked" {% endif %}
+                            <input type="radio" {% if config.articleDisplayFolderSort %} checked="checked" {% endif %}
                                    value="1"
                                    id="articleDisplayFolderSortYes" name="articleDisplayFolderSort"/><label
                                     for="articleDisplayFolderSortYes">{{ trans.YES }}</label>
-                            <input type="radio" {% if not articleDisplayFolderSort %} checked=" checked" {% endif %}
+                            <input type="radio" {% if not config.articleDisplayFolderSort %} checked=" checked" {% endif %}
                                    value="0"
                                    id="articleDisplayFolderSorttNo" name="articleDisplayFolderSort"/><label
                                     for="articleDisplayFolderSortNo">{{ trans.NO }}</label>
                         </fieldset>
                         <fieldset>
                             <legend>{{ trans.SHOW_EVENT_CONTENT }}</legend>
-                            <input type="radio" {% if articleDisplayMode=='title' %} checked="checked" {% endif %}
+                            <input type="radio" {% if config.articleDisplayMode=='title' %} checked="checked" {% endif %}
                                    value="title" id="articleDisplayModeTitle" name="articleDisplayMode"/><label
                                     for="articleDisplayModeTitle">{{ trans.TITLE }}</label>
-                            <input type="radio" {% if articleDisplayMode=='summary' %} checked="checked" {% endif %}
+                            <input type="radio" {% if config.articleDisplayMode=='summary' %} checked="checked" {% endif %}
                                    value="summary" id="articleDisplayModeSummary" name="articleDisplayMode"/><label
                                     for="articleDisplayModeSummary">{{ trans.SUMMARY }}</label>
-                            <input type="radio" {% if articleDisplayMode=='content' %} checked="checked" {% endif %}
+                            <input type="radio" {% if config.articleDisplayMode=='content' %} checked="checked" {% endif %}
                                    value="content" id="articleDisplayModeContent" name="articleDisplayMode"/><label
                                     for="articleDisplayModeContent">{{ trans.CONTENT }}</label>
-                        </fieldset>
-                        <fieldset>
-                            <legend>{{ trans.KEEP_LAST_X_EVENTS_FEED }}</legend>
-                            <h4>{{ trans.KEEP_LAST_X_EVENTS_FEED_DESC }}</h4>
                         </fieldset>
 
                     </section>

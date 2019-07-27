@@ -31,6 +31,71 @@ class Category
 
     }
 
+    public function exist()
+    {
+
+        $cn = 0;
+
+        $resultFlux = $this->db->query("select count(name) as cn from categories where id = " . $this->getId());
+        while ($rows = $resultFlux->fetch_array()) {
+            $cn = $rows['cn'];
+        }
+
+        if ($this->db->errno) {
+            $this->logger->info("\t\tFailure: \t$this->db->error\n");
+            $this->logger->error($q);
+
+            return "\t\tFailure: \t$this->db->error\n";
+
+        }
+
+        if ($cn > 0) {
+            return true;
+        } else {
+            return false;
+        }
+
+    }
+
+    public function add()
+    {
+
+        $q = "INSERT INTO categories(name, parent, isopen) VALUES ('" . $this->getName() . "', -1,1)";
+
+        $this->logger->info($q);
+
+        $this->db->query($q);
+
+        if ($this->db->errno) {
+            $this->logger->info("\t\tFailure: \t$this->db->error\n");
+            $this->logger->error($q);
+
+            return "\t\tFailure: \t$this->db->error\n";
+
+        }
+
+        return "200";
+    }
+
+    public function rename()
+    {
+        $q = "UPDATE categories set name = '" . $this->db->real_escape_string($this->getName()) . "' where id = " . $this->getId();
+
+        $this->logger->info($q);
+
+        $this->db->query($q);
+
+        if ($this->db->errno) {
+            $this->logger->info("\t\tFailure: \t$this->db->error\n");
+            $this->logger->error($q);
+
+            return "\t\tFailure: \t$this->db->error\n";
+
+        }
+
+        return "200";
+    }
+
     public function getCategoryById()
     {
         $categories = array();
@@ -60,7 +125,7 @@ class Category
                 $unreadEventsByFolder = $rowsUnreadByFolder['unread'];
             }
 
-            $resultsFeedsByFolder = $this->db->query('SELECT fe.id as feed_id, fe.name as feed_name, fe.description as feed_description, fe.website as feed_website, fe.url as feed_url, fe.lastupdate as feed_lastupdate, fe.lastSyncInError as feed_lastSyncInError 
+            $resultsFeedsByFolder = $this->db->query('SELECT fe.id as feed_id, fe.name as feed_name, fe.description as feed_description, fe.website as feed_website, fe.url as feed_url, fe.lastupdate as feed_lastupdate, fe.folder as feed_folder,fe.lastSyncInError as feed_lastSyncInError 
             FROM categories f 
                 inner join flux fe on fe.folder = f.id 
             where f.id = ' . $rows['id'] . " order by fe.name");
@@ -84,6 +149,7 @@ class Category
                     'website' => $rowsFeedsByFolder['feed_website'],
                     'url' => $rowsFeedsByFolder['feed_url'],
                     'lastupdate' => $rowsFeedsByFolder['feed_lastupdate'],
+                    'folder' => $rowsFeedsByFolder['feed_folder'],
                     'lastSyncInError' => $rowsFeedsByFolder['feed_lastSyncInError'],
                     'unread' => $unreadEventsByFeed
                 );
