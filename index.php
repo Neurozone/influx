@@ -33,8 +33,74 @@ session_start();
 if (file_exists('conf/config.php')) {
     require_once('conf/config.php');
 
+    $db = new mysqli(MYSQL_HOST, MYSQL_LOGIN, MYSQL_MDP, MYSQL_BDD);
+    $db->set_charset('utf8mb4');
+    $db->query('SET NAMES utf8mb4');
+
+    spl_autoload_register(function ($className) {
+        include_once $_SERVER['DOCUMENT_ROOT'] . '/classes/' . $className . '.php';
+    });
+
+    $conf = new Configuration($db);
+    $config = $conf->getAll();
+
+    $fluxObject = new Flux($db, $logger);
+    $itemsObject = new Items($db, $logger);
+    $userObject = new User($db,$logger);
+    $categoryObject = new Category($db,$logger);
+    $opmlObject = new Opml($db,$logger);
+
+    $synchronisationCode = $config['synchronisationCode'];
+
+    mb_internal_encoding('UTF-8'); // UTF8 pour fonctions mb_*
+    $start = microtime(true);
+
+
+    $paginationScale = $config['paginationScale'];
+    if (empty($paginationScale)) {
+
+        $paginationScale = 5;
+    }
+
+    $scroll = false;
+    $unreadEventsForFolder = 0;
+    $hightlighted = 0;
+
+
+    $results = $db->query('SELECT COUNT(i.guid),f.folder FROM items i INNER JOIN flux f ON i.feed = f.id WHERE i.unread =1 GROUP BY f.folder');
+    while ($item = $results->fetch_array()) {
+        $events[$item[1]] = intval($item[0]);
+    }
+
+    $allEvents = $events;
+
+    $results = $db->query("SELECT f.name AS name, f.id AS id, f.url AS url, c.id AS folder 
+FROM flux f 
+    INNER JOIN categories c ON f.folder = c.id 
+ORDER BY f.name");
+
+    if ($results != false) {
+        while ($item = $results->fetch_array()) {
+            $name = $item['name'];
+            $feedsIdMap[$item['id']]['name'] = $name;
+
+
+            $feedsFolderMap[$item['folder']][$item['id']]['id'] = $item['id'];
+            $feedsFolderMap[$item['folder']][$item['id']]['name'] = $name;
+            $feedsFolderMap[$item['folder']][$item['id']]['url'] = $item['url'];
+
+        }
+    }
+    $feeds['folderMap'] = $feedsFolderMap;
+    $feeds['idMap'] = $feedsIdMap;
+
+    $allFeeds = $feeds;
+    $allFeedsPerFolder = $allFeeds['folderMap'];
+
+    $page = 1;
+
 } else {
-    if (!isset($_SESSION['install']) or $_SESSION['install'] == false) {
+    if (!isset($_SESSION['install'])){
         $_SESSION['install'] = true;
         header('location: /install');
         exit();
@@ -66,9 +132,7 @@ date_default_timezone_set($timezone_default);
 // Database
 /* ---------------------------------------------------------------- */
 
-$db = new mysqli(MYSQL_HOST, MYSQL_LOGIN, MYSQL_MDP, MYSQL_BDD);
-$db->set_charset('utf8mb4');
-$db->query('SET NAMES utf8mb4');
+
 
 
 
@@ -97,18 +161,7 @@ if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
 }
 */
 
-spl_autoload_register(function ($className) {
-    include_once $_SERVER['DOCUMENT_ROOT'] . '/classes/' . $className . '.php';
-});
 
-$conf = new Configuration($db);
-$config = $conf->getAll();
-
-$fluxObject = new Flux($db, $logger);
-$itemsObject = new Items($db, $logger);
-$userObject = new User($db,$logger);
-$categoryObject = new Category($db,$logger);
-$opmlObject = new Opml($db,$logger);
 
 /* ---------------------------------------------------------------- */
 // i18n
@@ -116,13 +169,19 @@ $opmlObject = new Opml($db,$logger);
 
 $language = new Language();
 
-if ($language->getLanguage() == $config['language'] && is_file('locales/' . $config['language'] . '.json')) {
-    $_SESSION['language'] = $language->getLanguage();
-    $l_trans = json_decode(file_get_contents('templates/influx/locales/' . $config['language'] . '.json'), true);
-} elseif ($language->getLanguage() != $config['language'] && is_file('locales/' . $config['language'] . '.json')) {
-    $_SESSION['language'] = $language->getLanguage();
-    $l_trans = json_decode(file_get_contents('templates/influx/locales/' . $config['language'] . '.json'), true);
-} elseif (!is_file('locales/' . $config['language'] . '.json')) {
+if(isset($config['language'])) {
+    if ($language->getLanguage() == $config['language'] && is_file('locales/' . $config['language'] . '.json')) {
+        $_SESSION['language'] = $language->getLanguage();
+        $l_trans = json_decode(file_get_contents('templates/influx/locales/' . $config['language'] . '.json'), true);
+    } elseif ($language->getLanguage() != $config['language'] && is_file('locales/' . $config['language'] . '.json')) {
+        $_SESSION['language'] = $language->getLanguage();
+        $l_trans = json_decode(file_get_contents('templates/influx/locales/' . $config['language'] . '.json'), true);
+    } elseif (!is_file('locales/' . $config['language'] . '.json')) {
+        $_SESSION['language'] = 'en';
+        $l_trans = json_decode(file_get_contents('templates/influx/locales/' . $_SESSION['language'] . '.json'), true);
+    }
+}
+else{
     $_SESSION['language'] = 'en';
     $l_trans = json_decode(file_get_contents('templates/influx/locales/' . $_SESSION['language'] . '.json'), true);
 }
@@ -141,62 +200,15 @@ if (dirname($_SERVER['SCRIPT_NAME']) != '/') {
 }
 
 
-mb_internal_encoding('UTF-8'); // UTF8 pour fonctions mb_*
-$start = microtime(true);
 
-$pagesArray = array();
 
-$wrongLogin = !empty($wrongLogin);
-$filter = array('unread' => 1);
 
-$paginationScale = $config['paginationScale'];
-if (empty($paginationScale)) {
-
-    $paginationScale = 5;
-}
-
-$scroll = false;
-$unreadEventsForFolder = 0;
-$hightlighted = 0;
-
-$synchronisationCode = $config['synchronisationCode'];
 
 /* ---------------------------------------------------------------- */
 // Get all unread event
 /* ---------------------------------------------------------------- */
 
 
-$results = $db->query('SELECT COUNT(i.guid),f.folder FROM items i INNER JOIN flux f ON i.feed = f.id WHERE i.unread =1 GROUP BY f.folder');
-while ($item = $results->fetch_array()) {
-    $events[$item[1]] = intval($item[0]);
-}
-
-$allEvents = $events;
-
-$results = $db->query("SELECT f.name AS name, f.id AS id, f.url AS url, c.id AS folder 
-FROM flux f 
-    INNER JOIN categories c ON f.folder = c.id 
-ORDER BY f.name");
-
-if ($results != false) {
-    while ($item = $results->fetch_array()) {
-        $name = $item['name'];
-        $feedsIdMap[$item['id']]['name'] = $name;
-
-
-        $feedsFolderMap[$item['folder']][$item['id']]['id'] = $item['id'];
-        $feedsFolderMap[$item['folder']][$item['id']]['name'] = $name;
-        $feedsFolderMap[$item['folder']][$item['id']]['url'] = $item['url'];
-
-    }
-}
-$feeds['folderMap'] = $feedsFolderMap;
-$feeds['idMap'] = $feedsIdMap;
-
-$allFeeds = $feeds;
-$allFeedsPerFolder = $allFeeds['folderMap'];
-
-$page = 1;
 
 /* ---------------------------------------------------------------- */
 // Route: Before for logging
@@ -207,9 +219,11 @@ $router->before('GET|POST|PUT|DELETE|PATCH|OPTIONS', '*', function () use ($logg
     $logger->info(getClientIP());
     $logger->info("before");
 
-    if (!isset($_SESSION['user'])) {
+    if (!isset($_SESSION['user']) && (!isset($_SESSION['install']))) {
         header('location: /login');
     }
+
+
 });
 
 /* ---------------------------------------------------------------- */
@@ -1060,7 +1074,8 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
                 'currentTheme' => $config['theme'],
                 'folders' => $categoryObject->getFeedsByCategories(),
                 'feeds' => $feeds,
-                'config' => $config
+                'config' => $config,
+                'user' => $_SESSION['user']
             ]
         );
 
@@ -1271,6 +1286,111 @@ $router->get('/feed/{id}', function ($id) use (
 
         ]
     );
+
+});
+
+/* ---------------------------------------------------------------- */
+// Route: /install
+/* ---------------------------------------------------------------- */
+
+$router->mount('/install', function () use ($router, $trans,$twig, $cookiedir, $logger) {
+
+    /* ---------------------------------------------------------------- */
+    // Route: /install (GET)
+    /* ---------------------------------------------------------------- */
+
+    $router->get('/', function () use ($twig, $cookiedir,$trans) {
+
+        $_SESSION['install'] = true;
+
+        $filelist = glob("locales/*.json");
+
+        foreach ($filelist as $file) {
+            $locale = explode(".", basename($file));
+            $list_lang[] = $locale[0];
+        }
+
+        $templateslist = glob("templates/*");
+        foreach ($templateslist as $tpl) {
+            $tpl_array = explode(".", basename($tpl));
+            $list_templates[] = $tpl_array[0];
+        }
+
+        echo $twig->render('install.twig',
+            [
+                'list_lang' => $list_lang,
+                'list_templates' => $list_templates,
+                'trans' => $trans
+            ]);
+
+    });
+
+    /* ---------------------------------------------------------------- */
+    // Route: /install (POST
+    /* ---------------------------------------------------------------- */
+
+    $router->post('/', function () use ($twig, $cookiedir) {
+
+        $install = new Install();
+        /* Prend le choix de langue de l'utilisateur, soit :
+         * - lorsqu'il vient de changer la langue du sélecteur ($lang)
+         * - lorsqu'il vient de lancer l'installeur ($install_changeLngLeed)
+         */
+        $lang = '';
+        if (isset($_GET['lang'])) $lang = $_GET['lang'];
+        elseif (isset($_POST['install_changeLngLeed'])) $lang = $_POST['install_changeLngLeed'];
+        $installDirectory = dirname(__FILE__) . '/install';
+// N'affiche que les langues du navigateur
+// @TODO: il faut afficher toutes les langues disponibles
+//        avec le choix par défaut de la langue préférée
+        $languageList = Functions::getBrowserLanguages();
+        if (!empty($lang)) {
+            // L'utilisateur a choisi une langue, qu'on incorpore dans la liste
+            array_unshift($languageList, $lang);
+            $liste = array_unique($languageList);
+        }
+        unset($i18n); //@TODO: gérer un singleton et le choix de langue / liste de langue
+        $currentLanguage = i18n_init($languageList, $installDirectory);
+        $languageList = array_unique($i18n->languages);
+        if (file_exists('constant.php')) {
+            die(_t('ALREADY_INSTALLED'));
+        }
+        define('DEFAULT_TEMPLATE', 'influx');
+        $templates = scandir('templates');
+        if (!in_array(DEFAULT_TEMPLATE, $templates)) die('Missing default template : ' . DEFAULT_TEMPLATE);
+        $templates = array_diff($templates, array(DEFAULT_TEMPLATE, '.', '..')); // Répertoires non voulus sous Linux
+        sort($templates);
+        $templates = array_merge(array(DEFAULT_TEMPLATE), $templates); // le thème par défaut en premier
+// Cookie de la session
+        $cookiedir = '';
+        if (dirname($_SERVER['SCRIPT_NAME']) != '/') $cookiedir = dirname($_SERVER["SCRIPT_NAME"]) . '/';
+        session_set_cookie_params(0, $cookiedir);
+        session_start();
+// Protection des variables
+        $_ = array_merge($_GET, $_POST);
+        $installActionName = 'installButton';
+        $install->launch($_, $installActionName);
+
+        $constant = "<?php
+//Host de Mysql, le plus souvent localhost ou 127.0.0.1
+define('MYSQL_HOST','{$this->options['db']['mysqlHost']}');
+//Identifiant MySQL
+define('MYSQL_LOGIN','{$this->options['db']['mysqlLogin']}');
+//mot de passe MySQL
+define('MYSQL_MDP','{$this->options['db']['mysqlMdp']}');
+//Nom de la base MySQL ou se trouvera leed
+define('MYSQL_BDD','{$this->options['db']['mysqlBase']}');
+//Prefix des noms des tables leed pour les bases de données uniques
+define('MYSQL_PREFIX','{$this->options['db']['mysqlPrefix']}');
+?>";
+
+        file_put_contents(self::CONSTANT_FILE, $constant);
+        if (!is_readable(self::CONSTANT_FILE))
+            die('"' . self::CONSTANT_FILE . '" not found!');
+
+        header('location: /login');
+
+    });
 
 });
 
