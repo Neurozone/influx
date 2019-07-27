@@ -11,7 +11,13 @@ use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
-
+use Influx\Flux;
+use Influx\Items;
+use Influx\User;
+use Influx\Category;
+use Influx\Opml;
+use Influx\Configuration;
+use Influx\Statistics;
 
 
 $stream = new StreamHandler(__DIR__ . '/logs/influx.log', Logger::DEBUG);
@@ -33,13 +39,13 @@ session_start();
 if (file_exists('conf/config.php')) {
     require_once('conf/config.php');
 
+    /* ---------------------------------------------------------------- */
+    // Database
+    /* ---------------------------------------------------------------- */
+
     $db = new mysqli(MYSQL_HOST, MYSQL_LOGIN, MYSQL_MDP, MYSQL_BDD);
     $db->set_charset('utf8mb4');
     $db->query('SET NAMES utf8mb4');
-
-    spl_autoload_register(function ($className) {
-        include_once $_SERVER['DOCUMENT_ROOT'] . '/classes/' . $className . '.php';
-    });
 
     $conf = new Configuration($db);
     $config = $conf->getAll();
@@ -55,6 +61,12 @@ if (file_exists('conf/config.php')) {
     mb_internal_encoding('UTF-8'); // UTF8 pour fonctions mb_*
     $start = microtime(true);
 
+    /* ---------------------------------------------------------------- */
+    // Timezone
+    /* ---------------------------------------------------------------- */
+
+    $timezone_default = 'Europe/Paris';
+    date_default_timezone_set($timezone_default);
 
     $paginationScale = $config['paginationScale'];
     if (empty($paginationScale)) {
@@ -66,7 +78,9 @@ if (file_exists('conf/config.php')) {
     $unreadEventsForFolder = 0;
     $hightlighted = 0;
 
+    $page = 1;
 
+    /*
     $results = $db->query('SELECT COUNT(i.guid),f.folder FROM items i INNER JOIN flux f ON i.feed = f.id WHERE i.unread =1 GROUP BY f.folder');
     while ($item = $results->fetch_array()) {
         $events[$item[1]] = intval($item[0]);
@@ -96,8 +110,9 @@ ORDER BY f.name");
 
     $allFeeds = $feeds;
     $allFeedsPerFolder = $allFeeds['folderMap'];
+    */
 
-    $page = 1;
+
 
 } else {
     if (!isset($_SESSION['install'])){
@@ -122,46 +137,18 @@ function getClientIP()
 }
 
 /* ---------------------------------------------------------------- */
-// Timezone
-/* ---------------------------------------------------------------- */
-
-$timezone_default = 'Europe/Paris';
-date_default_timezone_set($timezone_default);
-
-/* ---------------------------------------------------------------- */
-// Database
-/* ---------------------------------------------------------------- */
-
-
-
-
-
-/*
-$query_configuration = 'select * from configuration';
-$result_configuration = $db->query($query_configuration);
-
-while ($row = $result_configuration->fetch_array()) {
-    $config[$row['name']] = $row['value'];
-}
-*/
-
-/* ---------------------------------------------------------------- */
 // Reverse proxy
 /* ---------------------------------------------------------------- */
 
 // @todo
 
-
 // Use X-Forwarded-For HTTP Header to Get Visitor's Real IP Address
-/*
+
 if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
     $http_x_headers = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
 
     $_SERVER['REMOTE_ADDR'] = $http_x_headers[0];
 }
-*/
-
-
 
 /* ---------------------------------------------------------------- */
 // i18n
@@ -189,26 +176,13 @@ else{
 $trans = $l_trans;
 
 /* ---------------------------------------------------------------- */
-//
+// Cookie
 /* ---------------------------------------------------------------- */
-
-
 
 $cookiedir = '';
 if (dirname($_SERVER['SCRIPT_NAME']) != '/') {
     $cookiedir = dirname($_SERVER["SCRIPT_NAME"]) . '/';
 }
-
-
-
-
-
-
-/* ---------------------------------------------------------------- */
-// Get all unread event
-/* ---------------------------------------------------------------- */
-
-
 
 /* ---------------------------------------------------------------- */
 // Route: Before for logging
@@ -223,17 +197,15 @@ $router->before('GET|POST|PUT|DELETE|PATCH|OPTIONS', '*', function () use ($logg
         header('location: /login');
     }
 
-
 });
 
 /* ---------------------------------------------------------------- */
-// Route: /
+// Route: / (GET)
 /* ---------------------------------------------------------------- */
 $router->get('/', function () use (
-    $twig, $logger,
+    $twig,
+    $logger,
     $scroll,
-    $allEvents,
-    $allFeedsPerFolder,
     $config,
     $db,
     $trans,
@@ -254,8 +226,8 @@ $router->get('/', function () use (
     echo $twig->render('index.twig',
         [
             'action' => $action,
-            'allEvents' => $allEvents,
-            'allFeedsPerFolder' => $allFeedsPerFolder,
+            //'allEvents' => $allEvents,
+            //'allFeedsPerFolder' => $allFeedsPerFolder,
             'config' => $config,
             'events' => $itemsObject->loadAllUnreadItem($offset, $row_count),
             //'folders' => $folders,
@@ -303,19 +275,17 @@ $router->post('/login', function () use ($db, $config, $logger) {
         }
     }
 
-
-    if ($user == false) {
+    if (!isset($_SESSION['user'])) {
         $logger->info("wrong login for '" . $_POST['login'] . "'");
         header('location: /login');
     } else {
-        $_SESSION['currentUser'] = $user;
+        $_SESSION['user'] = $user;
         if (isset($_POST['rememberMe'])) {
             setcookie('InfluxChocolateCookie', sha1($_POST['password'] . $_POST['login']), time() + 31536000);
         }
         header('location: /');
     }
     exit();
-
 
 });
 
@@ -391,7 +361,7 @@ $router->post('/password/recover', function () use ($db, $config, $logger) {
 });
 
 /* ---------------------------------------------------------------- */
-// Route: /logout
+// Route: /logout (GET)
 /* ---------------------------------------------------------------- */
 
 $router->get('/logout', function () {
@@ -407,7 +377,7 @@ $router->get('/logout', function () {
 // @TODO: à mettre en place
 
 /* ---------------------------------------------------------------- */
-// Route: /update
+// Route: /update (GET)
 /* ---------------------------------------------------------------- */
 
 $router->get('/update', function () {
@@ -421,7 +391,7 @@ $router->get('/update', function () {
 });
 
 /* ---------------------------------------------------------------- */
-// Route: /favorites
+// Route: /favorites (GET)
 /* ---------------------------------------------------------------- */
 
 $router->get('/favorites', function () use (
@@ -431,17 +401,13 @@ $router->get('/favorites', function () use (
     $unreadEventsForFolder,
     //$target,
     //$folders,
-    $allEvents,
+    //$allEvents,
     //$unread,
-    $allFeedsPerFolder,
+    //$allFeedsPerFolder,
     $config,
     $db,
     $categoryObject
 ) {
-
-    if (!$_SESSION['user']) {
-        header('location: /login');
-    }
 
     $resultsNbFavorites = $db->query('SELECT count(*) as nb_items from items where favorite = 1');
     $numberOfItem = 0;
@@ -481,8 +447,8 @@ $router->get('/favorites', function () use (
     echo $twig->render('index.twig',
         [
             //'action' => $action,
-            'allEvents' => $allEvents,
-            'allFeedsPerFolder' => $allFeedsPerFolder,
+            //'allEvents' => $allEvents,
+            //'allFeedsPerFolder' => $allFeedsPerFolder,
             //'articlePerPages' => $articlePerPages,
             //'eventManager' => $eventManager,
             'events' => $events,
@@ -504,7 +470,7 @@ $router->get('/favorites', function () use (
 });
 
 /* ---------------------------------------------------------------- */
-// Route: /article
+// Route: /article (GET)
 /* ---------------------------------------------------------------- */
 
 // @todo
@@ -512,7 +478,7 @@ $router->get('/favorites', function () use (
 $router->mount('/article', function () use ($router, $twig, $db, $logger, $trans, $config) {
 
     /* ---------------------------------------------------------------- */
-    // Route: /article
+    // Route: /article (GET)
     /* ---------------------------------------------------------------- */
 
     $router->get('/', function () use ($twig, $db, $logger, $trans, $config) {
@@ -522,7 +488,7 @@ $router->mount('/article', function () use ($router, $twig, $db, $logger, $trans
     });
 
     /* ---------------------------------------------------------------- */
-    // Route: /article/favorite
+    // Route: /article/favorite (GET)
     /* ---------------------------------------------------------------- */
 
     $router->get('/favorites', function () use ($twig, $db, $logger, $trans, $config) {
@@ -532,7 +498,7 @@ $router->mount('/article', function () use ($router, $twig, $db, $logger, $trans
     });
 
     /* ---------------------------------------------------------------- */
-    // Route: /article/unread
+    // Route: /article/unread (GET)
     /* ---------------------------------------------------------------- */
 
     $router->get('/unread', function () use ($twig, $db, $logger, $trans, $config) {
@@ -542,7 +508,7 @@ $router->mount('/article', function () use ($router, $twig, $db, $logger, $trans
     });
 
     /* ---------------------------------------------------------------- */
-    // Route: /article/flux/{id}
+    // Route: /article/flux/ (GET)
     /* ---------------------------------------------------------------- */
 
     $router->post('/flux', function () use ($twig, $db, $logger, $config) {
@@ -615,7 +581,7 @@ $router->mount('/article', function () use ($router, $twig, $db, $logger, $trans
     });
 
     /* ---------------------------------------------------------------- */
-    // Route: /article/folder/{id}
+    // Route: /article/folder/{id} (GET)
     /* ---------------------------------------------------------------- */
 
     $router->get('/folder/{id}', function () use ($twig, $db, $logger, $trans, $config) {
@@ -631,7 +597,7 @@ $router->mount('/article', function () use ($router, $twig, $db, $logger, $trans
 });
 
 /* ---------------------------------------------------------------- */
-// Route: /settings
+// Route: /settings (GET)
 /* ---------------------------------------------------------------- */
 
 $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $config, $db, $cookiedir, $categoryObject, $fluxObject,$opmlObject) {
@@ -651,7 +617,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
 
 
     /* ---------------------------------------------------------------- */
-    // Route: /settings/synchronize
+    // Route: /settings/synchronize (GET)
     /* ---------------------------------------------------------------- */
 
     $router->get('/synchronize', function ($option) use ($twig, $trans, $logger, $config, $cookiedir) {
@@ -700,7 +666,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
     });
 
     /* ---------------------------------------------------------------- */
-    // Route: /statistics
+    // Route: /statistics (GET)
     /* ---------------------------------------------------------------- */
 
     $router->get('/statistics', function () use ($twig, $trans, $logger, $config) {
@@ -822,7 +788,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
     });
 
     /* ---------------------------------------------------------------- */
-    // Route: /settings/feed/add
+    // Route: /settings/feed/add (POST)
     /* ---------------------------------------------------------------- */
 
     $router->post('/feed/add', function () use ($twig, $trans, $logger, $config, $fluxObject) {
@@ -848,7 +814,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
     });
 
     /* ---------------------------------------------------------------- */
-    // Route: /settings/feed/remove/{id}
+    // Route: /settings/feed/remove/{id} (GET)
     /* ---------------------------------------------------------------- */
 
     $router->get('/feed/remove/{id}', function ($id) use ($twig, $trans, $logger, $config,$fluxObject) {
@@ -905,7 +871,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
     });
 
     /* ---------------------------------------------------------------- */
-    // Route: /settings/category/remove/{id}
+    // Route: /settings/category/remove/{id} (GET)
     /* ---------------------------------------------------------------- */
 
     $router->get('/category/remove/{id}', function ($id) use ($twig, $db, $logger, $trans, $config) {
@@ -1033,7 +999,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
     });
 
     /* ---------------------------------------------------------------- */
-    // Route: /settings/{option}
+    // Route: /settings/{option} (GET)
     /* ---------------------------------------------------------------- */
 
     $router->get('/{option}', function ($option) use ($twig, $trans, $logger, $config, $cookiedir, $db, $categoryObject) {
@@ -1086,7 +1052,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
 // @todo
 
 /* ---------------------------------------------------------------- */
-// Route: /action/readAll
+// Route: /action/readAll (GET)
 /* ---------------------------------------------------------------- */
 
 
@@ -1102,7 +1068,7 @@ $router->get('/action/readAll/{id}', function ($id) use ($twig, $db,$logger,$tra
 });
 
 /* ---------------------------------------------------------------- */
-// Route: /action/readContent/{id}
+// Route: /action/readContent/{id} (GET)
 /* ---------------------------------------------------------------- */
 
 $router->get('/action/readContent/{id}', function ($id) use ($twig, $db, $logger, $trans, $config) {
@@ -1112,7 +1078,7 @@ $router->get('/action/readContent/{id}', function ($id) use ($twig, $db, $logger
 });
 
 /* ---------------------------------------------------------------- */
-// Route: /action/unreadContent/{id}
+// Route: /action/unreadContent/{id}(GET)
 /* ---------------------------------------------------------------- */
 
 $router->get('/action/unreadContent/{id}', function ($id) use ($twig, $db, $logger, $trans, $config) {
@@ -1124,7 +1090,7 @@ $router->get('/action/unreadContent/{id}', function ($id) use ($twig, $db, $logg
 // @todo
 
 /* ---------------------------------------------------------------- */
-// Route: /search
+// Route: /search (GET)
 /* ---------------------------------------------------------------- */
 
 $router->get('/search', function () use ($twig, $db, $logger, $trans, $config) {
@@ -1147,7 +1113,7 @@ $router->get('/search', function () use ($twig, $db, $logger, $trans, $config) {
 // @todo
 
 /* ---------------------------------------------------------------- */
-// Route: /action/readFolder
+// Route: /action/readFolder (GET)
 /* ---------------------------------------------------------------- */
 /*
 $router->get('/action/{readFolder}', function () use ($twig, $db,$logger,$trans,$config) {
@@ -1170,7 +1136,7 @@ $router->get('/action/{readFolder}', function () use ($twig, $db,$logger,$trans,
 // @todo
 
 /* ---------------------------------------------------------------- */
-// Route: /action/updateConfiguration
+// Route: /action/updateConfiguration (GET)
 /* ---------------------------------------------------------------- */
 
 $router->get('/action/updateConfiguration', function () use ($twig, $db, $logger, $trans, $config) {
@@ -1235,7 +1201,7 @@ $router->mount('/qrcode', function () use ($router, $twig, $db, $logger, $trans,
 
 
 /* ---------------------------------------------------------------- */
-// Route: /feed/{id}
+// Route: /feed/{id} (GET)
 /* ---------------------------------------------------------------- */
 
 $router->get('/feed/{id}', function ($id) use (
@@ -1244,8 +1210,8 @@ $router->get('/feed/{id}', function ($id) use (
     $trans,
     $scroll,
     //$target,
-    $allEvents,
-    $allFeedsPerFolder,
+    //$allEvents,
+    //$allFeedsPerFolder,
     $config,
     $db,
     $itemsObject,
@@ -1269,8 +1235,8 @@ $router->get('/feed/{id}', function ($id) use (
     echo $twig->render('index.twig',
         [
             'action' => 'feed',
-            'allEvents' => $allEvents,
-            'allFeedsPerFolder' => $allFeedsPerFolder,
+            //'allEvents' => $allEvents,
+            //'allFeedsPerFolder' => $allFeedsPerFolder,
             'events' => $itemsObject->loadUnreadItemPerFlux($offset, $row_count),
             'feed' => $flux,
             'folders' => $categoryObject->getFeedsByCategories(),
@@ -1313,20 +1279,20 @@ $router->mount('/install', function () use ($router, $trans,$twig, $cookiedir, $
         $templateslist = glob("templates/*");
         foreach ($templateslist as $tpl) {
             $tpl_array = explode(".", basename($tpl));
-            $list_templates[] = $tpl_array[0];
+            $listTemplates[] = $tpl_array[0];
         }
 
         echo $twig->render('install.twig',
             [
                 'list_lang' => $list_lang,
-                'list_templates' => $list_templates,
+                'list_templates' => $listTemplates,
                 'trans' => $trans
             ]);
 
     });
 
     /* ---------------------------------------------------------------- */
-    // Route: /install (POST
+    // Route: /install (POST)
     /* ---------------------------------------------------------------- */
 
     $router->post('/', function () use ($twig, $cookiedir) {
@@ -1340,9 +1306,9 @@ $router->mount('/install', function () use ($router, $trans,$twig, $cookiedir, $
         if (isset($_GET['lang'])) $lang = $_GET['lang'];
         elseif (isset($_POST['install_changeLngLeed'])) $lang = $_POST['install_changeLngLeed'];
         $installDirectory = dirname(__FILE__) . '/install';
-// N'affiche que les langues du navigateur
-// @TODO: il faut afficher toutes les langues disponibles
-//        avec le choix par défaut de la langue préférée
+        // N'affiche que les langues du navigateur
+        // @TODO: il faut afficher toutes les langues disponibles
+        //        avec le choix par défaut de la langue préférée
         $languageList = Functions::getBrowserLanguages();
         if (!empty($lang)) {
             // L'utilisateur a choisi une langue, qu'on incorpore dans la liste

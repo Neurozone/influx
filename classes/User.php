@@ -1,5 +1,7 @@
 <?php
 
+namespace Influx;
+
 class User
 {
     /*
