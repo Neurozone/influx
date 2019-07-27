@@ -226,11 +226,8 @@ $router->get('/', function () use (
     echo $twig->render('index.twig',
         [
             'action' => $action,
-            //'allEvents' => $allEvents,
-            //'allFeedsPerFolder' => $allFeedsPerFolder,
             'config' => $config,
             'events' => $itemsObject->loadAllUnreadItem($offset, $row_count),
-            //'folders' => $folders,
             'folders' => $categoryObject->getFeedsByCategories(),
             'numberOfItem' => $numberOfItem,
             'page' => $page,
