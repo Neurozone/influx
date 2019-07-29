@@ -15,53 +15,53 @@ keyCode['h'] = 72;
 keyCode['j'] = 74;
 keyCode['space'] = 32;
 
-$(document).ready(function(){
+$(document).ready(function () {
 
     // Page settings
-    if($('.settings').length){
+    if ($('.settings').length) {
 
         // Si nom du bloc en hash dans url
-        var hash=window.location.hash;
-        if(hash.length){
+        var hash = window.location.hash;
+        if (hash.length) {
             toggleBlocks(hash);
         }
 
         // Affichage des differents blocs apres clic sur le menu
-        $('.toggle').click(function(){
+        $('.toggle').click(function () {
                 toggleBlocks($(this).attr("href"));
             }
         );
 
-        $('[data-zone="installation"] form').submit(function(event){
+        $('[data-zone="installation"] form').submit(function (event) {
             var form = $(this);
-            installPlugin(form.find('[name="zip"]').val(),form);
+            installPlugin(form.find('[name="zip"]').val(), form);
             event.preventDefault();
         });
 
-        $('[data-otp-generate]').click(function() {
+        $('[data-otp-generate]').click(function () {
             var otpGeneratorEl = $(this);
             randomOtpSecret($(otpGeneratorEl.data('otp-generate')), $(otpGeneratorEl.data('otp-qrcode')));
         })
 
-    }else{
+    } else {
 
-        targetThisEvent($('article section:first'),true);
+        targetThisEvent($('article section:first'), true);
         addEventsButtonLuNonLus();
 
-        $('[data-mark-all-read]').click(function() {
+        $('[data-mark-all-read]').click(function () {
             markAllAsRead($(this));
         });
 
         // on initialise ajaxready à true au premier chargement de la fonction
         $(window).data('ajaxready', true);
-        $('article').append('<div id="loader">'+'LOADING'+'</div>');
+        $('article').append('<div id="loader">' + 'LOADING' + '</div>');
         $(window).data('page', 1);
         $(window).data('nblus', 0);
 
-        if ($(window).scrollTop()==0) scrollInfini();
+        if ($(window).scrollTop() == 0) scrollInfini();
     }
 
-    $('[data-toggle-group]').click(function(){
+    $('[data-toggle-group]').click(function () {
         toggleTab($(this));
     });
 
@@ -71,14 +71,13 @@ $(document).ready(function(){
 });
 
 
-
-function maj(data){
-   server = data.maj["leed"];
-        if(server!=null && server.version!=null && server.version!=$(".versionBloc").html()){
-            $(".versionBloc").addClass('newVersion');
-            $('.versionBloc').attr('title','Version '+server.version+' disponible.');
-            if(server.link != null) $('.versionBloc').attr('onclick','window.location="'+server.link+'";');
-        }
+function maj(data) {
+    server = data.maj["leed"];
+    if (server != null && server.version != null && server.version != $(".versionBloc").html()) {
+        $(".versionBloc").addClass('newVersion');
+        $('.versionBloc').attr('title', 'Version ' + server.version + ' disponible.');
+        if (server.link != null) $('.versionBloc').attr('onclick', 'window.location="' + server.link + '";');
+    }
 }
 
 /*
@@ -99,109 +98,104 @@ function _t(key,args){
 
 
 $(document).keydown(function (e) {
-    switch(true) {
-        case e.altKey||e.ctrlKey||e.shiftKey||e.metaKey:
-        case $('.index').length==0:
-        case $("input:focus").length!=0:
+    switch (true) {
+        case e.altKey || e.ctrlKey || e.shiftKey || e.metaKey:
+        case $('.index').length == 0:
+        case $("input:focus").length != 0:
             return true;
     }
-    switch(e.which){
+    switch (e.which) {
 
         case keyCode['m']:
             //marque l'élément sélectionné comme lu / non lu
             readTargetEvent();
             return false;
-        break;
+            break;
 
         case keyCode['l']:
             //marque l'élément precédent comme non lu et réafficher
             targetPreviousEventRead();
             return false;
-        break;
+            break;
 
         case keyCode['s']:
             //marque l'élément sélectionné comme favori / non favori
             switchFavoriteTargetEvent();
             return false;
-        break;
+            break;
         case keyCode['n']:
             //élément suivant (sans l'ouvrir)
             targetNextEvent();
             return false;
-        break;
+            break;
         case keyCode['v']:
             //ouvre l'url de l'élément sélectionné
             openTargetEvent();
             return false;
-        break;
+            break;
         case keyCode['p']:
             //élément précédent (sans l'ouvrir)
             targetPreviousEvent();
             return false;
-        break;
+            break;
         case keyCode['space']:
             //élément suivant (et l'ouvrir)
             targetNextEvent();
             openTargetEvent();
             return false;
-        break;
+            break;
         case keyCode['k']:
             //élément précédent (et l'ouvrir)
             targetPreviousEvent();
             openTargetEvent();
             return false;
-        break;
+            break;
         case keyCode['o']:
         case keyCode['enter']:
             //ouvrir l'élément sélectionné
             openTargetEvent();
             return false;
-        break;
+            break;
         case keyCode['h']:
             //ouvrir/fermer le panneau d'aide
             $('#helpPanel').fadeToggle(200);
             return false;
-        break;
+            break;
         case keyCode['j']:
             // Affiche / cache les blocs résumé / content
-            toggleArticleDisplayMode(document.getElementById('btnDisplayMode_'+$('.eventSelected').attr('id')),$('.eventSelected').attr('id'));
+            toggleArticleDisplayMode(document.getElementById('btnDisplayMode_' + $('.eventSelected').attr('id')), $('.eventSelected').attr('id'));
             return false;
-        break;
+            break;
     }
 });
 
-function getParameters()
-{
+function getParameters() {
     var url = window.location.toString();
-    var url_split =  url.split('/');
+    var url_split = url.split('/');
 
     var id = url_split[4].split('#');
-    var ret_tab = { "protocol": url_split[0], "root" : url_split[2], "action": url_split[3], "id": id[0]}
+    var ret_tab = {"protocol": url_split[0], "root": url_split[2], "action": url_split[3], "id": id[0]}
 
     return ret_tab;
 }
 
-$(window).scroll(function(){
+$(window).scroll(function () {
     scrollInfini();
 });
 
 function scrollInfini() {
     var deviceAgent = navigator.userAgent.toLowerCase();
+    if (console && console.log) console.log(getParameters());
 
-    if( console && console.log ) console.log(getParameters());
-
-
-
-    if($('.index').length) {
+    if ($('.index').length) {
         // On teste si ajaxready vaut false, auquel cas on stoppe la fonction
         if ($(window).data('ajaxready') == false) return;
 
-        if(isIntoView($($('section:last'))))
-        {
+        if (isIntoView($($('section:last')))) {
             // lorsqu'on commence un traitement, on met ajaxready à false
             $(window).data('ajaxready', false);
 
-             //j'affiche mon loader pour indiquer le chargement
+            //j'affiche mon loader pour indiquer le chargement
             $('article #loader').show();
 
             //utilisé pour l'alternance des couleurs d'un article à l'autre
@@ -214,11 +208,11 @@ function scrollInfini() {
             var url_route = getParameters();
             // récupération des variables passées en Get
             var action = url_route["action"];
-            var folder = getUrlVars()['folder'];
-            var feed = url_route["id"];
+            var category = getUrlVars()['category'];
+            var flux = url_route["id"];
             var order = getUrlVars()['order'];
             if (order) {
-                order = '&order='+order
+                order = '&order=' + order
             } else {
                 order = ''
             }
@@ -226,20 +220,18 @@ function scrollInfini() {
             $.ajax({
                 url: '/article/flux',
                 type: 'post',
-                data: 'scroll='+$(window).data('page')+'&nblus='+$(window).data('nblus')+'&hightlighted='+hightlighted+'&action='+action+'&folder='+folder+'&feed='+feed+order,
+                data: 'scroll=' + $(window).data('page') + '&nblus=' + $(window).data('nblus') + '&hightlighted=' + hightlighted + '&action=' + action + '&category=' + category + '&flux=' + flux + order,
 
                 //Succès de la requête
-                success: function(data) {
-                    if (data.replace(/^\s+/g,'').replace(/\s+$/g,'') != '')
-                    {    // on les insère juste avant le loader
+                success: function (data) {
+                    if (data.replace(/^\s+/g, '').replace(/\s+$/g, '') != '') {    // on les insère juste avant le loader
                         $('article #loader').before(data);
                         //on supprime de la page le script pour ne pas intéragir avec les next & prev
                         $('article .scriptaddbutton').remove();
                         //si l'élement courant est caché, selectionner le premier élément du scroll
                         //ou si le div loader est sélectionné (quand 0 article restant suite au raccourcis M)
-                        if (($('article section.eventSelected').attr('style')=='display: none;')
-                            || ($('article div.eventSelected').attr('id')=='loader'))
-                        {
+                        if (($('article section.eventSelected').attr('style') == 'display: none;')
+                            || ($('article div.eventSelected').attr('id') == 'loader')) {
                             targetThisEvent($('article section.scroll:first'), true);
                         }
                         // on les affiche avec un fadeIn
@@ -247,15 +239,15 @@ function scrollInfini() {
                         // on supprime le tag de classe pour le prochain scroll
                         $('article section.scroll').removeClass('scroll');
                         $(window).data('ajaxready', true);
-                        $(window).data('page', $(window).data('page')+1);
-                        $(window).data('enCoursScroll',0);
+                        $(window).data('page', $(window).data('page') + 1);
+                        $(window).data('enCoursScroll', 0);
                         // appel récursif tant qu'un scroll n'est pas detecté.
-                        if ($(window).scrollTop()==0) scrollInfini();
+                        if ($(window).scrollTop() == 0) scrollInfini();
                     } else {
                         $('article #loader').addClass('finScroll');
                     }
-                 },
-                complete: function(){
+                },
+                complete: function () {
                     // le chargement est terminé, on fait disparaitre notre loader
                     $('article #loader').fadeOut(400);
                 }
@@ -264,17 +256,18 @@ function scrollInfini() {
     }
 };
 
-/* Fonctions de séléctions */
+/* Fonctions de sélections */
+
 /* Cette fonction sera utilisé pour le scroll infini, afin d'ajouter les évènements necessaires */
-function addEventsButtonLuNonLus(){
-    var handler = function(event){
-    var target = event.target;
-    var id = this.id;
-    if($(target).hasClass('readUnreadButton') || $(target).hasClass('icon-eye')){
-        buttonAction(target,id);
-    }else{
-        targetThisEvent(this);
-    }
+function addEventsButtonLuNonLus() {
+    var handler = function (event) {
+        var target = event.target;
+        var id = this.id;
+        if ($(target).hasClass('readUnreadButton') || $(target).hasClass('icon-eye')) {
+            buttonAction(target, id);
+        } else {
+            targetThisEvent(this);
+        }
     }
     // on vire tous les évènements afin de ne pas avoir des doublons d'évènements
     $('article section').unbind('click');
@@ -282,93 +275,93 @@ function addEventsButtonLuNonLus(){
     $('article section').bind('click', handler);
 }
 
-function targetPreviousEvent(){
-    targetThisEvent($('.eventSelected').prevAll(':visible').first(),true);
-}
-function targetNextEvent(){
-
-    targetThisEvent($('.eventSelected').nextAll(':visible').first(),true);
+function targetPreviousEvent() {
+    targetThisEvent($('.eventSelected').prevAll(':visible').first(), true);
 }
 
-function targetThisEvent(event,focusOn){
+function targetNextEvent() {
+
+    targetThisEvent($('.eventSelected').nextAll(':visible').first(), true);
+}
+
+function targetThisEvent(event, focusOn) {
     target = $(event);
-    if(target.prop("tagName")=='SECTION'){
+    if (target.prop("tagName") == 'SECTION') {
         $('.eventSelected').removeClass('eventSelected');
         target.addClass('eventSelected');
         var id = target.attr('id');
-        if(id && focusOn)window.location = '#'+id;
+        if (id && focusOn) window.location = '#' + id;
     }
-    if(target.prop("tagName")=='DIV'){
+    if (target.prop("tagName") == 'DIV') {
         $('.eventSelected').removeClass('eventSelected');
         target.addClass('eventSelected');
     }
     // on débloque les touches le plus tard possible afin de passer derrière l'appel ajax
 }
-function openTargetEvent(){
+
+function openTargetEvent() {
     window.open($('.eventSelected .articleTitle a').attr('href'), '_blank');
 }
 
-function readTargetEvent(){
+function readTargetEvent() {
     var buttonElement = $('.eventSelected .readUnreadButton');
     var id = $(target).attr('id');
-    readThis(buttonElement,id,null,function(){
+    readThis(buttonElement, id, null, function () {
         // on fait un focus sur l'Event suivant
-        targetThisEvent($('.eventSelected').nextAll(':visible').first(),true);
+        targetThisEvent($('.eventSelected').nextAll(':visible').first(), true);
         $(window).scroll();
     });
 }
 
-function targetPreviousEventRead(){
-    targetThisEvent($('.eventSelected').prev().css('display','block'),true);
+function targetPreviousEventRead() {
+    targetThisEvent($('.eventSelected').prev().css('display', 'block'), true);
     var buttonElement = $('.eventSelected .readUnreadButton');
     var id = $(target).attr('id');
-    unReadThis(buttonElement,id,null);
+    unReadThis(buttonElement, id, null);
 }
 
-function readAllDisplayedEvents(){
-    $('article section').each(function(i,article){
-        var buttonElement = $('.readUnreadButton',article);
-        var id = $('.anchor',article).attr('id');
-        readThis(buttonElement,id);
+function readAllDisplayedEvents() {
+    $('article section').each(function (i, article) {
+        var buttonElement = $('.readUnreadButton', article);
+        var id = $('.anchor', article).attr('id');
+        readThis(buttonElement, id);
     });
 }
 
-function switchFavoriteTargetEvent(){
-    $('.favorite',target).click();
+function switchFavoriteTargetEvent() {
+    $('.favorite', target).click();
 }
 
-/* Fonctions de séléctions fin */
-
-function toggleFolder(element,folder){
-    feedBloc = $('ul',$(element).parent().parent());
+function togglecategory(element, category) {
+    fluxBloc = $('ul', $(element).parent().parent());
 
     open = 0;
-    if(feedBloc.css('display')=='none') open = 1;
-    feedBloc.slideToggle(200);
-    $(element).html(!open?'<i class="icon-folder-empty"></i>':'<i class="icon-folder-open-empty"></i>');
+    if (fluxBloc.css('display') == 'none') open = 1;
+    fluxBloc.slideToggle(200);
+    $(element).html(!open ? '<i class="icon-category-empty"></i>' : '<i class="icon-category-open-empty"></i>');
     $.ajax({
-                  url: "./action.php?action=changeFolderState",
-                  data:{id:folder,isopen:open}
+        url: "./action.php?action=changecategoryState",
+        data: {id: category, isopen: open}
     });
 }
 
-function addFavorite(element,id){
+function addFavorite(element, id) {
     var activeScreen = $('#pageTop').html();
     // Colorise l'élément pour indiquer la bonne réception de la demande
     $(element).css('color', 'black');
     $.ajax({
-        url: "./action.php?action=addFavorite",
-        data:{id:id},
-        success:function(msg){
-            if(msg.status == 'noconnect') {
+        url: "/action/add/favorite",
+        data: {id: id},
+        success: function (msg) {
+            if (msg.status == 'noconnect') {
                 alert(msg.texte)
             } else {
-                if( console && console.log && msg!="" ) console.log(msg);
-                $(element).attr('onclick','removeFavorite(this,'+id+');').html(_t('UNFAVORIZE'));
+                if (console && console.log && msg != "") console.log(msg);
+                $(element).attr('onclick', 'removeFavorite(this,' + id + ');').html(_t('UNFAVORIZE'));
                 // on compte combien d'article ont été remis en favoris sur la pages favoris (scroll infini)
-                if (activeScreen=='favorites') {
-                    $(window).data('nblus', $(window).data('nblus')-1);
-                    addOrRemoveFeedNumber('+');
+                if (activeScreen == 'favorites') {
+                    $(window).data('nblus', $(window).data('nblus') - 1);
+                    addOrRemoveFluxNumber('+');
                 }
             }
             $(element).css('color', ''); // Retour au style de classe
@@ -376,23 +369,23 @@ function addFavorite(element,id){
     });
 }
 
-function removeFavorite(element,id){
+function removeFavorite(element, id) {
     var activeScreen = $('#pageTop').html();
     // Colorise l'élément pour indiquer la bonne réception de la demande
     $(element).css('color', 'black');
     $.ajax({
         url: "./action.php?action=removeFavorite",
-        data:{id:id},
-        success:function(msg){
-            if(msg.status == 'noconnect') {
+        data: {id: id},
+        success: function (msg) {
+            if (msg.status == 'noconnect') {
                 alert(msg.texte)
             } else {
-                if( console && console.log && msg!="" ) console.log(msg);
-                $(element).attr('onclick','addFavorite(this,'+id+');').html(_t('FAVORIZE'));
+                if (console && console.log && msg != "") console.log(msg);
+                $(element).attr('onclick', 'addFavorite(this,' + id + ');').html(_t('FAVORIZE'));
                 // on compte combien d'article ont été remis en favoris sur la pages favoris (scroll infini)
-                if (activeScreen=='favorites') {
-                    $(window).data('nblus', $(window).data('nblus')+1);
-                    addOrRemoveFeedNumber('-');
+                if (activeScreen == 'favorites') {
+                    $(window).data('nblus', $(window).data('nblus') + 1);
+                    addOrRemoveFluxNumber('-');
                 }
             }
             $(element).css('color', ''); // Retour au style de classe
@@ -400,172 +393,172 @@ function removeFavorite(element,id){
     });
 }
 
-function renameFolder(element,folder){
-    var folderLine = $(element).parent();
-    var folderNameCase = $('span',folderLine);
-    var value = folderNameCase.html();
+function renamecategory(element, category) {
+    var categoryLine = $(element).parent();
+    var categoryNameCase = $('span', categoryLine);
+    var value = categoryNameCase.html();
     $(element).html('Enregistrer');
-    $(element).attr('style','background-color:#0C87C9;');
-    $(element).attr('onclick','saveRenameFolder(this,'+folder+')');
-    folderNameCase.replaceWith('<span><input type="text" name="folderName" value="'+value+'"/></span>');
+    $(element).attr('style', 'background-color:#0C87C9;');
+    $(element).attr('onclick', 'saveRenamecategory(this,' + category + ')');
+    categoryNameCase.replaceWith('<span><input type="text" name="categoryName" value="' + value + '"/></span>');
 }
 
 
-function saveRenameFolder(element,folder){
-    var folderLine = $(element).parent();
-    var folderNameCase = $('span',folderLine);
-    var value = $('input',folderNameCase).val();
+function saveRenamecategory(element, category) {
+    var categoryLine = $(element).parent();
+    var categoryNameCase = $('span', categoryLine);
+    var value = $('input', categoryNameCase).val();
     $(element).html('Rename');
-    $(element).attr('style','background-color:#F16529;');
-    $(element).attr('onclick','renameFolder(this,'+folder+')');
-    folderNameCase.replaceWith('<span>'+value+'</span>');
+    $(element).attr('style', 'background-color:#F16529;');
+    $(element).attr('onclick', 'renamecategory(this,' + category + ')');
+    categoryNameCase.replaceWith('<span>' + value + '</span>');
     $.ajax({
         url: "/settings/category/rename",
         type: 'post',
-        data:{id:folder,name:value}
+        data: {id: category, name: value}
     });
 }
 
 
-function renameFeed(element,feed){
-    var feedLine = $(element).parent().parent();
-    var feedNameCase = feedLine.children('.js-feedTitle').children('a:nth-child(1)');
-    var feedNameValue = feedNameCase.html();
-    var feedUrlCase = feedLine.children('.js-feedTitle').children('a:nth-child(2)');
-    var feedUrlValue = feedUrlCase.attr('href');
-    var url = feedNameCase.attr('href');
+function renameFlux(element, flux) {
+    var fluxLine = $(element).parent().parent();
+    var fluxNameCase = fluxLine.children('.js-fluxTitle').children('a:nth-child(1)');
+    var fluxNameValue = fluxNameCase.html();
+    var fluxUrlCase = fluxLine.children('.js-fluxTitle').children('a:nth-child(2)');
+    var fluxUrlValue = fluxUrlCase.attr('href');
+    var url = fluxNameCase.attr('href');
     $(element).html('Save');
-    $(element).attr('style','background-color:#0C87C9;');
-    $(element).attr('onclick','saveRenameFeed(this,'+feed+',"'+url+'")');
-    feedNameCase.replaceWith('<input type="text" name="feedName" value="'+feedNameValue+'" size="30" />');
-    feedUrlCase.replaceWith('<input type="text" name="feedUrl" value="'+feedUrlValue+'" size="30" />');
+    $(element).attr('style', 'background-color:#0C87C9;');
+    $(element).attr('onclick', 'saveRenameFlux(this,' + flux + ',"' + url + '")');
+    fluxNameCase.replaceWith('<input type="text" name="fluxName" value="' + fluxNameValue + '" size="30" />');
+    fluxUrlCase.replaceWith('<input type="text" name="fluxUrl" value="' + fluxUrlValue + '" size="30" />');
 }
 
-function saveRenameFeed(element,feed,url){
-    var feedLine = $(element).parent().parent();
-    var feedNameCase = feedLine.children('.js-feedTitle:first').children('input[name="feedName"]');
-    var feedNameValue = feedNameCase.val();
-    var feedUrlCase = feedLine.children('.js-feedTitle:first').children('input[name="feedUrl"]');
-    var feedUrlValue = feedUrlCase.val();
+function saveRenameFlux(element, flux, url) {
+    var fluxLine = $(element).parent().parent();
+    var fluxNameCase = fluxLine.children('.js-fluxTitle:first').children('input[name="fluxName"]');
+    var fluxNameValue = fluxNameCase.val();
+    var fluxUrlCase = fluxLine.children('.js-fluxTitle:first').children('input[name="fluxUrl"]');
+    var fluxUrlValue = fluxUrlCase.val();
     $(element).html('Renommer');
-    $(element).attr('style','background-color:#F16529;');
-    $(element).attr('onclick','renameFeed(this,'+feed+')');
-    feedNameCase.replaceWith('<a href="'+url+'">'+feedNameValue+'</a>');
-    feedUrlCase.replaceWith('<a class="underlink" href="'+feedUrlValue+'">'+feedUrlValue+'</a>');
+    $(element).attr('style', 'background-color:#F16529;');
+    $(element).attr('onclick', 'renameFlux(this,' + flux + ')');
+    fluxNameCase.replaceWith('<a href="' + url + '">' + fluxNameValue + '</a>');
+    fluxUrlCase.replaceWith('<a class="underlink" href="' + fluxUrlValue + '">' + fluxUrlValue + '</a>');
     $.ajax({
-        url: "/settings/feed/rename",
+        url: "/settings/flux/rename",
         type: 'post',
-        data:{id:feed,name:feedNameValue,url:feedUrlValue}
+        data: {id: flux, name: fluxNameValue, url: fluxUrlValue}
     });
 }
 
-
-function changeFeedFolder(element,id){
+// @todo
+function changeFluxCategory(element, id) {
     var value = $(element).val();
-    window.location = "./action.php?action=changeFeedFolder&feed="+id+"&folder="+value;
+    window.location = "./action.php?action=changeFluxcategory&flux=" + id + "&category=" + value;
 }
 
 
-function readThis(element,id,from,callback){
+function readThis(element, id, from, callback) {
     var activeScreen = $('#pageTop').html();
     var parent = $(element).closest('section');
-    var nextEvent = $('#'+id).nextAll(':visible').first();
+    var nextEvent = $('#' + id).nextAll(':visible').first();
     //sur les éléments non lus
-    if(!parent.hasClass('eventRead')){
+    if (!parent.hasClass('eventRead')) {
         parent.addClass('eventRead');
-        addOrRemoveFeedNumber('-');
+        addOrRemoveFluxNumber('-');
         $.ajax({
-            url: "/action/readContent/" + id,
-            success:function(msg){
-                if(msg.status == 'noconnect') {
+            url: "/action/read/" + activeScreen + "/" + id,
+            success: function (msg) {
+                if (msg.status == 'noconnect') {
                     alert(msg.texte)
                 } else {
-                    if( console && console.log && msg!="" ) console.log(msg);
-                    switch (activeScreen){
-                        case '':
+                    if (console && console.log && msg != "") console.log(msg);
+                    switch (activeScreen) {
+                        case 'all':
                             // cas de la page d'accueil
-                            parent.fadeOut(200,function(){
-                                if(callback){
+                            parent.fadeOut(200, function () {
+                                if (callback) {
                                     callback();
-                                }else{
-                                    targetThisEvent(nextEvent,true);
+                                } else {
+                                    targetThisEvent(nextEvent, true);
                                 }
                                 // on simule un scroll si tous les events sont cachés
-                                if($('article section:last').attr('style')=='display: none;') {
+                                if ($('article section:last').attr('style') == 'display: none;') {
                                     $(window).scrollTop($(document).height());
                                 }
                             });
                             // on compte combien d'article ont été lus afin de les soustraires de la requête pour le scroll infini
-                            $(window).data('nblus', $(window).data('nblus')+1);
-                        break;
-                        case 'selectedFolder':
-                        case 'selectedFeed':
-                            if(callback){
+                            $(window).data('nblus', $(window).data('nblus') + 1);
+                            break;
+                        case 'category':
+                        case 'flux':
+                            if (callback) {
                                 callback();
-                            }else{
-                                targetThisEvent(nextEvent,true);
+                            } else {
+                                targetThisEvent(nextEvent, true);
                             }
                             // on compte combien d'article ont été lus afin de les soustraires de la requête pour le scroll infini
-                            $(window).data('nblus', $(window).data('nblus')+1);
-                        break;
+                            $(window).data('nblus', $(window).data('nblus') + 1);
+                            break;
                         default:
-                            // autres cas : favoris, selectedFeed ...
-                            if(callback){
+                            // autres cas : favoris, selectedFlux ...
+                            if (callback) {
                                 callback();
-                            }else{
-                                targetThisEvent(nextEvent,true);
+                            } else {
+                                targetThisEvent(nextEvent, true);
                             }
-                        break;
+                            break;
                     }
                 }
             }
         });
-    }else{  // sur les éléments lus
-            // si ce n'est pas un clic sur le titre de l'event
-        if(from!='title'){
-            addOrRemoveFeedNumber('+');
+    } else {  // sur les éléments lus
+        // si ce n'est pas un clic sur le titre de l'event
+        if (from != 'title') {
+            addOrRemoveFluxNumber('+');
             $.ajax({
-                    url: "/action/unreadContent/" + id,
+                url: "/action/unreadContent/" + id,
 
-                    success:function(msg){
-                        if(msg.status == 'noconnect') {
-                            alert(msg.texte)
-                        } else {
-                            if( console && console.log && msg!="" ) console.log(msg);
-                            parent.removeClass('eventRead');
-                            // on compte combien d'article ont été remis à non lus
-                            if ((activeScreen=='') || (activeScreen=='selectedFolder')|| (activeScreen=='selectedFeed'))
-                                $(window).data('nblus', $(window).data('nblus')-1);
-                            if(callback){
-                                callback();
-                            }
+                success: function (msg) {
+                    if (msg.status == 'noconnect') {
+                        alert(msg.texte)
+                    } else {
+                        if (console && console.log && msg != "") console.log(msg);
+                        parent.removeClass('eventRead');
+                        // on compte combien d'article ont été remis à non lus
+                        if ((activeScreen == '') || (activeScreen == 'selectedcategory') || (activeScreen == 'selectedFlux'))
+                            $(window).data('nblus', $(window).data('nblus') - 1);
+                        if (callback) {
+                            callback();
                         }
                     }
+                }
             });
         }
     }
 
 }
 
-function unReadThis(element,id,from){
+function unReadThis(element, id, from) {
     var activeScreen = $('#pageTop').html();
     var parent = $(element).parent().parent();
-    if(parent.hasClass('eventRead')){
-        if(from!='title'){
+    if (parent.hasClass('eventRead')) {
+        if (from != 'title') {
             $.ajax({
                 url: "/action/unreadContent/" + id,
 
-                success:function(msg){
-                    if(msg.status == 'noconnect') {
+                success: function (msg) {
+                    if (msg.status == 'noconnect') {
                         alert(msg.texte)
                     } else {
-                        if( console && console.log && msg!="" ) console.log(msg);
+                        if (console && console.log && msg != "") console.log(msg);
                         parent.removeClass('eventRead');
                         // on compte combien d'article ont été remis à non lus
-                        if ((activeScreen=='') || (activeScreen=='selectedFolder')|| (activeScreen=='selectedFeed'))
-                            $(window).data('nblus', $(window).data('nblus')-1);
+                        if ((activeScreen == '') || (activeScreen == 'selectedcategory') || (activeScreen == 'selectedFlux'))
+                            $(window).data('nblus', $(window).data('nblus') - 1);
 
-                        addOrRemoveFeedNumber('+');
+                        addOrRemoveFluxNumber('+');
                     }
                 }
             });
@@ -575,71 +568,70 @@ function unReadThis(element,id,from){
 }
 
 //synchronisation manuelle lancée depuis le boutton du menu
-function synchronize(code){
-    if(code!=''){
-        $('article').prepend('<section>'+
-        '<iframe class="importFrame" src="action.php?action=synchronize&format=html&code='+code+'" name="idFrameSynchro" id="idFrameSynchro" width="100%" height="300" ></iframe>'+
-        '</section>');
-    }else{
+function synchronize(code) {
+    if (code != '') {
+        $('article').prepend('<section>' +
+            '<iframe class="importFrame" src="action.php?action=synchronize&format=html&code=' + code + '" name="idFrameSynchro" id="idFrameSynchro" width="100%" height="300" ></iframe>' +
+            '</section>');
+    } else {
         alert(_t('YOU_MUST_BE_CONNECTED_FEED'));
     }
 }
 
 
 // Disparition block et affichage block clique
-function toggleBlocks(target){
-    target=target.substring(1);
-    $('#main article > section').not('.logs').hide();$('.'+target).fadeToggle(200);
+function toggleBlocks(target) {
+    target = target.substring(1);
+    $('#main article > section').not('.logs').hide();
+    $('.' + target).fadeToggle(200);
 }
 
-// affiche ou cache les feeds n'ayant pas d'article non lus.
-function toggleUnreadFeedFolder(button,action){
+// affiche ou cache les fluxs n'ayant pas d'article non lus.
+function toggleUnreadFluxcategory(button, action) {
     $.ajax({
-        url: "./action.php?action=displayOnlyUnreadFeedFolder&displayOnlyUnreadFeedFolder="+action,
-        success:function(msg){
-            if(msg.status == 'noconnect') {
+        url: "./action.php?action=displayOnlyUnreadFluxcategory&displayOnlyUnreadFluxcategory=" + action,
+        success: function (msg) {
+            if (msg.status == 'noconnect') {
                 alert(msg.texte)
             } else {
-                if( console && console.log && msg!="" ) console.log(msg);
-                //Afficher ou cacher les feeds
-                if(action){
-                    $('.hidefeed').hide();
+                if (console && console.log && msg != "") console.log(msg);
+                //Afficher ou cacher les fluxs
+                if (action) {
+                    $('.hideflux').hide();
                     $(button).find('i').addClass('icon-resize-small').removeClass('icon-resize-full');
-                }else{
-                    $('.hidefeed').show();
-                     $(button).find('i').addClass('icon-resize-full').removeClass('icon-resize-small');
-                    
-                  
+                } else {
+                    $('.hideflux').show();
+                    $(button).find('i').addClass('icon-resize-full').removeClass('icon-resize-small');
+
+
                 }
                 //changement de l'évènement onclick pour faire l'inverse lors du prochain clic
-                $(button).attr('onclick','toggleUnreadFeedFolder(this,'+!action+');');
+                $(button).attr('onclick', 'toggleUnreadFluxcategory(this,' + !action + ');');
 
             }
         }
     });
 }
 
-function buttonAction(target,id){
+function buttonAction(target, id) {
     // Check unreadEvent
-    if($('#pageTop').html()){
-        var from=true;
-    }else{
-        var from='';
+    if ($('#pageTop').html()) {
+        var from = true;
+    } else {
+        var from = '';
     }
-    readThis(target,id,from);
+    readThis(target, id, from);
 }
 
 
 // permet de récupérer les variables passée en get dans l'URL et des les parser
-function getUrlVars()
-{
+function getUrlVars() {
     var vars = [], hash;
     var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
-    for(var i = 0; i < hashes.length; i++)
-    {
+    for (var i = 0; i < hashes.length; i++) {
         hash = hashes[i].split('=');
         vars.push(hash[0]);
-        if (hash[1]){
+        if (hash[1]) {
             rehash = hash[1].split('#');
             vars[hash[0]] = rehash[0];
         } else {
@@ -651,42 +643,46 @@ function getUrlVars()
     return vars;
 }
 
-// affiche ou cache les feeds n'ayant pas d'article non lus.
-function toggleFeedVerbose(button,action,idFeed){
+// affiche ou cache les fluxs n'ayant pas d'article non lus.
+function toggleFluxVerbose(button, action, idFlux) {
     $.ajax({
-        url: "./action.php?action=displayFeedIsVerbose&displayFeedIsVerbose="+action+"&idFeed="+idFeed,
-        success:function(msg){
-            if(msg.status == 'noconnect') {
+        url: "./action.php?action=displayFluxIsVerbose&displayFluxIsVerbose=" + action + "&idFlux=" + idFlux,
+        success: function (msg) {
+            if (msg.status == 'noconnect') {
                 alert(msg.texte)
             } else {
-                if( console && console.log && msg!="" ) console.log(msg);
+                if (console && console.log && msg != "") console.log(msg);
                 //changement de l'évènement onclick pour faire l'inverse lors du prochain clic
                 var reverseaction = 0
-                if (action==0) { reverseaction = 1 }
-                $(button).attr('onclick','toggleFeedVerbose(this,'+reverseaction+', '+idFeed+');');
+                if (action == 0) {
+                    reverseaction = 1
+                }
+                $(button).attr('onclick', 'toggleFluxVerbose(this,' + reverseaction + ', ' + idFlux + ');');
             }
         }
     });
 }
 
 // Bouton permettant l'affichage des options d'affichage et de non affichage des flux souhaités en page d'accueil
-function toggleOptionFeedVerbose(button,action){
+function toggleOptionFluxVerbose(button, action) {
     $.ajax({
-        url: "./action.php?action=optionFeedIsVerbose&optionFeedIsVerbose="+action,
-        success:function(msg){
-            if(msg.status == 'noconnect') {
+        url: "./action.php?action=optionFluxIsVerbose&optionFluxIsVerbose=" + action,
+        success: function (msg) {
+            if (msg.status == 'noconnect') {
                 alert(msg.texte)
             } else {
-                if( console && console.log && msg!="" ) console.log(msg);
+                if (console && console.log && msg != "") console.log(msg);
                 //changement de l'évènement onclick pour faire l'inverse lors du prochain clic
                 var reverseaction = 0
-                if (action==0) { reverseaction = 1 }
-                $(button).attr('onclick','toggleOptionFeedVerbose(this,'+reverseaction+');');
-                //Changement du statut des cases à cocher sur les feed (afficher ou cacher)
-                if (action==1){
-                    $('.feedVerbose').hide();
-                }else{
-                    $('.feedVerbose').show();
+                if (action == 0) {
+                    reverseaction = 1
+                }
+                $(button).attr('onclick', 'toggleOptionFluxVerbose(this,' + reverseaction + ');');
+                //Changement du statut des cases à cocher sur les flux (afficher ou cacher)
+                if (action == 1) {
+                    $('.fluxVerbose').hide();
+                } else {
+                    $('.fluxVerbose').show();
                 }
             }
         }
@@ -695,7 +691,7 @@ function toggleOptionFeedVerbose(button,action){
 
 // fonction d'ajout ou de retrait d'un article dans les compteurs
 // operator = '-' pour les soustraction '+' pour les ajouts
-function addOrRemoveFeedNumber(operator){
+function addOrRemoveFluxNumber(operator) {
     if (operator == '-') {
         // on diminue le nombre d'article en haut de page
         var nb = parseInt($('#nbarticle').html()) - 1;
@@ -705,26 +701,28 @@ function addOrRemoveFeedNumber(operator){
             $('#nbarticle').html(0);
         }
         // on diminue le nombre sur le flux en question
-        var feed_id = ($('.eventSelected').eq(0).data('feed'));
-        var feed = $('#menuBar ul a[href$="feed=' + feed_id + '"]').next().find('span');
-        nb = parseInt($(feed).text()) - 1;
+        var flux_id = ($('.selectedFlux').eq(0).data('id'));
+        if (console && console.log ) console.log("Flux id: " + flux_id);
+        var flux = $('#menuBar ul a[data-id="' + flux_id + '"]').next().find('span');
+        if (console && console.log ) console.log("Flux text: " + $(flux).text());
+        nb = parseInt($(flux).text()) - 1;
         if (nb > 0) {
-            $(feed).text(nb);
+            $(flux).text(nb);
         } else {
-            $(feed).text(0);
+            $(flux).text(0);
         }
         // on diminue le nombre sur le dossier
-        var feed_folder = ($(feed).closest('ul').prev('h1').find('.unreadForFolder'));
-        if(isNaN(feed_folder.html())) {
-            var regex='[0-9]+';
-            var found = feed_folder.html().match(regex);
-            nb = parseInt(found[0])-1;
-            var regex2='[^0-9]+';
-            var lib = feed_folder.html().match(regex2);
+        var flux_category = ($(flux).closest('ul').prev('h1').find('.unreadForcategory'));
+        if (isNaN(flux_category.html())) {
+            var regex = '[0-9]+';
+            var found = flux_category.html().match(regex);
+            nb = parseInt(found[0]) - 1;
+            var regex2 = '[^0-9]+';
+            var lib = flux_category.html().match(regex2);
             if (nb > 0) {
-                feed_folder.html(nb +lib[0])
+                flux_category.html(nb + lib[0])
             } else {
-                feed_folder.html('0' +lib[0])
+                flux_category.html('0' + lib[0])
             }
         }
     } else {
@@ -732,34 +730,35 @@ function addOrRemoveFeedNumber(operator){
         var nb = parseInt($('#nbarticle').html()) + 1;
         $('#nbarticle').html(nb);
         // on augmente le nombre sur le flux en question
-        var feed_id = ($('.eventSelected').eq(0).data('feed'));
-        var feed = $('#menuBar ul a[href$="feed=' + feed_id + '"]').next().find('span');
-        nb = parseInt($(feed).text()) + 1;
-        $(feed).text(nb);
+        var flux_id = ($('.eventSelected').eq(0).data('flux'));
+        var flux = $('#menuBar ul a[href$="flux=' + flux_id + '"]').next().find('span');
+        nb = parseInt($(flux).text()) + 1;
+        $(flux).text(nb);
         // on augmente le nombre sur le dossier
-        var feed_folder = ($(feed).closest('ul').prev('h1').find('.unreadForFolder'));
-        if(isNaN(feed_folder.html())) {
-            var regex='[0-9]+';
-            var found = feed_folder.html().match(regex);
-            nb = parseInt(found[0])+1;
-            var regex2='[^0-9]+';
-            var lib = feed_folder.html().match(regex2);
+        var flux_category = ($(flux).closest('ul').prev('h1').find('.unreadForcategory'));
+        if (isNaN(flux_category.html())) {
+            var regex = '[0-9]+';
+            var found = flux_category.html().match(regex);
+            nb = parseInt(found[0]) + 1;
+            var regex2 = '[^0-9]+';
+            var lib = flux_category.html().match(regex2);
             if (nb > 0) {
-                feed_folder.html(nb +lib[0])
+                flux_category.html(nb + lib[0])
             } else {
-                feed_folder.html('0' +lib[0])
+                flux_category.html('0' + lib[0])
             }
         }
     }
 }
-function isIntoView(elem){
+
+function isIntoView(elem) {
     var windowEl = $(window);
     // ( windowScrollPosition + windowHeight ) > last entry top position
-    return ( windowEl.scrollTop() + windowEl.height()  ) > $('section:last').offset().top;
+    return (windowEl.scrollTop() + windowEl.height()) > $('section:last').offset().top;
 }
 
-function getFeedName(id){
-    return $('[data-feed-id='+id+']').html();
+function getFluxName(id) {
+    return $('[data-flux-id=' + id + ']').html();
 }
 
 function markAllAsRead(el) {
@@ -768,18 +767,18 @@ function markAllAsRead(el) {
     var action = '';
     var type = el.data('mark-all-read');
     switch (type) {
-        case 'folder':
-            infoLink = el.siblings('.folderLink');
-            translation = 'READ_ALL_FOLDER_CONFIRM';
-            action = 'readFolder';
+        case 'category':
+            infoLink = el.siblings('.categoryLink');
+            translation = 'READ_ALL_category_CONFIRM';
+            action = 'readcategory';
             break;
-        case 'feed':
-            infoLink = el.siblings('.feedLink');
+        case 'flux':
+            infoLink = el.siblings('.fluxLink');
             translation = 'CONFIRM_MARK_FEED_AS_READ';
             action = 'readAll';
             break;
     }
-    if(confirm("Mark as Read") + '\n\n' + infoLink.html()) {
+    if (confirm("Mark as Read") + '\n\n' + infoLink.html()) {
         window.location = '/action/' + action + '/' + infoLink.data('id');
     }
 }
@@ -788,10 +787,10 @@ function randomOtpSecret(inputEl, qrcodeEl) {
     var base32chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
     var secretLength = 16;
     var otpSecret = '';
-    for (i=0;i<secretLength;i++) {
-        otpSecret = otpSecret + base32chars[Math.floor(Math.random()*base32chars.length)];
+    for (i = 0; i < secretLength; i++) {
+        otpSecret = otpSecret + base32chars[Math.floor(Math.random() * base32chars.length)];
     }
-    url = qrcodeEl.attr("src").replace(/key=[a-zA-Z2-7]*/, 'key='+otpSecret);
+    url = qrcodeEl.attr("src").replace(/key=[a-zA-Z2-7]*/, 'key=' + otpSecret);
     //url = url.replace(/label=[a-zA-Z2-7]*/, 'label='+otpSecret); //DEBUG: ajout du secret dans le label, donc visible !
     qrcodeEl.attr("src", url);
     inputEl.val(otpSecret);

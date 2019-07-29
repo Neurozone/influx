@@ -75,23 +75,20 @@
             </aside>
         </div>
         <form action="/install" method="POST" class="install">
-            <h1>{{ trans.INSTALL_TITLE }}INSTALL_TITLE</h1>
+            <h1>{{ trans.INSTALL_TITLE }}</h1>
             <h2>{{ trans.INSTALL_TAB_GENERAL }}</h2>
             <ul>
                 <li>
                     <span>{{ trans.INSTALL_LANGUAGE }}</span>
                     <select name="install_changeLng"">
-                        <?php
-                    foreach($languageList as $lang){
-                        $sel = $lang==$currentLanguage?'selected=selected':'';
-                        echo "<option $sel value='$lang'>$lang</option>";
-                        }
-                        ?>
+                    {% for ln in languageList %}
+                        <option value='{{ ln }}'>{{ ln }}</option>
+                    {% endfor %}
                     </select>
                 </li>
                 <li>
                     <span>{{ trans.INSTALL_TEMPLATE }}</span>
-                    <select name='template' >\n";
+                    <select name='template' >
                     <option value='influx'>influx</option>
                     </select>
                 </li>
@@ -104,42 +101,42 @@
             <ul>
                 <li>
                     <span>{{ trans.INSTALL_HOST }}</span>
-                    <input type="text" name="mysqlHost" value="<?php echo $install->options['db']['mysqlHost']; ?>" placeholder="{{ trans.INSTALL_COMMENT_HOST }}">
+                    <input type="text" name="mysqlHost" placeholder="{{ trans.INSTALL_COMMENT_HOST }}">
                 </li>
                 <li>
                     <span>{{ trans.LOGIN }}</span>
-                    <input type="text" name="mysqlLogin" value="<?php echo $install->options['db']['mysqlLogin']; ?>">
+                    <input type="text" name="mysqlLogin">
                 </li>
                 <li>
                     <span>{{ trans.PASSWORD }}</span>
-                    <input type="text" autocomplete="off" name="mysqlMdp" value="<?php echo $install->options['db']['mysqlMdp']; ?>" placeholder="{{ trans.INSTALL_DISPLAY_CLEAR }}">
+                    <input type="text" autocomplete="off" name="mysqlMdp" placeholder="{{ trans.INSTALL_DISPLAY_CLEAR }}">
                 </li>
                 <li>
                     <span>{{ trans.INSTALL_BDD }}</span>
-                    <input type="text" name="mysqlBase" value="<?php echo $install->options['db']['mysqlBase']; ?>" placeholder="{{ trans.INSTALL_COMMENT_BDD }}">
+                    <input type="text" name="mysqlBase" placeholder="{{ trans.INSTALL_COMMENT_BDD }}">
                 </li>
                 <li>
                     <span>{{ trans.INSTALL_PREFIX_TABLE }}</span>
-                    <input type="text" name="mysqlPrefix" value="<?php echo $install->options['db']['mysqlPrefix']; ?>">
+                    <input type="text" name="mysqlPrefix">
                 </li>
             </ul>
             <h2>{{ trans.INSTALL_TAB_ADMIN }}</h2>
             <ul>
                 <li>
                     <span>{{ trans.LOGIN }}</span>
-                    <input type="text" name="login" value="<?php echo $install->options['user']['login']; ?>" placeholder="{{ trans.LOGIN }}">
+                    <input type="text" name="login" placeholder="{{ trans.LOGIN }}">
                 </li>
                 <li>
                     <span>{{ trans.PASSWORD }}</span>
-                    <input type="text" autocomplete="off" name="password" value="<?php echo $install->options['user']['password']; ?>" placeholder="{{ trans.INSTALL_DISPLAY_CLEAR }}">
+                    <input type="text" autocomplete="off" name="password" placeholder="{{ trans.INSTALL_DISPLAY_CLEAR }}">
                 </li>
             </ul>
-            <button id="installButton" name="<?php echo $installActionName; ?>">{{ trans.INSTALL_BTN }}</button>
+            <button id="installButton" name="{{ installActionName }}">{{ trans.INSTALL_BTN }}</button>
         </form>
     </div>
     <div id="footer-container">
         <footer class="wrapper">
-            <p>Leed "Light Feed" by <a target="_blank" rel="noopener noreferrer" href="http://blog.idleman.fr">Idleman</a></p>
+
         </footer>
     </div>
     </body>
