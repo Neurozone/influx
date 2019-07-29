@@ -3,7 +3,11 @@
 
 ## Basics
 
-Minimal rss reader
+Rewriting of LeedRss reader with routing and twig as template system
+
+## Recommended Version
+
+The recommended and most stable version is none as the reader is still in development
 
 ## Installation
 
