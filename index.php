@@ -1289,6 +1289,96 @@ $router->mount('/install', function () use ($router, $trans,$twig, $cookiedir, $
     });
 
     /* ---------------------------------------------------------------- */
+    // Route: /install/check (GET)
+    /* ---------------------------------------------------------------- */
+
+    $router->get('/check', function () use ($twig, $cookiedir,$trans) {
+
+        $_SESSION['install'] = true;
+
+        $filelist = glob("locales/*.json");
+
+        foreach ($filelist as $file) {
+            $locale = explode(".", basename($file));
+            $list_lang[] = $locale[0];
+        }
+
+        $templateslist = glob("templates/*");
+        foreach ($templateslist as $tpl) {
+            $tpl_array = explode(".", basename($tpl));
+            $listTemplates[] = $tpl_array[0];
+        }
+
+        echo $twig->render('install.twig',
+            [
+                'list_lang' => $list_lang,
+                'list_templates' => $listTemplates,
+                'trans' => $trans
+            ]);
+
+    });
+
+    /* ---------------------------------------------------------------- */
+    // Route: /install/database (GET)
+    /* ---------------------------------------------------------------- */
+
+    $router->get('/database', function () use ($twig, $cookiedir,$trans) {
+
+        $_SESSION['install'] = true;
+
+        $filelist = glob("locales/*.json");
+
+        foreach ($filelist as $file) {
+            $locale = explode(".", basename($file));
+            $list_lang[] = $locale[0];
+        }
+
+        $templateslist = glob("templates/*");
+        foreach ($templateslist as $tpl) {
+            $tpl_array = explode(".", basename($tpl));
+            $listTemplates[] = $tpl_array[0];
+        }
+
+        echo $twig->render('install.twig',
+            [
+                'list_lang' => $list_lang,
+                'list_templates' => $listTemplates,
+                'trans' => $trans
+            ]);
+
+    });
+
+    /* ---------------------------------------------------------------- */
+    // Route: /install/user (GET)
+    /* ---------------------------------------------------------------- */
+
+    $router->get('/user', function () use ($twig, $cookiedir,$trans) {
+
+        $_SESSION['install'] = true;
+
+        $filelist = glob("locales/*.json");
+
+        foreach ($filelist as $file) {
+            $locale = explode(".", basename($file));
+            $list_lang[] = $locale[0];
+        }
+
+        $templateslist = glob("templates/*");
+        foreach ($templateslist as $tpl) {
+            $tpl_array = explode(".", basename($tpl));
+            $listTemplates[] = $tpl_array[0];
+        }
+
+        echo $twig->render('install.twig',
+            [
+                'list_lang' => $list_lang,
+                'list_templates' => $listTemplates,
+                'trans' => $trans
+            ]);
+
+    });
+
+    /* ---------------------------------------------------------------- */
     // Route: /install (POST)
     /* ---------------------------------------------------------------- */
 

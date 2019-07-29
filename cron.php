@@ -2,13 +2,17 @@
 
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
+use Monolog\Handler\RotatingFileHandler;
 use SimplePie\SimplePie;
 
+include_once('conf/config.php');
 require __DIR__ . '/vendor/autoload.php';
 
 $stream = new StreamHandler(__DIR__ . '/logs/synchronization.log', Logger::DEBUG);
+$handler = new RotatingFileHandler(__DIR__ . '/logs/synchronization.log', LOGS_DAYS_TO_KEEP);
 $logger = new Logger('SyncLogger');
 $logger->pushHandler($stream);
+$logger->pushHandler($handler);
 $logger->info('Sync started');
 
 $router = new \Bramus\Router\Router();
@@ -56,7 +60,7 @@ function getEnclosureHtml($enclosure) {
         return $html;
     }
 
-include_once('conf/config.php');
+
 
 $sp = new \SimplePie();
 $sp->enable_cache(true);
@@ -70,12 +74,14 @@ $query_feed = "select * from flux order by name";
 
 $result_feed = $db->query($query_feed);
 
+$start = microtime(true);
 $currentDate = date('d/m/Y H:i:s');
 $nbErrors = 0;
 $nbOk = 0;
 $nbTotal = 0;
 $localTotal = 0; // somme de tous les temps locaux, pour chaque flux
-$nbTotalEvents = 0;
+$nbTotalEventsMaj = 0;
+$nbTotalEventsIns = 0;
 $syncId = time();
 
 while ($row = $result_feed->fetch_array()) {
@@ -87,20 +93,22 @@ while ($row = $result_feed->fetch_array()) {
     $sp->set_feed_url($fluxUrl);
     $sp->handle_content_type();
 
-    $success = $sp->init();
-
-
-    $logger->info($fluxName);
-
     echo "\tParse flux: \t{$fluxName}\n";
     $logger->info("\tParse flux: \t{$fluxName}\n");
     echo "\t\tFlux id: \t$fluxId\n";
     $logger->info("\t\tFlux id: \t$fluxId\n");
-    if($sp->error())
-    {
+
+    if (!$sp->init()) {
+        $error = $sp->error;
+        $lastSyncInError = 1;
+        $nbErrors += 1;
         echo "\t\tFlux id: \t$sp->error()\n";
-        $logger->error("\t\tFlux id: \t$sp->error()\n");
+        $logger->error("\t\tError: \t$sp->error()\n");
+        continue;
     }
+
+    $linesUpdated = 0;
+    $linesInserted = 0;
 
     foreach($sp->get_items() as $item)
     {
@@ -148,9 +156,21 @@ while ($row = $result_feed->fetch_array()) {
 
         $db->query($insertOrUpdate);
 
+        $ret = $db->affected_rows;
 
-        echo "\t\tLine changed: \t$db->affected_rows\n";
-        $logger->info("\t\tLine changed: \t$db->affected_rows\n");
+        if($ret == 1)
+        {
+            $linesInserted += 1;
+            $nbTotalEventsIns += 1;
+        }elseif($ret == 2)
+        {
+            $linesUpdated += 1;
+            $nbTotalEventsMaj += 1;
+        }
+
+
+        //echo "\t\tLine changed: \t$db->affected_rows\n";
+        //$logger->info("\t\tLine changed: \t$db->affected_rows\n");
         if ($db->errno) {
             echo "\t\tFailure: \t$db->error\n";
             $logger->info("\t\tFailure: \t$db->error\n");
@@ -161,79 +181,30 @@ while ($row = $result_feed->fetch_array()) {
 
     }
 
-
-
+    $nbOk += 1;
+    echo "\t\tLines updated: $linesUpdated\n";
+    $logger->info("\t\tLines updated: $linesUpdated\n");
+    echo "\t\tLines inserted: $linesInserted\n";
+    $logger->info("\t\tLines inserted: $linesInserted\n");
 }
-/*
-echo "\t{$nbErrors}\t" . _t('ERRORS') . "\n";
-echo "\t{$nbOk}\t" . _t('GOOD') . "\n";
-echo "\t{$nbTotal}\t" . _t('AT_TOTAL') . "\n";
+
+$totalTime = microtime(true) - $start;
+
+$totalTimeStr = number_format($totalTime, 3);
+$currentDate = date('d/m/Y H:i:s');
+
+echo "\t{$nbErrors}\t" . 'ERRORS' . "\n";
+$logger->error("\t{$nbErrors}\t" . 'ERRORS' . "\n");
+echo "\t{$nbOk}\t" . 'GOOD' . "\n";
+$logger->info("\t{$nbOk}\t" . 'GOOD' . "\n");
+echo "\t{$nbTotal}\t" . 'AT_TOTAL' . "\n";
+$logger->info("\t{$nbTotal}\t" . 'AT_TOTAL' . "\n");
 echo "\t$currentDate\n";
-echo "\t$nbTotalEvents\n";
-echo "\t{$totalTimeStr}\t" . _t('SECONDS') . "\n";
-
-    //$feedManager->synchronize($feeds, $syncTypeStr, $commandLine, $configurationManager, $start);
-
-    $currentDate = date('d/m/Y H:i:s');
-    echo "{$syncTypeStr}\t{$currentDate}\n";
-
-    $maxEvents = $configurationManager->get('feedMaxEvents');
-    $nbErrors = 0;
-    $nbOk = 0;
-    $nbTotal = 0;
-    $localTotal = 0; // somme de tous les temps locaux, pour chaque flux
-    $nbTotalEvents = 0;
-    $syncId = time();
-    $enableCache = ($configurationManager->get('synchronisationEnableCache') == '') ? 0 : $configurationManager->get('synchronisationEnableCache');
-    $forceFeed = ($configurationManager->get('synchronisationForceFeed') == '') ? 0 : $configurationManager->get('synchronisationForceFeed');
-    foreach ($feeds as $feed) {
-        $nbEvents = 0;
-        $nbTotal++;
-        $startLocal = microtime(true);
-        $parseOk = $feed->parse($syncId, $nbEvents, $enableCache, $forceFeed);
-        $parseTime = microtime(true) - $startLocal;
-        $localTotal += $parseTime;
-        $parseTimeStr = number_format($parseTime, 3);
-        if ($parseOk) { // It's ok
-            $errors = array();
-            $nbTotalEvents += $nbEvents;
-            $nbOk++;
-        } else {
-            // tableau au cas où il arrive plusieurs erreurs
-            $errors = array($feed->getError());
-            $nbErrors++;
-        }
-        $feedName = truncate($feed->getName(), 30);
-
-
-        $feedUrl = $feed->getUrl();
-        $feedUrlTxt = truncate($feedUrl, 30);
-
-        echo date('d/m/Y H:i:s') . "\t" . $parseTimeStr . "\t";
-        echo "{$feedName}\t{$feedUrlTxt}\n";
-
-        foreach ($errors as $error) {
-            if ($commandLine)
-                echo "$error\n";
-            else
-                echo "<dd>$error</dd>\n";
-        }
-
-    }
-    assert('$nbTotal==$nbOk+$nbErrors');
-    $totalTime = microtime(true) - $start;
-    assert('$totalTime>=$localTotal');
-    $totalTimeStr = number_format($totalTime, 3);
-    $currentDate = date('d/m/Y H:i:s');
-
-    echo "\t{$nbErrors}\t" . _t('ERRORS') . "\n";
-    echo "\t{$nbOk}\t" . _t('GOOD') . "\n";
-    echo "\t{$nbTotal}\t" . _t('AT_TOTAL') . "\n";
-    echo "\t$currentDate\n";
-    echo "\t$nbTotalEvents\n";
-    echo "\t{$totalTimeStr}\t" . _t('SECONDS') . "\n";
-*/
-
-
-
+$logger->info("\t$currentDate\n");
+echo "\tTotal Updated\t$nbTotalEventsMaj\n";
+$logger->info("\tTotal Updated\t$nbTotalEventsMaj\n");
+echo "\tTotal Inserted\t$nbTotalEventsIns\n";
+$logger->info("\tTotal Inserted\t$nbTotalEventsIns\n");
+echo "\t{$totalTimeStr}\t" . 'SECONDS' . "\n";
+$logger->info("\t{$totalTimeStr}\t" . 'SECONDS' . "\n");
 
