@@ -13,7 +13,7 @@ class Items
     private $link;
     private $unread;
     private $lastupdate;
-    private $feed;
+    private $flux;
     private $favorite;
     private $pubdate;
     private $syncId;
@@ -44,7 +44,7 @@ class Items
     public function countUnreadItemPerFlux()
     {
 
-        $resultsNbUnread = $this->db->query('SELECT count(*) as nb_items from items where unread = 1 and feed = ' . $this->feed);
+        $resultsNbUnread = $this->db->query('SELECT count(*) as nb_items from items where unread = 1 and fluxId = ' . $this->flux);
         $numberOfItem = 0;
 
         while ($rows = $resultsNbUnread->fetch_array()) {
@@ -58,11 +58,8 @@ class Items
     public function loadAllUnreadItem($offset, $row_count)
     {
 
-        //$results = $this->db->query('SELECT le.guid,le.title,le.creator,le.content,le.description,le.link,le.unread,le.feed,le.favorite,le.pubdate,le.syncId, lf.name as feed_name
-    //FROM items le inner join flux lf on lf.id = le.feed where unread = 1 ORDER BY pubdate desc,unread desc LIMIT  ' . $offset . ',' . $row_count);
-
-        $results = $this->db->query('SELECT le.guid,le.title,le.creator,le.content,le.description,le.link,le.unread,le.feed,le.favorite,le.pubdate,le.syncId, lf.name as feed_name
-    FROM items le inner join flux lf on lf.id = le.feed where unread = 1 ORDER BY pubdate desc,unread desc LIMIT  ' . $offset . ',' . $row_count);
+        $results = $this->db->query('SELECT le.guid,le.title,le.creator,le.content,le.description,le.link,le.unread,le.fluxId,le.favorite,le.pubdate,le.syncId, lf.name as flux_name
+        FROM items le inner join flux lf on lf.id = le.fluxId where unread = 1 ORDER BY pubdate desc,unread desc LIMIT  ' . $offset . ',' . $row_count);
 
         while ($rows = $results->fetch_array()) {
 
@@ -75,11 +72,11 @@ class Items
                 'description' => $rows['description'],
                 'link' => $rows['link'],
                 'unread' => $rows['unread'],
-                'feed' => $rows['feed'],
+                'flux' => $rows['fluxId'],
                 'favorite' => $rows['favorite'],
                 'pubdate' => date('Y-m-d H:i:s', $rows['pubdate']),
                 'syncId' => $rows['syncId'],
-                'feed_name' => $rows['feed_name'],
+                'flux_name' => $rows['flux_name'],
             );
 
         }
@@ -91,8 +88,8 @@ class Items
     public function loadUnreadItemPerFlux($offset, $row_count)
     {
 
-        $results = $this->db->query('SELECT le.guid,le.title,le.creator,le.content,le.description,le.link,le.unread,le.feed,le.favorite,le.pubdate,le.syncId, lf.name as feed_name
-    FROM items le inner join flux lf on lf.id = le.feed where le.feed = ' . $this->feed . ' ORDER BY pubdate desc,unread desc LIMIT  ' . $offset . ',' . $row_count);
+        $results = $this->db->query('SELECT le.guid,le.title,le.creator,le.content,le.description,le.link,le.unread,le.fluxId,le.favorite,le.pubdate,le.syncId, lf.name as flux_name
+    FROM items le inner join flux lf on lf.id = le.fluxId where le.fluxId = ' . $this->flux . ' ORDER BY unread desc,pubdate desc LIMIT  ' . $offset . ',' . $row_count);
 
         while ($rows = $results->fetch_array()) {
 
@@ -105,11 +102,11 @@ class Items
                 'description' => $rows['description'],
                 'link' => $rows['link'],
                 'unread' => $rows['unread'],
-                'feed' => $rows['feed'],
+                'flux' => $rows['fluxId'],
                 'favorite' => $rows['favorite'],
                 'pubdate' => date('Y-m-d H:i:s', $rows['pubdate']),
                 'syncId' => $rows['syncId'],
-                'feed_name' => $rows['feed_name'],
+                'flux_name' => $rows['flux_name'],
             );
 
         }
@@ -118,14 +115,79 @@ class Items
 
     }
 
-    public function markItemAsRead()
+    public function markItemAsReadByGuid()
     {
+
+        $q = "UPDATE items set unread = 0 where guid = '" . $this->getGuid() . "'";
+
+        $this->logger->info($q);
+
+        $return = $this->db->query($q);
+
+        if ($this->db->errno) {
+            $this->logger->info("\t\tFailure: \t$this->db->error\n");
+            $this->logger->error($q);
+
+            return "\t\tFailure: \t$this->db->error\n";
+
+        }
+
+        return "200";
 
     }
 
     public function markAllItemAsRead()
     {
 
+    }
+
+    public function search()
+    {
+        $search = $this->escape_string($_GET['plugin_search']);
+        $requete = "SELECT title,guid,content,description,link,pubdate,unread, favorite FROM items 
+            WHERE title like '%" . htmlentities($search) . '%\'  OR content like \'%' . htmlentities($search) . '%\' ORDER BY pubdate desc';
+    }
+
+    public function getAllFavorites($offset, $row_count)
+    {
+
+        $results = $this->db->query('SELECT le.guid,le.title,le.creator,le.content,le.description,le.link,le.unread,le.fluxId,le.favorite,le.pubdate,le.syncId, lf.name as flux_name
+    FROM items le inner join flux lf on lf.id = le.fluxId where favorite = 1 ORDER BY pubdate desc,unread desc LIMIT   ' . $offset . ', ' . $row_count);
+
+        while ($rows = $results->fetch_array()) {
+
+            $items[] = array(
+                'id' => $rows['guid'],
+                'guid' => $rows['guid'],
+                'title' => $rows['title'],
+                'creator' => $rows['creator'],
+                'content' => $rows['content'],
+                'description' => $rows['description'],
+                'link' => $rows['link'],
+                'unread' => $rows['unread'],
+                'flux' => $rows['fluxId'],
+                'favorite' => $rows['favorite'],
+                'pubdate' => date('Y-m-d H:i:s', $rows['pubdate']),
+                'syncId' => $rows['syncId'],
+                'flux_name' => $rows['flux_name'],
+            );
+
+        }
+
+        return $items;
+
+    }
+
+    public function getNumberOfFavorites()
+    {
+        $resultsNbFavorites = $this->db->query('SELECT count(*) as nb_items from items where favorite = 1');
+        $numberOfItem = 0;
+
+        while ($rows = $resultsNbFavorites->fetch_array()) {
+            $numberOfItem = $rows['nb_items'];
+        }
+
+        return $numberOfItem;
     }
 
     /**
@@ -261,15 +323,15 @@ class Items
      */
     public function getFeed()
     {
-        return $this->feed;
+        return $this->flux;
     }
 
     /**
-     * @param mixed $feed
+     * @param mixed $flux
      */
-    public function setFeed($feed)
+    public function setFlux($flux)
     {
-        $this->feed = $feed;
+        $this->flux = $flux;
     }
 
     /**

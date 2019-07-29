@@ -22,7 +22,8 @@
                 <form action="/settings/feed/add" method="POST">
                     <section class="addBloc">
                         <h3>{{ trans.ADD_FEED }}</h3>
-                        <p>{{ trans.FEED_RSS_LINK }} : <input type="text" name="newUrl" placeholder="http://monflux.com/rss"/>&nbsp;
+                        <p>{{ trans.FEED_RSS_LINK }} : <input type="text" name="newUrl"
+                                                              placeholder="http://monflux.com/rss"/>&nbsp;
                             <select name="newUrlCategory">
                                 {% for folder in folders %}
                                     <option {% if folder.id == 1 %}selected="selected"{% endif %}
@@ -55,8 +56,8 @@
 
                 <ul class="clear nochip">
                     {% set feedsForFolder="" %}
-                    {% for folder in folders %}
-                        {% set feedsForFolder = folder.feeds %}
+                    {% for folder in categories %}
+                        {% set feedsForFolder = folder.flux %}
                         <li>
                             <h1 class="folder left"><span>{{ folder.name }}</span>
                                 <button onclick="renameFolder(this,{{ folder.id }})">{{ trans.RENAME }}</button>
@@ -65,27 +66,28 @@
                             </h1>
                             <div class="clear"></div>
                             <ul class="feedsList">
-                                {% for feed in folder.feeds %}
+                                {% for feed in folder.flux %}
                                     <li class="feedListItem{% if feed.LastSyncInError == 1 %} errorSync{% endif %}">
-                            <span class="feedTitle js-feedTitle" {% if feed.LastSyncInError == 1 %} title="{{ trans.SYNCHRONISATION_ERROR }}" {% endif %}>
-                                    <a{% if folder.LastSyncInError == 1 %} class="inError"{% endif %} href="/settings/feed/{{ feed.id }}" data-feed-id="{{ feed.id }}">{{ feed.name }}</a>
+                            <span class="feedTitle js-fluxTitle" {% if feed.LastSyncInError == 1 %} title="{{ trans.SYNCHRONISATION_ERROR }}" {% endif %}>
+                                    <a{% if folder.LastSyncInError == 1 %} class="inError"{% endif %} href="/flux/{{ feed.id }}"
+                                                                                                      data-flux-id="{{ feed.id }}">{{ feed.name }}</a>
                                 <a href="{{ feed.url }}" class="underlink">{{ feed.url }}</a>
                                     </span>
                                         <div class="feedAction">
-                                            <select class="feedFolder" onchange="changeFeedFolder(this,{{ feed.id }});">
-                                                {% for f in folders %}
+                                            <select class="feedFolder"
+                                                    onchange="changeFluxCategory(this,{{ feed.id }});">
+                                                {% for f in categories %}
                                                     <option {% if feed.folder == f.id %}selected="selected"{% endif %}
                                                             value="{{ f.id }}">{{ f.name }}</option>
                                                 {% endfor %}
                                             </select>
 
-
                                         </div>
                                         <div class="feedButtons">
                                             <button class="feedRename"
-                                                    onclick="renameFeed(this,{{ feed.id }})">{{ trans.RENAME }}</button>
+                                                    onclick="renameFlux(this,{{ feed.id }})">{{ trans.RENAME }}</button>
                                             <button class="feedDelete"
-                                                    onclick="if(confirm('{{ trans.CONFIRM_DELETE_FEED }}\n\n'+getFeedName({{ feed.id }}))){window.location='/settings/feed/remove/{{ feed.id }}';}">{{ trans.DELETE }}</button>
+                                                    onclick="if(confirm('{{ trans.CONFIRM_DELETE_FEED }}\n\n'+getFluxName({{ feed.id }}))){window.location='/settings/flux/remove/{{ feed.id }}';}">{{ trans.DELETE }}</button>
                                         </div>
                                     </li>
                                 {% endfor %}
@@ -111,7 +113,8 @@
                 <form method="POST" action="/settings/configuration/update">
                     <section>
                         <h3>{{ trans.GENERALITY }}</h3>
-                        <p><label for="root">{{ trans.PROJECT_ROOT }} :</label> <input type="text" id="root" name="root" value="{{ config.root }}">
+                        <p><label for="root">{{ trans.PROJECT_ROOT }} :</label> <input type="text" id="root" name="root"
+                                                                                       value="{{ config.root }}">
                         </p>
                         <h4>{{ trans.LET_SLASH_AT_END }}</h4>
                         <p>{{ trans.INSTALL_LANGUAGE }} :
@@ -166,7 +169,8 @@
                                    id="otpEnabledNo" name="otpEnabled"/><label for="otpEnabledNo">{{ trans.NO }}</label>
                             <p>{{ trans.OTP_SETTINGS_DESC }}myUser->getOtpKey(.</p>
                             <p><label for="otpSecret">{{ trans.OTP_SECRET }} :</label>
-                                <input type="text" id="otpSecret" name="otpSecret" autocomplete="off" placeholder="{{ trans.OTP_DISABLED_EMPTY }}" value="{{  user.OtpSecret }}">
+                                <input type="text" id="otpSecret" name="otpSecret" autocomplete="off"
+                                       placeholder="{{ trans.OTP_DISABLED_EMPTY }}" value="{{ user.OtpSecret }}">
                                 <i class="icon-random-otp" data-otp-generate="#otpSecret" data-otp-qrcode="#qrCodeOtp"
                                    title="Random OTP secret"></i>
                             </p>
@@ -175,12 +179,14 @@
 
                     <section>
                         <h3>{{ trans.SYNCHRONISATION }}</h3>
-                        <p><input type="radio" {% if config.synchronisationType == "auto" %} checked="checked" {% endif %}
-                                  value="auto" id="synchronisationTypeComplete" name="synchronisationType"> <label
+                        <p>
+                            <input type="radio" {% if config.synchronisationType == "auto" %} checked="checked" {% endif %}
+                                   value="auto" id="synchronisationTypeComplete" name="synchronisationType"> <label
                                     for="synchronisationTypeComplete"><strong>
                                     {{ trans.AUTOMATIC_FULL }} :</strong></label> {{ trans.AUTOMATIC_FULL_DESC }}</p>
-                        <p><input type="radio" {% if config.synchronisationType == 'graduate' %} checked="checked" {% endif %}
-                                  value="graduate" id="synchronisationTypeGraduated" name="synchronisationType"> <label
+                        <p>
+                            <input type="radio" {% if config.synchronisationType == 'graduate' %} checked="checked" {% endif %}
+                                   value="graduate" id="synchronisationTypeGraduated" name="synchronisationType"> <label
                                     for="synchronisationTypeGraduated"><strong>{{ trans.AUTOMATIC_GRADUATE }}
                                     :</strong></label> {{ trans.AUTOMATIC_GRADUATE_DESC }}</p>
 
@@ -201,7 +207,8 @@
                         </fieldset>
                         <fieldset>
                             <legend>{{ trans.SORT_BY_RECENT_EVENT_HOME }}</legend>
-                            <input type="radio" {% if config.articleDisplayHomeSort %} checked="checked" {% endif %} value="1"
+                            <input type="radio" {% if config.articleDisplayHomeSort %} checked="checked" {% endif %}
+                                   value="1"
                                    id="articleDisplayHomeSortYes" name="articleDisplayHomeSort"/><label
                                     for="articleDisplayHomeSortYes">{{ trans.YES }}</label>
                             <input type="radio" {% if not config.articleDisplayHomeSort %} checked=" checked" {% endif %}

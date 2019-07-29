@@ -112,14 +112,14 @@ class Category
         return $categories;
     }
 
-    public function getFeedsByCategories()
+    public function getFluxByCategories()
     {
         $results = $this->db->query('SELECT * FROM categories c ORDER BY name ');
         while ($rows = $results->fetch_array()) {
 
             $resultsUnreadByFolder = $this->db->query('SELECT count(*) as unread
             FROM items le 
-                inner join flux lfe on le.feed = lfe.id 
+                inner join flux lfe on le.fluxId = lfe.id 
                 inner join categories lfo on lfe.folder = lfo.id  
             where unread = 1 and lfo.id = ' . $rows['id']);
 
@@ -127,16 +127,16 @@ class Category
                 $unreadEventsByFolder = $rowsUnreadByFolder['unread'];
             }
 
-            $resultsFeedsByFolder = $this->db->query('SELECT fe.id as feed_id, fe.name as feed_name, fe.description as feed_description, fe.website as feed_website, fe.url as feed_url, fe.lastupdate as feed_lastupdate, fe.folder as feed_folder,fe.lastSyncInError as feed_lastSyncInError 
+            $resultsFluxByFolder = $this->db->query('SELECT fe.id as feed_id, fe.name as feed_name, fe.description as feed_description, fe.website as feed_website, fe.url as feed_url, fe.lastupdate as feed_lastupdate, fe.folder as feed_folder,fe.lastSyncInError as feed_lastSyncInError 
             FROM categories f 
                 inner join flux fe on fe.folder = f.id 
             where f.id = ' . $rows['id'] . " order by fe.name");
 
 
-            while ($rowsFeedsByFolder = $resultsFeedsByFolder->fetch_array()) {
+            while ($rowsFluxByFolder = $resultsFluxByFolder->fetch_array()) {
 
                 $resultsUnreadByFeed = $this->db->query('SELECT count(*) as unread FROM categories f inner join flux fe on fe.folder = f.id 
-                inner join items e on e.feed = fe.id  where e.unread = 1 and fe.id = ' . $rowsFeedsByFolder['feed_id']);
+                inner join items e on e.fluxId = fe.id  where e.unread = 1 and fe.id = ' . $rowsFluxByFolder['feed_id']);
 
                 $unreadEventsByFeed = 0;
 
@@ -144,15 +144,15 @@ class Category
                     $unreadEventsByFeed = $rowsUnreadByFeed['unread'];
                 }
 
-                $feedsByCategories[] = array(
-                    'id' => $rowsFeedsByFolder['feed_id'],
-                    'name' => $rowsFeedsByFolder['feed_name'],
-                    'description' => $rowsFeedsByFolder['feed_description'],
-                    'website' => $rowsFeedsByFolder['feed_website'],
-                    'url' => $rowsFeedsByFolder['feed_url'],
-                    'lastupdate' => $rowsFeedsByFolder['feed_lastupdate'],
-                    'folder' => $rowsFeedsByFolder['feed_folder'],
-                    'lastSyncInError' => $rowsFeedsByFolder['feed_lastSyncInError'],
+                $fluxByCategories[] = array(
+                    'id' => $rowsFluxByFolder['feed_id'],
+                    'name' => $rowsFluxByFolder['feed_name'],
+                    'description' => $rowsFluxByFolder['feed_description'],
+                    'website' => $rowsFluxByFolder['feed_website'],
+                    'url' => $rowsFluxByFolder['feed_url'],
+                    'lastupdate' => $rowsFluxByFolder['feed_lastupdate'],
+                    'folder' => $rowsFluxByFolder['feed_folder'],
+                    'lastSyncInError' => $rowsFluxByFolder['feed_lastSyncInError'],
                     'unread' => $unreadEventsByFeed
                 );
             }
@@ -163,10 +163,10 @@ class Category
                 'parent' => $rows['parent'],
                 'isopen' => $rows['isopen'],
                 'unread' => $unreadEventsByFolder,
-                'feeds' => $feedsByCategories
+                'flux' => $fluxByCategories
             );
 
-            $feedsByCategories = null;
+            $fluxByCategories = null;
         }
 
         return $categories;

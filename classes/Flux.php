@@ -77,7 +77,7 @@ class Flux
 
     public function markAllRead()
     {
-        $q = "UPDATE items set unread = 0 where feed = " . $this->getId();
+        $q = "UPDATE items set unread = 0 where feed = '" . $this->getId() . "'";
 
         $this->logger->info($q);
 
@@ -143,6 +143,50 @@ class Flux
 
     //public function loadInfoPerFlux()
     public function getFluxById()
+    {
+        $resultFlux = $this->db->query("select * from flux where id = " . $this->id);
+        while ($rows = $resultFlux->fetch_array()) {
+
+            $flux = array(
+                'id' => $rows['id'],
+                'name' => $rows['name'],
+                'description' => $rows['description'],
+                'website' => $rows['website'],
+                'url' => $rows['url'],
+                'lastupdate' => $rows['lastupdate'],
+                'folder' => $rows['folder'],
+                'isverbose' => $rows['isverbose'],
+                'lastSyncInError' => $rows['lastSyncInError'],
+            );
+
+        }
+
+        return $flux;
+    }
+
+    public function syncFluxById()
+    {
+        $resultFlux = $this->db->query("select * from flux where id = " . $this->id);
+        while ($rows = $resultFlux->fetch_array()) {
+
+            $flux = array(
+                'id' => $rows['id'],
+                'name' => $rows['name'],
+                'description' => $rows['description'],
+                'website' => $rows['website'],
+                'url' => $rows['url'],
+                'lastupdate' => $rows['lastupdate'],
+                'folder' => $rows['folder'],
+                'isverbose' => $rows['isverbose'],
+                'lastSyncInError' => $rows['lastSyncInError'],
+            );
+
+        }
+
+        return $flux;
+    }
+
+    public function syncAllFlux()
     {
         $resultFlux = $this->db->query("select * from flux where id = " . $this->id);
         while ($rows = $resultFlux->fetch_array()) {

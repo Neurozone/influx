@@ -157,6 +157,7 @@ while ($row = $result_feed->fetch_array()) {
         $db->query($insertOrUpdate);
 
         $ret = $db->affected_rows;
+<<<<<<< HEAD
 
         if($ret == 1)
         {
@@ -169,6 +170,20 @@ while ($row = $result_feed->fetch_array()) {
         }
 
 
+=======
+
+        if($ret == 1)
+        {
+            $linesInserted += 1;
+            $nbTotalEventsIns += 1;
+        }elseif($ret == 2)
+        {
+            $linesUpdated += 1;
+            $nbTotalEventsMaj += 1;
+        }
+
+
+>>>>>>> 0694d126efeeb206666d9af8fcd611ae11c39dd1
         //echo "\t\tLine changed: \t$db->affected_rows\n";
         //$logger->info("\t\tLine changed: \t$db->affected_rows\n");
         if ($db->errno) {
