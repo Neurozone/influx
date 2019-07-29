@@ -1,7 +1,28 @@
 <?php
 
-require __DIR__ . '/vendor/autoload.php';
+namespace Influx;
 
+class Install
+{
+
+    public function checkDirectories()
+    {
+
+    }
+
+    public function checkPermissions()
+    {
+
+    }
+
+    public function createSuperUser()
+    {
+
+    }
+
+}
+
+/*
 use Sinergi\BrowserDetector\Language;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
@@ -23,15 +44,11 @@ $twig->addExtension(new \Twig\Extension\DebugExtension());
 // Create Router instance
 $router = new \Bramus\Router\Router();
 
-/* ---------------------------------------------------------------- */
-// Route: /install
-/* ---------------------------------------------------------------- */
+
 
 $router->mount('/install', function () use ($router, $twig, $cookiedir, $logger) {
 
-    /* ---------------------------------------------------------------- */
-    // Route: /install (GET)
-    /* ---------------------------------------------------------------- */
+
 
     $router->get('/', function () use ($twig, $cookiedir) {
 
@@ -56,17 +73,12 @@ $router->mount('/install', function () use ($router, $twig, $cookiedir, $logger)
 
     });
 
-    /* ---------------------------------------------------------------- */
-    // Route: /install (POST
-    /* ---------------------------------------------------------------- */
+
 
     $router->post('/', function () use ($twig, $cookiedir) {
 
         $install = new Install();
-        /* Prend le choix de langue de l'utilisateur, soit :
-         * - lorsqu'il vient de changer la langue du sélecteur ($lang)
-         * - lorsqu'il vient de lancer l'installeur ($install_changeLngLeed)
-         */
+
         $lang = '';
         if (isset($_GET['lang'])) $lang = $_GET['lang'];
         elseif (isset($_POST['install_changeLngLeed'])) $lang = $_POST['install_changeLngLeed'];
@@ -126,3 +138,5 @@ define('MYSQL_PREFIX','{$this->options['db']['mysqlPrefix']}');
 });
 
 $router->run();
+
+*/
