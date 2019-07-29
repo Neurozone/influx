@@ -2,13 +2,17 @@
 
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
+use Monolog\Handler\RotatingFileHandler;
 use SimplePie\SimplePie;
 
+include_once('conf/config.php');
 require __DIR__ . '/vendor/autoload.php';
 
 $stream = new StreamHandler(__DIR__ . '/logs/synchronization.log', Logger::DEBUG);
+$handler = new RotatingFileHandler(__DIR__ . '/logs/synchronization.log', LOGS_DAYS_TO_KEEP);
 $logger = new Logger('SyncLogger');
 $logger->pushHandler($stream);
+$logger->pushHandler($handler);
 $logger->info('Sync started');
 
 $router = new \Bramus\Router\Router();
@@ -56,7 +60,7 @@ function getEnclosureHtml($enclosure) {
         return $html;
     }
 
-include_once('conf/config.php');
+
 
 $sp = new \SimplePie();
 $sp->enable_cache(true);
@@ -153,6 +157,7 @@ while ($row = $result_feed->fetch_array()) {
         $db->query($insertOrUpdate);
 
         $ret = $db->affected_rows;
+<<<<<<< HEAD
 
         if($ret == 1)
         {
@@ -165,6 +170,20 @@ while ($row = $result_feed->fetch_array()) {
         }
 
 
+=======
+
+        if($ret == 1)
+        {
+            $linesInserted += 1;
+            $nbTotalEventsIns += 1;
+        }elseif($ret == 2)
+        {
+            $linesUpdated += 1;
+            $nbTotalEventsMaj += 1;
+        }
+
+
+>>>>>>> 0694d126efeeb206666d9af8fcd611ae11c39dd1
         //echo "\t\tLine changed: \t$db->affected_rows\n";
         //$logger->info("\t\tLine changed: \t$db->affected_rows\n");
         if ($db->errno) {
