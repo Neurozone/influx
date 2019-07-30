@@ -8,8 +8,13 @@ use SimplePie\SimplePie;
 include_once('conf/config.php');
 require __DIR__ . '/vendor/autoload.php';
 
+if (defined('LOGS_DAYS_TO_KEEP')) {
+    $handler = new RotatingFileHandler(__DIR__ . '/logs/influx.log', LOGS_DAYS_TO_KEEP);
+} else {
+    $handler = new RotatingFileHandler(__DIR__ . '/logs/influx.log', 7);
+}
+
 $stream = new StreamHandler(__DIR__ . '/logs/synchronization.log', Logger::DEBUG);
-$handler = new RotatingFileHandler(__DIR__ . '/logs/synchronization.log', LOGS_DAYS_TO_KEEP);
 $logger = new Logger('SyncLogger');
 $logger->pushHandler($stream);
 $logger->pushHandler($handler);
@@ -19,47 +24,47 @@ $router = new \Bramus\Router\Router();
 
 function convertFileSize($bytes)
 {
-    if($bytes<1024){
-        return round(($bytes / 1024), 2).' o';
-    }elseif(1024<$bytes && $bytes<1048576){
-        return round(($bytes / 1024), 2).' ko';
-    }elseif(1048576<$bytes && $bytes<1073741824){
-        return round(($bytes / 1024)/1024, 2).' Mo';
-    }elseif(1073741824<$bytes){
-        return round(($bytes / 1024)/1024/1024, 2).' Go';
+    if ($bytes < 1024) {
+        return round(($bytes / 1024), 2) . ' o';
+    } elseif (1024 < $bytes && $bytes < 1048576) {
+        return round(($bytes / 1024), 2) . ' ko';
+    } elseif (1048576 < $bytes && $bytes < 1073741824) {
+        return round(($bytes / 1024) / 1024, 2) . ' Mo';
+    } elseif (1073741824 < $bytes) {
+        return round(($bytes / 1024) / 1024 / 1024, 2) . ' Go';
     }
 }
 
-function getEnclosureHtml($enclosure) {
-	$html = '';
-        if($enclosure!=null && $enclosure->link!=''){
-            $enclosureName = substr(
-                $enclosure->link,
-                strrpos($enclosure->link, '/')+1,
-                strlen($enclosure->link)
-            );
-            $enclosureArgs = strpos($enclosureName, '?');
-            if($enclosureArgs!==false)
-                $enclosureName = substr($enclosureName,0,$enclosureArgs);
-            $enclosureFormat = isset($enclosure->handler)
-                ? $enclosure->handler
-                : substr($enclosureName, strrpos($enclosureName,'.')+1);
-            $html ='<div class="enclosure"><h1>Fichier média :</h1>';
-            $enclosureType = $enclosure->get_type();
-            if (strpos($enclosureType, 'image/') === 0) {
-                $html .= '<img src="' . $enclosure->link . '" />';
-            } elseif (strpos($enclosureType, 'audio/') === 0) {
-                $html .= '<audio src="' . $enclosure->link . '" preload="none" controls>Audio not supported</audio>';
-            } elseif (strpos($enclosureType, 'video/') === 0) {
-                $html .= '<video src="' . $enclosure->link . '" preload="none" controls>Video not supported</video>';
-            } else {
-                $html .= '<a href="'.$enclosure->link.'"> '.$enclosureName.'</a>';
-            }
-            $html .= ' <span>(Format '.strtoupper($enclosureFormat).', '.convertFileSize($enclosure->length).')</span></div>';
+function getEnclosureHtml($enclosure)
+{
+    $html = '';
+    if ($enclosure != null && $enclosure->link != '') {
+        $enclosureName = substr(
+            $enclosure->link,
+            strrpos($enclosure->link, '/') + 1,
+            strlen($enclosure->link)
+        );
+        $enclosureArgs = strpos($enclosureName, '?');
+        if ($enclosureArgs !== false)
+            $enclosureName = substr($enclosureName, 0, $enclosureArgs);
+        $enclosureFormat = isset($enclosure->handler)
+            ? $enclosure->handler
+            : substr($enclosureName, strrpos($enclosureName, '.') + 1);
+        $html = '<div class="enclosure"><h1>Fichier média :</h1>';
+        $enclosureType = $enclosure->get_type();
+        if (strpos($enclosureType, 'image/') === 0) {
+            $html .= '<img src="' . $enclosure->link . '" />';
+        } elseif (strpos($enclosureType, 'audio/') === 0) {
+            $html .= '<audio src="' . $enclosure->link . '" preload="none" controls>Audio not supported</audio>';
+        } elseif (strpos($enclosureType, 'video/') === 0) {
+            $html .= '<video src="' . $enclosure->link . '" preload="none" controls>Video not supported</video>';
+        } else {
+            $html .= '<a href="' . $enclosure->link . '"> ' . $enclosureName . '</a>';
         }
-        return $html;
+        $html .= ' <span>(Format ' . strtoupper($enclosureFormat) . ', ' . convertFileSize($enclosure->length) . ')</span></div>';
     }
-
+    return $html;
+}
 
 
 $sp = new \SimplePie();
@@ -110,14 +115,13 @@ while ($row = $result_feed->fetch_array()) {
     $linesUpdated = 0;
     $linesInserted = 0;
 
-    foreach($sp->get_items() as $item)
-    {
-       $guid = $item->get_id(true);
+    foreach ($sp->get_items() as $item) {
+        $guid = $item->get_id(true);
 
         $permalink = $item->get_permalink();
         $content = $db->real_escape_string($item->get_content());
         $title = $db->real_escape_string(mb_strimwidth($item->get_title(), 0, 250, "..."));
-        $description =  $db->real_escape_string(mb_strimwidth($item->get_description(), 0, 300, "..."));
+        $description = $db->real_escape_string(mb_strimwidth($item->get_description(), 0, 300, "..."));
 
         $link = $item->get_link();
 
@@ -126,72 +130,41 @@ while ($row = $result_feed->fetch_array()) {
 
         $author = '';
 
-        if ($creator = $item->get_author())
-        {
-            $author =  $creator->get_name();
-        }
-        elseif($item->get_authors()){
-            foreach ($item->get_authors() as $creator)
-            {
-                $author .=   $creator->get_name() . ',';
+        if ($creator = $item->get_author()) {
+            $author = $creator->get_name();
+        } elseif ($item->get_authors()) {
+            foreach ($item->get_authors() as $creator) {
+                $author .= $creator->get_name() . ',';
             }
-        }
-        else{
+        } else {
             $author = $link;
         }
 
-        if(is_numeric($item->get_date()))
-        {
+        if (is_numeric($item->get_date())) {
             $pubdate = $item->get_date();
-        }
-        elseif($item->get_date())
-        {
+        } elseif ($item->get_date()) {
             $pubdate = strtotime($item->get_date());
-        }
-        else{
+        } else {
             $pubdate = time();
         }
 
-        $insertOrUpdate = "INSERT INTO influx.items VALUES ('" . $guid . "','" . $title . "','" . $db->real_escape_string($author) . "','" . $content . $enclosure . "','" . $description . "','" . $permalink . "',1," . $fluxId . ",0," . $pubdate . ',' . time() . ',' . $syncId . ") ON DUPLICATE KEY UPDATE title = '" . $title . "', content = '" . $content ."'";
+        $insertOrUpdate = "INSERT INTO influx.items VALUES ('" . $guid . "','" . $title . "','" . $db->real_escape_string($author) . "','" . $content . $enclosure . "','" . $description . "','" . $permalink . "',1," . $fluxId . ",0," . $pubdate . ',' . time() . ',' . $syncId . ") ON DUPLICATE KEY UPDATE title = '" . $title . "', content = '" . $content . "'";
 
         $db->query($insertOrUpdate);
-
         $ret = $db->affected_rows;
-<<<<<<< HEAD
 
-        if($ret == 1)
-        {
+        if ($ret == 1) {
             $linesInserted += 1;
             $nbTotalEventsIns += 1;
-        }elseif($ret == 2)
-        {
+        } elseif ($ret == 2) {
             $linesUpdated += 1;
             $nbTotalEventsMaj += 1;
         }
 
-
-=======
-
-        if($ret == 1)
-        {
-            $linesInserted += 1;
-            $nbTotalEventsIns += 1;
-        }elseif($ret == 2)
-        {
-            $linesUpdated += 1;
-            $nbTotalEventsMaj += 1;
-        }
-
-
->>>>>>> 0694d126efeeb206666d9af8fcd611ae11c39dd1
-        //echo "\t\tLine changed: \t$db->affected_rows\n";
-        //$logger->info("\t\tLine changed: \t$db->affected_rows\n");
         if ($db->errno) {
             echo "\t\tFailure: \t$db->error\n";
             $logger->info("\t\tFailure: \t$db->error\n");
             $logger->error($insertOrUpdate);
-
-
         }
 
     }
@@ -222,4 +195,3 @@ echo "\tTotal Inserted\t$nbTotalEventsIns\n";
 $logger->info("\tTotal Inserted\t$nbTotalEventsIns\n");
 echo "\t{$totalTimeStr}\t" . 'SECONDS' . "\n";
 $logger->info("\t{$totalTimeStr}\t" . 'SECONDS' . "\n");
-

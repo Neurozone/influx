@@ -5,6 +5,8 @@ namespace Influx;
 class Install
 {
 
+    private $root = '/';
+
     public function checkDirectories()
     {
 
@@ -20,32 +22,27 @@ class Install
 
     }
 
+    /**
+     * @return string
+     */
+    public function getRoot()
+    {
+        return $this->root;
+    }
+
+    /**
+     * @param string $root
+     */
+    public function setRoot($root)
+    {
+        $this->root = $root;
+    }
+
+
+
 }
 
 /*
-use Sinergi\BrowserDetector\Language;
-use Monolog\Logger;
-use Monolog\Handler\StreamHandler;
-
-$stream = new StreamHandler(__DIR__ . '/logs/influx.log', Logger::DEBUG);
-$logger = new Logger('influxLogger');
-$logger->pushHandler($stream);
-$logger->info('Influx started');
-$stream = new StreamHandler(__DIR__ . '/logs/influx.log', Logger::DEBUG);
-$logger = new Logger('influxLogger');
-$logger->pushHandler($stream);
-$logger->info('Influx started');
-
-$loader = new \Twig\Loader\FilesystemLoader($templatePath);
-$twig = new \Twig\Environment($loader, [__DIR__ . '/cache' => 'cache', 'debug' => true,]);
-$twig->addExtension(new Umpirsky\Twig\Extension\PhpFunctionExtension());
-$twig->addExtension(new \Twig\Extension\DebugExtension());
-
-// Create Router instance
-$router = new \Bramus\Router\Router();
-
-
-
 $router->mount('/install', function () use ($router, $twig, $cookiedir, $logger) {
 
 

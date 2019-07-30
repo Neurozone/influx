@@ -1,3 +1,17 @@
+/*
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published
+by the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
 <?php
 
 error_reporting(E_ALL & ~E_NOTICE);
@@ -11,6 +25,7 @@ use Endroid\QrCode\Response\QrCodeResponse;
 use Sinergi\BrowserDetector\Language;
 use Monolog\Logger;
 use Monolog\Handler\StreamHandler;
+use Monolog\Handler\RotatingFileHandler;
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 use Influx\Flux;
@@ -21,8 +36,19 @@ use Influx\Opml;
 use Influx\Configuration;
 use Influx\Statistics;
 
+if (defined('LOGS_DAYS_TO_KEEP'))
+{
+    $handler = new RotatingFileHandler(__DIR__ . '/logs/influx.log', LOGS_DAYS_TO_KEEP);
+}
+else
+{
+    $handler = new RotatingFileHandler(__DIR__ . '/logs/influx.log', 7);
+}
+
 $stream = new StreamHandler(__DIR__ . '/logs/influx.log', Logger::DEBUG);
+
 $logger = new Logger('influxLogger');
+$logger->pushHandler($handler);
 $logger->pushHandler($stream);
 
 $templatePath = __DIR__ . '/templates/influx';
@@ -68,12 +94,6 @@ if (file_exists('conf/config.php')) {
 
     $timezone_default = 'Europe/Paris';
     date_default_timezone_set($timezone_default);
-
-    $paginationScale = $config['paginationScale'];
-    if (empty($paginationScale)) {
-
-        $paginationScale = 5;
-    }
 
     $scroll = false;
     $unreadEventsForCategory = 0;
@@ -227,7 +247,11 @@ $router->get('/login', function () use ($twig) {
 $router->post('/login', function () use ($db, $config, $logger, $userObject) {
 
     $userObject->setLogin($_POST['login']);
-    if($userObject->checkPassword($_POST['$password']))
+
+    //$logger->info("login: " . $_POST['login']);
+    //$logger->info("password: " . $_POST['password']);
+
+    if($userObject->checkPassword($_POST['password']))
     {
 
         $_SESSION['user'] = $_POST['login'];
@@ -1166,64 +1190,65 @@ $router->mount('/install', function () use ($router, $trans, $twig, $cookiedir, 
 
     $router->get('/', function () use ($twig, $cookiedir, $trans) {
 
-        /*
-        if(file_exists('conf/config.php'))
-        {
-            session_unset();
-            session_destroy();
-            header('location: /login');
-        }
-        */
-
         $_SESSION['install'] = true;
 
-        $filelist = glob("locales/*.json");
+        $installObject = new \Influx\Install();
 
-        foreach ($filelist as $file) {
-            $locale = explode(".", basename($file));
-            $list_lang[] = $locale[0];
-        }
-
-        $templateslist = glob("templates/*");
-        foreach ($templateslist as $tpl) {
+        $templatesList = glob("templates/*");
+        foreach ($templatesList as $tpl) {
             $tpl_array = explode(".", basename($tpl));
             $listTemplates[] = $tpl_array[0];
         }
 
+        $fileList = glob("templates/influx/locales/*.json");
+
+        foreach ($fileList as $file) {
+            $locale = explode(".", basename($file));
+            $list_lang[] = $locale[0];
+        }
+
+        //  echo $install->getDefaultRoot();
+
+        $root = $installObject->getRoot();
+
         echo $twig->render('install.twig',
             [
+                'action' => 'general',
                 'list_lang' => $list_lang,
                 'list_templates' => $listTemplates,
-                'trans' => $trans
+                'root' => $root,
+                'trans' => $trans,
             ]);
 
     });
 
     /* ---------------------------------------------------------------- */
-    // Route: /install/check (GET)
+    // Route: /install/ (POST)
     /* ---------------------------------------------------------------- */
 
-    $router->get('/check', function () use ($twig, $cookiedir,$trans) {
+    $router->post('/', function () use ($twig, $cookiedir,$trans) {
 
-        $_SESSION['install'] = true;
 
-        $filelist = glob("locales/*.json");
-
-        foreach ($filelist as $file) {
-            $locale = explode(".", basename($file));
-            $list_lang[] = $locale[0];
+        if($_POST['action'] == 'database') {
+            $_SESSION['language'] = $_POST['install_changeLng'];
+            $_SESSION['template'] = $_POST['template'];
+            $_SESSION['root'] = $_POST['root'];
         }
 
-        $templateslist = glob("templates/*");
-        foreach ($templateslist as $tpl) {
-            $tpl_array = explode(".", basename($tpl));
-            $listTemplates[] = $tpl_array[0];
+        if($_POST['action'] == 'check') {
+            $_SESSION['language'] = $_POST['install_changeLng'];
+            $_SESSION['template'] = $_POST['template'];
+            $_SESSION['root'] = $_POST['root'];
+        }
+
+        if($_POST['action'] == 'admin') {
+            $_SESSION['login'] = $_POST['login'];
+            $_SESSION['password'] = $_POST['password'];
         }
 
         echo $twig->render('install.twig',
             [
-                'list_lang' => $list_lang,
-                'list_templates' => $listTemplates,
+                'action' => $_POST['action'],
                 'trans' => $trans
             ]);
 
