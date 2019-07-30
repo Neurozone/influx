@@ -160,7 +160,11 @@ $router->before('GET|POST|PUT|DELETE|PATCH|OPTIONS', '/.*', function () use ($lo
     $logger->info($_SERVER['REQUEST_URI']);
     $logger->info(getClientIP());
 
-    if (!isset($_SESSION['install']) && !isset($_SESSION['user']) && $_SERVER['REQUEST_URI'] !== '/login') {
+    if (!isset($_SESSION['install']) && !isset($_SESSION['user']) && $_SERVER['REQUEST_URI'] == '/password/recover') {
+        header('Location: /password/recover');
+        exit();
+    }
+    elseif (!isset($_SESSION['install']) && !isset($_SESSION['user']) && $_SERVER['REQUEST_URI'] !== '/login') {
         header('Location: /login');
         exit();
     } else if (isset($_SESSION['install']) && $_SESSION['install'] && $_SERVER['REQUEST_URI'] !== '/install') {
@@ -220,8 +224,24 @@ $router->get('/login', function () use ($twig) {
 // Route: /login (POST)
 /* ---------------------------------------------------------------- */
 
-$router->post('/login', function () use ($db, $config, $logger) {
+$router->post('/login', function () use ($db, $config, $logger, $userObject) {
 
+    $userObject->setLogin($_POST['login']);
+    if($userObject->checkPassword($_POST['$password']))
+    {
+
+        $_SESSION['user'] = $_POST['login'];
+        $_SESSION['userId'] = $userObject->getId();
+        $_SESSION['userEmail'] = $userObject->getEmail();
+        if (isset($_POST['rememberMe'])) {
+            setcookie('InfluxChocolateCookie', sha1($_POST['password'] . $_POST['login']), time() + 31536000);
+        }
+        header('location: /');
+
+    }
+    else{
+        header('location: /login');
+    }
     /*
     $salt = $config['cryptographicSalt'];
 
@@ -252,7 +272,7 @@ $router->post('/login', function () use ($db, $config, $logger) {
         header('location: /');
     }
     */
-    exit();
+
 
 });
 

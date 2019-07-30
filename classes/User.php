@@ -76,9 +76,9 @@ class User
     public function checkPassword($password)
     {
 
-        if($stmt = $this->db->prepare("select hash from user where login = ? and password = ?")) {
+        if($stmt = $this->db->prepare("select id,login,email,hash from user where login = ?")) {
 
-            $stmt->bind_param("s", $this->login);
+            $stmt->bind_param("s", $this->getLogin());
 
             $stmt->execute();
 
@@ -86,14 +86,19 @@ class User
             $result = $stmt->get_result();
 
             while ($row = $result->fetch_array()) {
-                $this->hash = $row['hash'];
+                $this->setHash($row['hash']);
+                $this->setLogin($row['login']);
+                $this->setEmail($row['email']);
+                $this->setId($row['id']);
             }
 
         }
 
         if (password_verify($password, $this->hash)) {
+            $this->logger->info('Bon password');
             return true;
         } else {
+            $this->logger->info('Mauvais password');
             return false;
         }
     }
