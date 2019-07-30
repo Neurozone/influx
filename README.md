@@ -27,3 +27,7 @@ Please see
 
 * Forgotten password change with email link
 * API with JWT 
+
+## License
+
+AGPL-3.0-or-later
