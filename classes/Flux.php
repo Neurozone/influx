@@ -104,8 +104,8 @@ class Flux
         $title = $sp->get_title();
         $desc = $sp->get_description();
 
-        $q = "INSERT INTO flux(name, description, website, url,lastUpdate,folder,isverbose) 
-                VALUES ('" . $title . "', '" . $d . "', '" . $link . "', '" . $this->getUrl() . "', 0," . $this->getFolder() . ", 1)";
+        $q = "INSERT INTO flux(name, description, website, url,lastUpdate,categoryId,isverbose) 
+                VALUES ('" . $title . "', '" . $desc . "', '" . $link . "', '" . $this->getUrl() . "', 0," . $this->getFolder() . ", 1)";
 
         $this->logger->info($q);
 
@@ -154,7 +154,7 @@ class Flux
                 'website' => $rows['website'],
                 'url' => $rows['url'],
                 'lastupdate' => $rows['lastupdate'],
-                'folder' => $rows['folder'],
+                'folder' => $rows['categoryId'],
                 'isverbose' => $rows['isverbose'],
                 'lastSyncInError' => $rows['lastSyncInError'],
             );
@@ -198,7 +198,7 @@ class Flux
                 'website' => $rows['website'],
                 'url' => $rows['url'],
                 'lastupdate' => $rows['lastupdate'],
-                'folder' => $rows['folder'],
+                'folder' => $rows['categoryId'],
                 'isverbose' => $rows['isverbose'],
                 'lastSyncInError' => $rows['lastSyncInError'],
             );

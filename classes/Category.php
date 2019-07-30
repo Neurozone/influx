@@ -120,22 +120,22 @@ class Category
             $resultsUnreadByFolder = $this->db->query('SELECT count(*) as unread
             FROM items le 
                 inner join flux lfe on le.fluxId = lfe.id 
-                inner join categories lfo on lfe.folder = lfo.id  
+                inner join categories lfo on lfe.categoryId = lfo.id  
             where unread = 1 and lfo.id = ' . $rows['id']);
 
             while ($rowsUnreadByFolder = $resultsUnreadByFolder->fetch_array()) {
                 $unreadEventsByFolder = $rowsUnreadByFolder['unread'];
             }
 
-            $resultsFluxByFolder = $this->db->query('SELECT fe.id as feed_id, fe.name as feed_name, fe.description as feed_description, fe.website as feed_website, fe.url as feed_url, fe.lastupdate as feed_lastupdate, fe.folder as feed_folder,fe.lastSyncInError as feed_lastSyncInError 
+            $resultsFluxByFolder = $this->db->query('SELECT fe.id as feed_id, fe.name as feed_name, fe.description as feed_description, fe.website as feed_website, fe.url as feed_url, fe.lastupdate as feed_lastupdate, fe.categoryId as feed_folder,fe.lastSyncInError as feed_lastSyncInError 
             FROM categories f 
-                inner join flux fe on fe.folder = f.id 
+                inner join flux fe on fe.categoryId = f.id 
             where f.id = ' . $rows['id'] . " order by fe.name");
 
 
             while ($rowsFluxByFolder = $resultsFluxByFolder->fetch_array()) {
 
-                $resultsUnreadByFeed = $this->db->query('SELECT count(*) as unread FROM categories f inner join flux fe on fe.folder = f.id 
+                $resultsUnreadByFeed = $this->db->query('SELECT count(*) as unread FROM categories f inner join flux fe on fe.categoryId = f.id 
                 inner join items e on e.fluxId = fe.id  where e.unread = 1 and fe.id = ' . $rowsFluxByFolder['feed_id']);
 
                 $unreadEventsByFeed = 0;

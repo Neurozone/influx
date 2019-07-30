@@ -222,14 +222,15 @@ $router->get('/login', function () use ($twig) {
 
 $router->post('/login', function () use ($db, $config, $logger) {
 
+    /*
     $salt = $config['cryptographicSalt'];
 
     if ($stmt = $db->prepare("select id,login,password from user where login = ? and password = ?")) {
         $stmt->bind_param("ss", $_POST['login'], sha1($_POST['password'] . $salt));
-        /* execute query */
+
         $stmt->execute();
 
-        /* instead of bind_result: */
+
         $result = $stmt->get_result();
 
         while ($row = $result->fetch_array()) {
@@ -238,6 +239,7 @@ $router->post('/login', function () use ($db, $config, $logger) {
             $user = $row['login'];
         }
     }
+
 
     if (!isset($_SESSION['user'])) {
         $logger->info("wrong login for '" . $_POST['login'] . "'");
@@ -249,6 +251,7 @@ $router->post('/login', function () use ($db, $config, $logger) {
         }
         header('location: /');
     }
+    */
     exit();
 
 });
@@ -274,12 +277,12 @@ $router->get('/password/new/{token}', function ($token) use ($db, $twig, $config
 
 });
 
-$router->post('/password/new', function ($token) use ($db, $twig, $config, $logger, $trans, $userObject) {
+$router->post('/password/new', function () use ($db, $twig, $config, $logger, $trans, $userObject) {
 
 
-    $userObject->setToken(token);
+    $userObject->setToken($_POST['token']);
     $userInfos = $userObject->createHash($_POST['password']);
-    echo $twig->render('password.twig', []);
+    header('location: /');
 
 });
 
