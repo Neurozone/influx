@@ -263,6 +263,27 @@ $router->get('/password/recover', function () use ($db, $twig, $config, $logger,
 
 });
 
+// Route: /password/new/{id} (GET)
+/* ---------------------------------------------------------------- */
+
+$router->get('/password/new/{token}', function ($token) use ($db, $twig, $config, $logger, $trans, $userObject) {
+
+    $userObject->setToken($token);
+    $userInfos = $userObject->getUserInfosByToken();
+    echo $twig->render('password.twig', ['token' => $token]);
+
+});
+
+$router->post('/password/new', function ($token) use ($db, $twig, $config, $logger, $trans, $userObject) {
+
+
+    $userObject->setToken(token);
+    $userInfos = $userObject->createHash($_POST['password']);
+    echo $twig->render('password.twig', []);
+
+});
+
+
 /* ---------------------------------------------------------------- */
 // Route: /password/recover (POST)
 /* ---------------------------------------------------------------- */

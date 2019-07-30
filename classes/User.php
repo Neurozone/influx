@@ -17,6 +17,7 @@ class User
     private $hash = '';
     private $email = '';
     private $otpSecret = '';
+    private $token = '';
     private $db;
     private $logger;
 
@@ -67,6 +68,11 @@ class User
 
     }
 
+    public function getUserInfosByToken()
+    {
+
+    }
+
     public function checkPassword($password)
     {
 
@@ -105,7 +111,13 @@ class User
 
     public function createHash($password)
     {
-        return password_hash($password, PASSWORD_DEFAULT);
+        $this->setHash(password_hash($password, PASSWORD_DEFAULT));
+
+        $q = "UPDATE user set hash = '" . $this->getHash() . "' where token = '" . $this->getToken() . "'";
+
+        $this->logger->info($q);
+
+        $return = $this->db->query($q);
     }
 
 
@@ -219,6 +231,38 @@ class User
     public function setDb($db)
     {
         $this->db = $db;
+    }
+
+    /**
+     * @return string
+     */
+    public function getHash()
+    {
+        return $this->hash;
+    }
+
+    /**
+     * @param string $hash
+     */
+    public function setHash($hash)
+    {
+        $this->hash = $hash;
+    }
+
+    /**
+     * @return string
+     */
+    public function getToken()
+    {
+        return $this->token;
+    }
+
+    /**
+     * @param string $token
+     */
+    public function setToken($token)
+    {
+        $this->token = $token;
     }
 
 
