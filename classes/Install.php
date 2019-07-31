@@ -19,7 +19,29 @@ class Install
 
     public function createSuperUser()
     {
+        /*
+         `login` varchar(225) NOT NULL,
+  `hash` varchar(225) NOT NULL,
+  `email` varchar(225) NOT NULL,
+  `otpSecret` varchar(225) DEFAULT NULL,
+  `isAdmin` int(1) DEFAULT NULL,
+  `token` varchar(100) DEFAULT NULL,
+  `secret` varchar(100) NOT NULL,
+         */
+        $q = "INSERT INTO user(login, hash, email, isAdmin,secret) 
+                VALUES ('" . $title . "', '" . $desc . "', '" . $link . "', '" . $this->getUrl() . "', 0," . $this->getFolder() . ", 1)";
 
+        $this->logger->info($q);
+
+        $return = $this->db->query($q);
+
+        if ($this->db->errno) {
+            $this->logger->info("\t\tFailure: \t$this->db->error\n");
+            $this->logger->error($q);
+
+            return "\t\tFailure: \t$this->db->error\n";
+
+        }
     }
 
     /**

@@ -1,4 +1,6 @@
-/*
+<?php
+
+/**
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as published
 by the Free Software Foundation, either version 3 of the License, or
@@ -11,8 +13,7 @@ GNU Affero General Public License for more details.
 
 You should have received a copy of the GNU Affero General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
-*/
-<?php
+ */
 
 error_reporting(E_ALL & ~E_NOTICE);
 
@@ -51,7 +52,7 @@ $logger = new Logger('influxLogger');
 $logger->pushHandler($handler);
 $logger->pushHandler($stream);
 
-$templatePath = __DIR__ . '/templates/influx';
+$templatePath = __DIR__ . '/templates/influx-ng';
 
 $loader = new \Twig\Loader\FilesystemLoader($templatePath);
 $twig = new \Twig\Environment($loader, ['cache' => __DIR__ . '/cache', 'debug' => true,]);
