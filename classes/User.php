@@ -21,7 +21,8 @@ class User
     private $db;
     private $logger;
 
-    public function __construct($db,$logger){
+    public function __construct($db, $logger)
+    {
 
         $this->db = $db;
         $this->db->set_charset('utf8mb4');
@@ -46,7 +47,7 @@ class User
 
         $count = 0;
 
-        if($stmt = $this->db->prepare("select count(login) as cn from user where login = ?")) {
+        if ($stmt = $this->db->prepare("select count(login) as cn from user where login = ?")) {
             $stmt->bind_param("s", $_POST['login']);
 
             $stmt->execute();
@@ -58,8 +59,7 @@ class User
                 $count = $row['cn'];
             }
 
-            if($count == 1)
-            {
+            if ($count == 1) {
                 return true;
             }
 
@@ -76,7 +76,7 @@ class User
     public function checkPassword($password)
     {
 
-        if($stmt = $this->db->prepare("select id,login,email,hash from user where login = ?")) {
+        if ($stmt = $this->db->prepare("select id,login,email,hash from user where login = ?")) {
 
             $stmt->bind_param("s", $this->getLogin());
 
@@ -125,6 +125,21 @@ class User
         $return = $this->db->query($q);
     }
 
+    public function createCookie()
+    {
+        $value = $this->getLogin() . ',' . hash('sha256', $this->getLogin() . $this->getSecret() . $this->getId());
+        setcookie('login', $value, time() + 365 * 24 * 3600, null, null, false, true);
+    }
+
+    public function validateCookie($cookieValue)
+    {
+
+        if ($cookieValue == $this->getLogin() . ',' . hash('sha256', $this->getLogin() . $this->getSecret() . $this->getId())) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 
     /**
      * @return mixed

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="referrer" content="no-referrer" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="description" content="Agr&eacute;gateur de flux RSS InFlux">
+    <meta name="author" content="Hecate">
+    <meta name="viewport" content="width=device-width">
+    <title>InFlux</title>
+    <!-- Tell the browser to be responsive to screen width -->
+    <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
+    <!-- Bootstrap 4.3.1 -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="templates/influx-ng/font-awesome/css/fontawesome.min.css">
+    <!-- Theme style -->
+    <link rel="stylesheet" href="templates/influx-ng/css/AdminLTE.min.css">
+    <link rel="stylesheet" href="templates/influx-ng/css/skin-black.min.css">
+    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+
+    <!-- Google Font -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700,300italic,400italic,600italic">
+</head>
+<body class="hold-transition skin-black sidebar-mini">
+    <div class="global-wrapper">
+        <!-- <!> Balise ayant double utilit&eacute; : sert de base a javascript pour connaitre l'action courante permet le retour en haut de page -->
+        <a id="pageTopAnvil"></a>
+        <a id="pageTop" class="hidden">{{ action }}</a>
+        <div id="header-container">
+            <header class="wrapper clearfix">
+                <h1 class="logo" id="title"><a href="/">In<i>Flux</i></a></h1>
+                <div class="loginBloc"> - <span><a href="/settings/user" class="">Identifi&eacute; avec  {{ user }}</a> </span><a href="/logout" class="loginButton">{{ trans.DISCONNECT }}</a>
+                    <div class="clear"></div>
+                </div>
+                <nav>
+                    <ul>
+                        <li><a href="/" title="Accueil"><i class="icon-home"></i></a></li>
+                        <li><a href="/favorites" title="Favoris"><i class="icon-star-empty"></i></a></li>
+                        <li><a href="/settings" title="Gestion"><i class="icon-cog"></i></a></li>
+                        <li><a class="synchronizeButton" title="Lancer une synchronisation manuelle" onclick="synchronize('{{ synchronisationCode }}');"><i class="icon-arrows-cw"></i></a></li>
+
+                    </ul>
+                </nav>
+            </header>
+        </div>
+    <div id="main-container">
