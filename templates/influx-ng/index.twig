@@ -33,38 +33,40 @@
 <div class="wrapper">
 
 
-        <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
-            <a class="navbar-brand" href="#">Navbar</a>
-            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-            </button>
+    <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
+        <a class="navbar-brand" href="#">Navbar</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault"
+                aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
 
-            <div class="collapse navbar-collapse" id="navbarsExampleDefault">
-                <ul class="navbar-nav mr-auto">
-                    <li class="nav-item active">
-                        <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#">Link</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link disabled" href="#">Disabled</a>
-                    </li>
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="http://example.com" id="dropdown01" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Dropdown</a>
-                        <div class="dropdown-menu" aria-labelledby="dropdown01">
-                            <a class="dropdown-item" href="#">Action</a>
-                            <a class="dropdown-item" href="#">Another action</a>
-                            <a class="dropdown-item" href="#">Something else here</a>
-                        </div>
-                    </li>
-                </ul>
-                <form class="form-inline my-2 my-lg-0">
-                    <input class="form-control mr-sm-2" type="text" placeholder="Search" aria-label="Search">
-                    <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
-                </form>
-            </div>
-        </nav>
+        <div class="collapse navbar-collapse" id="navbarsExampleDefault">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item active">
+                    <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Link</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link disabled" href="#">Disabled</a>
+                </li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="http://example.com" id="dropdown01" data-toggle="dropdown"
+                       aria-haspopup="true" aria-expanded="false">Dropdown</a>
+                    <div class="dropdown-menu" aria-labelledby="dropdown01">
+                        <a class="dropdown-item" href="#">Action</a>
+                        <a class="dropdown-item" href="#">Another action</a>
+                        <a class="dropdown-item" href="#">Something else here</a>
+                    </div>
+                </li>
+            </ul>
+            <form class="form-inline my-2 my-lg-0">
+                <input class="form-control mr-sm-2" type="text" placeholder="Search" aria-label="Search">
+                <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+            </form>
+        </div>
+    </nav>
 
     <!-- Left side column. contains the logo and sidebar -->
     <aside class="main-sidebar ">
@@ -107,9 +109,9 @@
         <!-- Content Header (Page header) -->
         <section class="content-header">
             <h1><a target="_blank" rel="noopener noreferrer" href="{{ flux.website }}">{{ flux.name }}</a> :
-            <small>{{ flux.description }}</small>
-            <a href="/flux/{{ flux.id }}/page/{{ page }}/unread">Non lu</a> |
-            <a href="/flux/{{ flux.id }}/page/{{ page }}/older">Plus vieux</a> en premier
+                <small>{{ flux.description }}</small>
+                <a href="/flux/{{ flux.id }}/page/{{ page }}/unread">Non lu</a> |
+                <a href="/flux/{{ flux.id }}/page/{{ page }}/older">Plus vieux</a> en premier
             </h1>
         </section>
 
@@ -119,49 +121,50 @@
 
             <div class="row">
                 {% for event in events %}
-                {% set plainDescription = event.description|striptags|escape %}
+                    {% set plainDescription = event.description|striptags|escape %}
 
-                <div class="card mw-100">
-                    <div class="card-header bg-transparent">
-                        <h2><a onclick="readThis(this,{{ event.id }},'title');" target="_blank"
-                               rel="noopener noreferrer" href="{{ event.link }}"
-                               title="{{ plainDescription|escape }}">{{ event.title|escape }}</a>
-                        </h2>
-                        <a class="readUnreadButton"><i class="far fa-eye"></i>
-                            Lu/Non lu</a>
-                        {% if event.favorite != 1 %}
-                            <a class="" onclick="addFavorite(this,{{ event.id }});">Ajouter aux
-                                favoris</a>
-                        {% else %}
-                            <a class="" onclick="removeFavorite(this,{{ event.id }});">Supprimer
-                                des favoris</a>
-                        {% endif %}
-                        <a href="{{ event.link }}" target="_blank"
-                           rel="noopener noreferrer">{{ event.flux_name }}</a>
-                        {% if event.creator %}
-                            par {{ event.creator }}
-                        {% endif %}
-                        {{ event.pubdate }}
+                    <div class="card mw-100">
+                        <div class="card-header bg-transparent">
+                            <h2><a onclick="readThis(this,{{ event.id }},'title');" target="_blank"
+                                   rel="noopener noreferrer" href="{{ event.link }}"
+                                   title="{{ plainDescription|escape }}">{{ event.title|escape }}</a>
+                            </h2>
+                            <a class="readUnreadButton"><i class="far fa-eye"></i>
+                                Lu/Non lu</a>
+                            {% if event.favorite != 1 %}
+                                <a class="" onclick="addFavorite(this,{{ event.id }});">Ajouter aux
+                                    favoris</a>
+                            {% else %}
+                                <a class="" onclick="removeFavorite(this,{{ event.id }});">Supprimer
+                                    des favoris</a>
+                            {% endif %}
+                            <a href="{{ event.link }}" target="_blank"
+                               rel="noopener noreferrer">{{ event.flux_name }}</a>
+                            {% if event.creator %}
+                                par {{ event.creator }}
+                            {% endif %}
+                            {{ event.pubdate }}
 
-                    </div>
-                    <div class="card-body">
-                        <h5 class="card-title"></h5>
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title"></h5>
 
                             {{ event.content|raw }}
 
+                        </div>
+                        <div class="card-footer">
+                            <a class="pointer right readUnreadButton"><i class="far fa-eye"></i>
+                                Lu/Non lu</a>
+                            {% if event.getFavorite != 1 %}
+                                <a class="right pointer favorite" onclick="addFavorite(this,{{ event.id }});">Ajouter
+                                    aux
+                                    favoris</a>
+                            {% else %}
+                                <a class="right pointer favorite" onclick="removeFavorite(this,{{ event.id }});">Supprimer
+                                    des favoris</a>
+                            {% endif %}
+                        </div>
                     </div>
-                    <div class="card-footer">
-                        <a class="pointer right readUnreadButton"><i class="far fa-eye"></i>
-                            Lu/Non lu</a>
-                        {% if event.getFavorite != 1 %}
-                            <a class="right pointer favorite" onclick="addFavorite(this,{{ event.id }});">Ajouter aux
-                                favoris</a>
-                        {% else %}
-                            <a class="right pointer favorite" onclick="removeFavorite(this,{{ event.id }});">Supprimer
-                                des favoris</a>
-                        {% endif %}
-                    </div>
-                </div>
                 {% endfor %}
             </div>
 
