@@ -41,14 +41,6 @@ body {
  * Content Wrapper - contains the main content
  */
 .content-wrapper,
-.main-footer {
-  -webkit-transition: -webkit-transform 0.3s ease-in-out, margin 0.3s ease-in-out;
-  -moz-transition: -moz-transform 0.3s ease-in-out, margin 0.3s ease-in-out;
-  -o-transition: -o-transform 0.3s ease-in-out, margin 0.3s ease-in-out;
-  transition: transform 0.3s ease-in-out, margin 0.3s ease-in-out;
-  margin-left: 230px;
-  z-index: 820;
-}
 .layout-top-nav .content-wrapper,
 .layout-top-nav .main-footer {
   margin-left: 0;
@@ -62,7 +54,7 @@ body {
 @media (min-width: 768px) {
   .sidebar-collapse .content-wrapper,
   .sidebar-collapse .main-footer {
-    margin-left: 0;
+    margin-left: auto;
   }
 }
 @media (max-width: 767px) {
@@ -443,7 +435,7 @@ a:focus {
   left: 0;
   padding-top: 50px;
   min-height: 100%;
-  width: 230px;
+  width: 20%;
   z-index: 810;
   -webkit-transition: -webkit-transform 0.3s ease-in-out, width 0.3s ease-in-out;
   -moz-transition: -moz-transform 0.3s ease-in-out, width 0.3s ease-in-out;
@@ -744,7 +736,7 @@ a:focus {
   .control-sidebar-open .content-wrapper,
   .control-sidebar-open .right-side,
   .control-sidebar-open .main-footer {
-    margin-right: 230px;
+    margin-right: 20%;
   }
 }
 .fixed .control-sidebar {
@@ -5003,16 +4995,7 @@ hr {
   .fixed .right-side {
     padding-top: 0 !important;
   }
-  .invoice {
-    width: 100%;
-    border: 0;
-    margin: 0;
-    padding: 0;
-  }
-  .invoice-col {
-    float: left;
-    width: 33.3333333%;
-  }
+
   .table-responsive {
     overflow: auto;
   }
