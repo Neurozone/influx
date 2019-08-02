@@ -1,0 +1,283 @@
+{% include 'header.twig' %}
+
+<div id="main" class="wrapper clearfix settings">
+    <div id="menuBar">
+        <aside>
+            <h3>{{ trans.FEED_OPTION }}</h3>
+            <ul>
+                <li><a class="toggle" href="/settings/manage">{{ trans.FEED_MANAGING }}</a></li>
+                <li><a class="toggle" href="/settings/synchronize">{{ trans.MANUAL_FEED_UPDATE }}</a></li>
+                <li><a class="toggle" href="/settings/preferences">{{ trans.PREFERENCES }}</a></li>
+                <li><a class="toggle" href="/settings/feeds/import">{{ trans.IMPORT }}</a></li>
+                <li><a class="toggle" href="/settings/feeds/export">{{ trans.EXPORT }}</a></li>
+                <li><a class="toggle" href="/settings/statistics">{{ trans.STATISTICS }}</a></li>
+            </ul>
+        </aside>
+    </div>
+
+    <article>
+        {% if section == 'manage' %}
+            <section class="manageBloc">
+                <h2>{{ trans.FEED_MANAGING }} :</h2>
+                <form action="/settings/feed/add" method="POST">
+                    <section class="addBloc">
+                        <h3>{{ trans.ADD_FEED }}</h3>
+                        <p>{{ trans.FEED_RSS_LINK }} : <input type="text" name="newUrl"
+                                                              placeholder="http://monflux.com/rss"/>&nbsp;
+                            <select name="newUrlCategory">
+                                {% for folder in folders %}
+                                    <option {% if folder.id == 1 %}selected="selected"{% endif %}
+                                            value="{{ folder.id }}">{{ folder.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <button>{{ trans.ADD }}</button>
+                        </p>
+
+                    </section>
+                </form>
+
+                <section class="addBloc">
+                    <h3>{{ trans.ADD_FOLDER }}</h3>
+                    <form method="POST" action="/settings/category/add">
+                        {{ trans.NEW_FOLDER }} <input type="text" name="categoryName">
+                        <button>{{ trans.ADD }}</button>
+                    </form>
+                </section>
+
+                <section class="addBloc">
+                    <h3>{{ trans.FEED_OPTION }}</h3>
+                    <span>{{ trans.FEED_OPTION_ISVERBOSE }}</span>
+                    {% if optionFeedIsVerbose == 0 %}
+                        <input class="" onclick="toggleOptionFeedVerbose(this,1)" type="checkbox" checked>
+                    {% else %}
+                        <input class="" onclick="toggleOptionFeedVerbose(this,0)" type="checkbox">
+                    {% endif %}
+                </section>
+
+                <ul class="clear nochip">
+                    {% set feedsForFolder="" %}
+                    {% for folder in categories %}
+                        {% set feedsForFolder = folder.flux %}
+                        <li>
+                            <h1 class="folder left"><span>{{ folder.name }}</span>
+                                <button onclick="renameFolder(this,{{ folder.id }})">{{ trans.RENAME }}</button>
+                                <button onclick="if(confirm('{{ trans.CONFIRM_DELETE_FOLDER }}\n\n{{ folder.name }}'))window.location='/settings/folder/remove/{{ folder.id }}'">{{ trans.DELETE }}</button>
+                                <div class="clear"></div>
+                            </h1>
+                            <div class="clear"></div>
+                            <ul class="feedsList">
+                                {% for feed in folder.flux %}
+                                    <li class="feedListItem{% if feed.LastSyncInError == 1 %} errorSync{% endif %}">
+                            <span class="feedTitle js-fluxTitle" {% if feed.LastSyncInError == 1 %} title="{{ trans.SYNCHRONISATION_ERROR }}" {% endif %}>
+                                    <a{% if folder.LastSyncInError == 1 %} class="inError"{% endif %} href="/flux/{{ feed.id }}"
+                                                                                                      data-flux-id="{{ feed.id }}">{{ feed.name }}</a>
+                                <a href="{{ feed.url }}" class="underlink">{{ feed.url }}</a>
+                                    </span>
+                                        <div class="feedAction">
+                                            <select class="feedFolder"
+                                                    onchange="changeFluxCategory(this,{{ feed.id }});">
+                                                {% for f in categories %}
+                                                    <option {% if feed.folder == f.id %}selected="selected"{% endif %}
+                                                            value="{{ f.id }}">{{ f.name }}</option>
+                                                {% endfor %}
+                                            </select>
+
+                                        </div>
+                                        <div class="feedButtons">
+                                            <button class="feedRename"
+                                                    onclick="renameFlux(this,{{ feed.id }})">{{ trans.RENAME }}</button>
+                                            <button class="feedDelete"
+                                                    onclick="if(confirm('{{ trans.CONFIRM_DELETE_FEED }}\n\n'+getFluxName({{ feed.id }}))){window.location='/settings/flux/remove/{{ feed.id }}';}">{{ trans.DELETE }}</button>
+                                        </div>
+                                    </li>
+                                {% endfor %}
+
+                            </ul>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </section>
+        {% endif %}
+
+        {% if section == 'synchronize' %}
+            <section class="synchronizeBloc">
+                <h2>{{ trans.FEED_SYNCHRONISATION }} :</h2>
+                <iframe class="importFrame" src="settings/synchronize" name="idFrameSynchro" id="idFrameSynchro"
+                        width="100%" height="300"></iframe>
+            </section>
+        {% endif %}
+
+        {% if section == 'preferences' %}
+            <section class="preferenceBloc">
+                <h2>{{ trans.PREFERENCES }} :</h2>
+                <form method="POST" action="/settings/configuration/update">
+                    <section>
+                        <h3>{{ trans.GENERALITY }}</h3>
+                        <p><label for="root">{{ trans.PROJECT_ROOT }} :</label> <input type="text" id="root" name="root"
+                                                                                       value="{{ config.root }}">
+                        </p>
+                        <h4>{{ trans.LET_SLASH_AT_END }}</h4>
+                        <p>{{ trans.INSTALL_LANGUAGE }} :
+                            <select name="ChgLanguage">
+                                {% for ln in languageList %}
+                                    {% if ln == currentLanguage %}
+                                        <option selected=selected value='{{ ln }}'>{{ ln }}</option>
+                                        ";
+                                    {% else %}
+                                        <option value='{{ ln }}'>{{ ln }}</option>
+                                        ";
+                                    {% endif %}
+                                {% endfor %}
+                            </select></p>
+                        <p>{{ trans.THEMES }} :
+                            <select name="ChgTheme">
+                                {% for th in themeList %}
+                                    {% if th == currentTheme %}
+                                        <option selected=selected value='{{ th }}'>{{ th }}</option>
+                                        ";
+                                    {% else %}
+                                        <option value='{{ th }}'>{{ th }}</option>
+                                        ";
+                                    {% endif %}
+                                {% endfor %}
+                            </select></p>
+                    </section>
+
+                    <section>
+                        <h3>{{ trans.USER }}</h3>
+                        <p><label for="login">{{ trans.LOGIN }} :</label> <input type="text" id="login" name="login"
+                                                                                 value="{{ user }}"></p>
+                        <p><label for="password">{{ trans.PASSWORD }} :</label> <input type="text" id="password"
+                                                                                       name="password"
+                                                                                       autocomplete="off"
+                                                                                       value=""
+                                                                                       placeholder="{{ trans.INSTALL_DISPLAY_CLEAR }}">
+                        </p>
+                        <p>{{ trans.LET_EMPTY_IF_NO_PASS_CHANGE }}<br/>
+                            {{ trans.HOWTO_RESET_PASSWORD }}</p>
+                        <fieldset>
+
+                            <img id="qrCodeOtp" class="qrcodeOtp"
+                                 src="qrcode/qr/label/{$serviceUrl}/user/{{ user }}/key/{{ config.OtpSecret }}/issuer/{$serviceUrl}/algorithm/sha1/digits/8/period/30/qrSize/4/qrMargin/1"/>
+
+                            <legend>{{ trans.OTP_SETTINGS }}</legend>
+                            <input type="radio" {% if otpEnabled is defined %} checked="checked" {% endif %} value="1"
+                                   id="otpEnabledYes" name="otpEnabled"/><label
+                                    for="otpEnabledYes">{{ trans.YES }}</label>
+                            <input type="radio"{% if otpEnabled is not defined %} checked="checked" {% endif %}
+                                   value="0"
+                                   id="otpEnabledNo" name="otpEnabled"/><label for="otpEnabledNo">{{ trans.NO }}</label>
+                            <p>{{ trans.OTP_SETTINGS_DESC }}myUser->getOtpKey(.</p>
+                            <p><label for="otpSecret">{{ trans.OTP_SECRET }} :</label>
+                                <input type="text" id="otpSecret" name="otpSecret" autocomplete="off"
+                                       placeholder="{{ trans.OTP_DISABLED_EMPTY }}" value="{{ user.OtpSecret }}">
+                                <i class="icon-random-otp" data-otp-generate="#otpSecret" data-otp-qrcode="#qrCodeOtp"
+                                   title="Random OTP secret"></i>
+                            </p>
+                        </fieldset>
+                    </section>
+
+                    <section>
+                        <h3>{{ trans.SYNCHRONISATION }}</h3>
+                        <p>
+                            <input type="radio" {% if config.synchronisationType == "auto" %} checked="checked" {% endif %}
+                                   value="auto" id="synchronisationTypeComplete" name="synchronisationType"> <label
+                                    for="synchronisationTypeComplete"><strong>
+                                    {{ trans.AUTOMATIC_FULL }} :</strong></label> {{ trans.AUTOMATIC_FULL_DESC }}</p>
+                        <p>
+                            <input type="radio" {% if config.synchronisationType == 'graduate' %} checked="checked" {% endif %}
+                                   value="graduate" id="synchronisationTypeGraduated" name="synchronisationType"> <label
+                                    for="synchronisationTypeGraduated"><strong>{{ trans.AUTOMATIC_GRADUATE }}
+                                    :</strong></label> {{ trans.AUTOMATIC_GRADUATE_DESC }}</p>
+
+
+                        <p><strong>{{ trans.SYNCHRONISATION_CODE }} :</strong>
+                            {{ config.synchronisationCode }}
+                        </p>
+
+                    </section>
+
+                    <section>
+
+                        <h3>{{ trans.PREFERENCES }}</h3>
+                        <fieldset>
+                            <legend><label for="articlePerPages">{{ trans.EVENT_NUMBER_PER_PAGES }}</label></legend>
+                            <input type="text" value="{{ config.articlePerPages }}" id="articlePerPages"
+                                   name="articlePerPages" size="4"/>
+                        </fieldset>
+                        <fieldset>
+                            <legend>{{ trans.SORT_BY_RECENT_EVENT_HOME }}</legend>
+                            <input type="radio" {% if config.articleDisplayHomeSort %} checked="checked" {% endif %}
+                                   value="1"
+                                   id="articleDisplayHomeSortYes" name="articleDisplayHomeSort"/><label
+                                    for="articleDisplayHomeSortYes">{{ trans.YES }}</label>
+                            <input type="radio" {% if not config.articleDisplayHomeSort %} checked=" checked" {% endif %}
+                                   value="0" id="articleDisplayHomeSortNo" name="articleDisplayHomeSort"/><label
+                                    for="articleDisplayHomeSortNo">{{ trans.NO }}</label>
+                        </fieldset>
+                        <fieldset>
+                            <legend>{{ trans.SORT_BY_RECENT_EVENT_FOLDER }}</legend>
+                            <input type="radio" {% if config.articleDisplayFolderSort %} checked="checked" {% endif %}
+                                   value="1"
+                                   id="articleDisplayFolderSortYes" name="articleDisplayFolderSort"/><label
+                                    for="articleDisplayFolderSortYes">{{ trans.YES }}</label>
+                            <input type="radio" {% if not config.articleDisplayFolderSort %} checked=" checked" {% endif %}
+                                   value="0"
+                                   id="articleDisplayFolderSorttNo" name="articleDisplayFolderSort"/><label
+                                    for="articleDisplayFolderSortNo">{{ trans.NO }}</label>
+                        </fieldset>
+                        <fieldset>
+                            <legend>{{ trans.SHOW_EVENT_CONTENT }}</legend>
+                            <input type="radio" {% if config.articleDisplayMode=='title' %} checked="checked" {% endif %}
+                                   value="title" id="articleDisplayModeTitle" name="articleDisplayMode"/><label
+                                    for="articleDisplayModeTitle">{{ trans.TITLE }}</label>
+                            <input type="radio" {% if config.articleDisplayMode=='summary' %} checked="checked" {% endif %}
+                                   value="summary" id="articleDisplayModeSummary" name="articleDisplayMode"/><label
+                                    for="articleDisplayModeSummary">{{ trans.SUMMARY }}</label>
+                            <input type="radio" {% if config.articleDisplayMode=='content' %} checked="checked" {% endif %}
+                                   value="content" id="articleDisplayModeContent" name="articleDisplayMode"/><label
+                                    for="articleDisplayModeContent">{{ trans.CONTENT }}</label>
+                        </fieldset>
+
+                    </section>
+
+                    <button name="installButton">{{ trans.SAVE }}</button>
+                </form>
+
+            </section>
+        {% endif %}
+
+
+
+        {% if section == 'feeds/import' %}
+
+            <section class="importBloc">
+                <h2>{{ trans.IMPORT_FEED_OPML_FORMAT }}</h2>
+                <form action="settings/feeds/import" method="POST" enctype="multipart/form-data">
+                    <p>{{ trans.OPML_FILE }} : <input name="newImport" type="file"/>
+                        <button name="importButton">{{ trans.IMPORT }}</button>
+                    </p>
+                    <p>{{ trans.IMPORT_COFFEE_TIME }}</p>
+                </form>
+            </section>
+        {% endif %}
+
+
+        {% if section == 'feeds/export' %}
+
+            <section class="exportBloc">
+                <form action="settings/feed/export" method="POST">
+                    <h2>{{ trans.EXPORT_FEED_OPML_FORMAT }}</h2>
+                    <p>{{ trans.OPML_FILE }} :
+                        <button name="exportButton">{{ trans.EXPORT }}</button>
+                    </p>
+                </form>
+            </section>
+        {% endif %}
+
+
+    </article>
+
+</div> <!-- #main -->
+
+{% include "footer.twig" %}

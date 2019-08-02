@@ -52,13 +52,6 @@ $logger = new Logger('influxLogger');
 $logger->pushHandler($handler);
 $logger->pushHandler($stream);
 
-$templatePath = __DIR__ . '/templates/influx-ng';
-
-$loader = new \Twig\Loader\FilesystemLoader($templatePath);
-$twig = new \Twig\Environment($loader, ['cache' => __DIR__ . '/cache', 'debug' => true,]);
-
-$twig->addExtension(new \Twig\Extension\DebugExtension());
-
 // Create Router instance
 $router = new \Bramus\Router\Router();
 
@@ -77,6 +70,14 @@ if (file_exists('conf/config.php')) {
 
     $conf = new Configuration($db);
     $config = $conf->getAll();
+
+    $template = 'influx';
+    $templatePath = __DIR__ . '/templates/' . $template;
+
+    $loader = new \Twig\Loader\FilesystemLoader($templatePath);
+    $twig = new \Twig\Environment($loader, ['cache' => __DIR__ . '/cache', 'debug' => true,]);
+
+    $twig->addExtension(new \Twig\Extension\DebugExtension());
 
     $fluxObject = new Flux($db, $logger);
     $itemsObject = new Items($db, $logger);
@@ -122,20 +123,6 @@ function getClientIP()
     }
 
     return '';
-}
-
-/* ---------------------------------------------------------------- */
-// Reverse proxy
-/* ---------------------------------------------------------------- */
-
-// @todo
-
-// Use X-Forwarded-For HTTP Header to Get Visitor's Real IP Address
-
-if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-    $http_x_headers = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
-
-    $_SERVER['REMOTE_ADDR'] = $http_x_headers[0];
 }
 
 /* ---------------------------------------------------------------- */
