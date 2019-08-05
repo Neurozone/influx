@@ -61,6 +61,8 @@ if (file_exists('conf/config.php')) {
     // Database
     /* ---------------------------------------------------------------- */
 
+    $_SESSION['install'] = false;
+
     $db = new mysqli(MYSQL_HOST, MYSQL_LOGIN, MYSQL_MDP, MYSQL_BDD);
     $db->set_charset('utf8mb4');
     $db->query('SET NAMES utf8mb4');
@@ -84,7 +86,7 @@ if (file_exists('conf/config.php')) {
 
     $synchronisationCode = $config['synchronisationCode'];
 
-    mb_internal_encoding('UTF-8'); // UTF8 pour fonctions mb_*
+    mb_internal_encoding('UTF-8');
     $start = microtime(true);
 
     /* ---------------------------------------------------------------- */
@@ -96,7 +98,7 @@ if (file_exists('conf/config.php')) {
 
     $scroll = false;
     $unreadEventsForCategory = 0;
-    $hightlighted = 0;
+    $highlighted = 0;
 
     $page = 1;
 
@@ -174,6 +176,9 @@ $router->before('GET|POST|PUT|DELETE|PATCH|OPTIONS', '/.*', function () use ($lo
     } else if (isset($_SESSION['install']) && $_SESSION['install'] && $_SERVER['REQUEST_URI'] !== '/install') {
         header('Location: /install');
         exit();
+    } else if (isset($_SESSION['install']) && $_SESSION['install'] == false && $_SERVER['REQUEST_URI'] !== '/install') {
+        header('Location: /');
+        exit();
     }
 });
 
@@ -232,9 +237,6 @@ $router->post('/login', function () use ($db, $config, $logger, $userObject) {
 
     $userObject->setLogin($_POST['login']);
 
-    //$logger->info("login: " . $_POST['login']);
-    //$logger->info("password: " . $_POST['password']);
-
     if ($userObject->checkPassword($_POST['password'])) {
 
         $_SESSION['user'] = $_POST['login'];
@@ -248,37 +250,6 @@ $router->post('/login', function () use ($db, $config, $logger, $userObject) {
     } else {
         header('location: /login');
     }
-    /*
-    $salt = $config['cryptographicSalt'];
-
-    if ($stmt = $db->prepare("select id,login,password from user where login = ? and password = ?")) {
-        $stmt->bind_param("ss", $_POST['login'], sha1($_POST['password'] . $salt));
-
-        $stmt->execute();
-
-
-        $result = $stmt->get_result();
-
-        while ($row = $result->fetch_array()) {
-            $_SESSION['user'] = $row['login'];
-            $_SESSION['userid'] = $row['id'];
-            $user = $row['login'];
-        }
-    }
-
-
-    if (!isset($_SESSION['user'])) {
-        $logger->info("wrong login for '" . $_POST['login'] . "'");
-        header('location: /login');
-    } else {
-        $_SESSION['user'] = $user;
-        if (isset($_POST['rememberMe'])) {
-            setcookie('InfluxChocolateCookie', sha1($_POST['password'] . $_POST['login']), time() + 31536000);
-        }
-        header('location: /');
-    }
-    */
-
 
 });
 
@@ -304,7 +275,7 @@ $router->get('/password/new/{token}', function ($token) use ($db, $twig, $config
 });
 
 $router->post('/password/new', function () use ($db, $twig, $config, $logger, $trans, $userObject) {
-    
+
     $userObject->setToken($_POST['token']);
     $userInfos = $userObject->createHash($_POST['password']);
     header('location: /');
@@ -618,7 +589,6 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
 
         $requete = 'select lf.name, FROM_UNIXTIME(max(le.pubdate)) last_published from flux lf inner join items le on lf.id = le.flux group by lf.name order by 2';
 
-
     });
 
     /* ---------------------------------------------------------------- */
@@ -686,7 +656,6 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
         $fluxObject->setCategory($_GET['id']);
         $fluxObject->setName($_GET['name']);
         $fluxObject->setUrl($_GET['url']);
-
         $fluxObject->changeCategory();
 
         header('location: /settings');
@@ -888,7 +857,6 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
 // Route: /action/read/all (GET)
 /* ---------------------------------------------------------------- */
 
-
 $router->get('/action/read/all', function () use ($twig, $db, $logger, $trans, $config, $fluxObject) {
 
     $fluxObject->markAllRead();
@@ -984,6 +952,7 @@ $router->get('/action/updateConfiguration', function () use ($twig, $db, $logger
 
 /* ---------------------------------------------------------------- */
 // Route: /qrcode
+// @TODO
 /* ---------------------------------------------------------------- */
 
 $router->mount('/qrcode', function () use ($router, $twig, $db, $logger, $trans, $config) {
@@ -1233,7 +1202,7 @@ $router->mount('/install', function () use ($router, $trans, $twig, $cookieDir, 
         $currentLanguage = i18n_init($languageList, $installDirectory);
         $languageList = array_unique($i18n->languages);
         if (file_exists('constant.php')) {
-            die(_t('ALREADY_INSTALLED'));
+            die('ALREADY_INSTALLED');
         }
         define('DEFAULT_TEMPLATE', 'influx');
         $templates = scandir('templates');
@@ -1266,7 +1235,9 @@ define('MYSQL_PREFIX','{$this->options['db']['mysqlPrefix']}');
 
         file_put_contents(self::CONSTANT_FILE, $constant);
         if (!is_readable(self::CONSTANT_FILE))
+        {
             die('"' . self::CONSTANT_FILE . '" not found!');
+        }
 
         header('location: /login');
 
