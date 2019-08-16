@@ -8,8 +8,8 @@
                 <li><a class="toggle" href="/settings/manage">{{ trans.FEED_MANAGING }}</a></li>
                 <li><a class="toggle" href="/settings/synchronize">{{ trans.MANUAL_FEED_UPDATE }}</a></li>
                 <li><a class="toggle" href="/settings/preferences">{{ trans.PREFERENCES }}</a></li>
-                <li><a class="toggle" href="/settings/feeds/import">{{ trans.IMPORT }}</a></li>
-                <li><a class="toggle" href="/settings/feeds/export">{{ trans.EXPORT }}</a></li>
+                <li><a class="toggle" href="/settings/flux/import">{{ trans.IMPORT }}</a></li>
+                <li><a class="toggle" href="/settings/flux/export">{{ trans.EXPORT }}</a></li>
                 <li><a class="toggle" href="/settings/statistics">{{ trans.STATISTICS }}</a></li>
             </ul>
         </aside>
@@ -19,15 +19,15 @@
         {% if section == 'manage' %}
             <section class="manageBloc">
                 <h2>{{ trans.FEED_MANAGING }} :</h2>
-                <form action="/settings/feed/add" method="POST">
+                <form action="/settings/flux/add" method="POST">
                     <section class="addBloc">
                         <h3>{{ trans.ADD_FEED }}</h3>
                         <p>{{ trans.FEED_RSS_LINK }} : <input type="text" name="newUrl"
                                                               placeholder="http://monflux.com/rss"/>&nbsp;
                             <select name="newUrlCategory">
-                                {% for folder in folders %}
-                                    <option {% if folder.id == 1 %}selected="selected"{% endif %}
-                                            value="{{ folder.id }}">{{ folder.name }}</option>
+                                {% for cat in categories %}
+                                    <option {% if cat.id == 1 %}selected="selected"{% endif %}
+                                            value="{{ cat.id }}">{{ cat.name }}</option>
                                 {% endfor %}
                             </select>
                             <button>{{ trans.ADD }}</button>

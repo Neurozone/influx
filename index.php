@@ -166,6 +166,8 @@ $router->before('GET|POST|PUT|DELETE|PATCH|OPTIONS', '/.*', function () use ($lo
     $logger->info("before");
     $logger->info($_SERVER['REQUEST_URI']);
     $logger->info(getClientIP());
+    $logger->info($_SESSION['install']);
+    $logger->info($_SESSION['user']);
 
     if (!isset($_SESSION['install']) && !isset($_SESSION['user']) && $_SERVER['REQUEST_URI'] == '/password/recover') {
         header('Location: /password/recover');
@@ -176,9 +178,10 @@ $router->before('GET|POST|PUT|DELETE|PATCH|OPTIONS', '/.*', function () use ($lo
     } else if (isset($_SESSION['install']) && $_SESSION['install'] && $_SERVER['REQUEST_URI'] !== '/install') {
         header('Location: /install');
         exit();
-    } else if (isset($_SESSION['install']) && $_SESSION['install'] == false && $_SERVER['REQUEST_URI'] !== '/install') {
-        header('Location: /');
-        exit();
+    } else  {
+        $logger->info("on passe dans ce before");
+        //header('Location: /');
+        //exit();
     }
 });
 
@@ -869,10 +872,11 @@ $router->get('/action/read/all', function () use ($twig, $db, $logger, $trans, $
 // Route: /action/read/flux/{id} (GET)
 /* ---------------------------------------------------------------- */
 
-$router->get('/action/read/flux/{id}', function ($id) use ($twig, $db, $logger, $trans, $config, $itemsObject) {
+$router->get('/action/read/flux/{id}', function ($id) use ($twig, $db, $logger, $trans, $config, $fluxObject) {
 
-    $itemsObject->setGuid($id);
-    $itemsObject->markItemAsReadByGuid();
+    $fluxObject->setId($id);
+    $fluxObject->markAllRead();
+    header('location: /');
 
 });
 
@@ -881,6 +885,28 @@ $router->get('/action/read/flux/{id}', function ($id) use ($twig, $db, $logger, 
 /* ---------------------------------------------------------------- */
 
 $router->get('/action/unread/flux/{id}', function ($id) use ($twig, $db, $logger, $trans, $config) {
+
+    $result = $db->query("update items set unread = 1 where guid = '" . $id . "'");
+
+});
+
+/* ---------------------------------------------------------------- */
+// Route: /action/read/item/{id} (GET)
+/* ---------------------------------------------------------------- */
+
+$router->get('/action/read/item/{id}', function ($id) use ($twig, $db, $logger, $trans, $config, $itemsObject) {
+
+    $itemsObject->setGuid($id);
+    $itemsObject->markItemAsReadByGuid();
+    header('location: /');
+
+});
+
+/* ---------------------------------------------------------------- */
+// Route: /action/unread/item/{id} (GET)
+/* ---------------------------------------------------------------- */
+
+$router->get('/action/unread/item/{id}', function ($id) use ($twig, $db, $logger, $trans, $config) {
 
     $result = $db->query("update items set unread = 1 where guid = '" . $id . "'");
 
@@ -1019,7 +1045,7 @@ $router->get('/flux/{id}', function ($id) use (
 
     echo $twig->render('index.twig',
         [
-            'action' => 'flux',
+            'action' => 'items',
             'events' => $itemsObject->loadUnreadItemPerFlux($offset, $row_count),
             'flux' => $flux,
             'fluxId' => $id,

@@ -467,6 +467,7 @@ function readThis(element, id, from, callback) {
     if (!parent.hasClass('eventRead')) {
         parent.addClass('eventRead');
         addOrRemoveFluxNumber('-');
+        if (console && console.log ) console.log("/action/read/" + activeScreen + "/" + id);
         $.ajax({
             url: "/action/read/" + activeScreen + "/" + id,
             success: function (msg) {
@@ -492,7 +493,7 @@ function readThis(element, id, from, callback) {
                             $(window).data('nblus', $(window).data('nblus') + 1);
                             break;
                         case 'category':
-                        case 'flux':
+                        case 'items':
                             if (callback) {
                                 callback();
                             } else {
@@ -775,7 +776,7 @@ function markAllAsRead(el) {
         case 'flux':
             infoLink = el.siblings('.fluxLink');
             translation = 'CONFIRM_MARK_FEED_AS_READ';
-            action = 'readAll';
+            action = 'read/flux';
             break;
     }
     if (confirm("Mark as Read") + '\n\n' + infoLink.html()) {
