@@ -52,7 +52,7 @@ $logger = new Logger('influxLogger');
 $logger->pushHandler($handler);
 $logger->pushHandler($stream);
 
-$templatePath = __DIR__ . '/templates/influx-ng';
+$templatePath = __DIR__ . '/templates/influx';
 
 $loader = new \Twig\Loader\FilesystemLoader($templatePath);
 $twig = new \Twig\Environment($loader, ['cache' => __DIR__ . '/cache', 'debug' => true,]);

@@ -6,7 +6,7 @@
         <a title="Retourner au d&eacute;but" class="goTopButton" href="#pageTopAnvil"><i class="icon-up-dir"></i></a>
         <!-- TITRE -->
         <h2 class="articleTitle">
-            <a onclick="readThis(this,{{ event.id }},'title');" target="_blank" rel="noopener noreferrer" href="{{ event.link }}" title="{{ plainDescription|escape }}">{{ event.title|escape }}</a>
+            <a onclick="readThis(this,'{{ event.id }}'','title');" target="_blank" rel="noopener noreferrer" href="{{ event.link }}" title="{{ plainDescription|escape }}">{{ event.title|escape }}</a>
         </h2>
         <!-- DETAILS + OPTIONS -->
         <h3 class="articleDetails">
