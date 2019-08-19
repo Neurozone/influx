@@ -1,41 +1,4 @@
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="referrer" content="no-referrer"/>
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <meta name="description" content="Agr&eacute;gateur de flux RSS InFlux">
-    <meta name="author" content="Hecate">
-    <meta name="viewport" content="width=device-width">
-    <title>InFlux</title>
-    <!-- Tell the browser to be responsive to screen width -->
-    <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
-          integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
-    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
-    <!-- Font Awesome -->
-    <script src="https://kit.fontawesome.com/3dc7e89a7c.js"></script>
-
-
-    <style>
-        .bd-placeholder-img {
-            font-size: 1.125rem;
-            text-anchor: middle;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-        }
-
-        @media (min-width: 768px) {
-            .bd-placeholder-img-lg {
-                font-size: 3.5rem;
-            }
-        }
-    </style>
-    <!-- Custom styles for this template -->
-    <link href="/templates/influx-ng/css/dashboard.css" rel="stylesheet">
-</head>
+{% include 'header.twig' %}
 <body>
 
 <header class="navbar navbar-expand navbar-dark flex-column flex-md-row bd-navbar">
@@ -108,94 +71,8 @@
             </div>
         </nav>
 
-        <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-4">
-            <div class="d-flex flex-wrap flex-md-nowrap  pt-3 pb-2 mb-3 border-bottom">
+        {% include 'article.twig' %}
 
-                {% if action == 'flux' %}
-
-                    <h1 class="h2"><a target="_blank" rel="noopener noreferrer"
-                                      href="{{ flux.website }}">{{ flux.name }}</a></h1>
-                    <h1 class="h3">{{ flux.description }}</h1>
-
-                {% endif %}
-
-                {% if action == 'category' %}
-                    <h1 class="articleSection">Dossier : {{ category.name }}</h1>
-                    <p>Tous les &eacute;v&eacute;nements non lus pour le dossier {{ category.name }}</p>
-                {% endif %}
-
-                {% if action == 'favorites' %}
-
-                    <h1 class="articleSection">Articles favoris <span id="nbarticle">{{ numberOfItem }}</span>
-                        </h1>
-                {% endif %}
-
-            </div>
-
-            {% for event in events %}
-                {% set plainDescription = event.description|striptags|escape %}
-                <div class="row">
-                    <div class="card {% if event.unread == 0 %} text-white bg-dark{% else %} bg-light{% endif %}">
-                        <div class="card-header bg-transparent">
-                            <h2><a onclick="readThis(this,{{ event.id }},'title');" target="_blank"
-                                   rel="noopener noreferrer" href="{{ event.link }}"
-                                   title="{{ plainDescription|escape }}">{{ event.title|escape }}</a>
-                            </h2>
-                            <button type="button" class="btn btn-dark readUnreadButton" onclick="readThis(this,'{{ event.id }}','item');"><a class="readUnreadButton"><i
-                                            class="far fa-eye"></i>
-                                    Lu/Non lu</a></button>
-
-                            {% if event.favorite != 1 %}
-                                <button type="button" class="btn btn-dark"><a class=""
-                                                                              onclick="addFavorite(this,{{ event.id }});">Ajouter
-                                        aux
-                                        favoris</a></button>
-                            {% else %}
-                                <button type="button" class="btn btn-dark"><a class=""
-                                                                              onclick="removeFavorite(this,{{ event.id }});">Supprimer
-                                        des favoris</a></button>
-                            {% endif %}
-                            <a href="{{ event.link }}" target="_blank"
-                               rel="noopener noreferrer">{{ event.flux_name }}</a>
-                            {% if event.creator %}
-                                par {{ event.creator }}
-                            {% endif %}
-                            {{ event.pubdate }}
-
-                        </div>
-                        <div class="card-body">
-                            <h5 class="card-title"></h5>
-                            {{ event.content|raw }}
-                        </div>
-                        <div class="card-footer">
-                            <button type="button" class="btn btn-dark"><a class="readUnreadButton"><i
-                                            class="far fa-eye"></i>
-                                    Lu/Non lu</a></button>
-
-                            {% if event.favorite != 1 %}
-                                <button type="button" class="btn btn-dark"><a class=""
-                                                                              onclick="addFavorite(this,{{ event.id }});">Ajouter
-                                        aux
-                                        favoris</a></button>
-                            {% else %}
-                                <button type="button" class="btn btn-dark"><a class=""
-                                                                              onclick="removeFavorite(this,{{ event.id }});">Supprimer
-                                        des favoris</a></button>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            {% endfor %}
-
-        </main>
     </div>
 </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
-        integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
-        crossorigin="anonymous"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"
-        integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy"
-        crossorigin="anonymous"></script>
-<script src="/templates/influx-ng/js/script.js"></script>
-</body>
-</html>
+{% include 'footer.twig' %}

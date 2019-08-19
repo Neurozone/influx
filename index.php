@@ -1,18 +1,18 @@
 <?php
 
 /**
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as published
-by the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU Affero General Public License for more details.
-
-You should have received a copy of the GNU Affero General Public License
-along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published
+ * by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 error_reporting(E_ALL & ~E_NOTICE);
@@ -37,12 +37,9 @@ use Influx\Opml;
 use Influx\Configuration;
 use Influx\Statistics;
 
-if (defined('LOGS_DAYS_TO_KEEP'))
-{
+if (defined('LOGS_DAYS_TO_KEEP')) {
     $handler = new RotatingFileHandler(__DIR__ . '/logs/influx.log', LOGS_DAYS_TO_KEEP);
-}
-else
-{
+} else {
     $handler = new RotatingFileHandler(__DIR__ . '/logs/influx.log', 7);
 }
 
@@ -52,11 +49,11 @@ $logger = new Logger('influxLogger');
 $logger->pushHandler($handler);
 $logger->pushHandler($stream);
 
+
 $templatePath = __DIR__ . '/templates/influx';
 
 $loader = new \Twig\Loader\FilesystemLoader($templatePath);
 $twig = new \Twig\Environment($loader, ['cache' => __DIR__ . '/cache', 'debug' => true,]);
-
 $twig->addExtension(new \Twig\Extension\DebugExtension());
 
 // Create Router instance
@@ -71,12 +68,22 @@ if (file_exists('conf/config.php')) {
     // Database
     /* ---------------------------------------------------------------- */
 
+    $_SESSION['install'] = false;
+
     $db = new mysqli(MYSQL_HOST, MYSQL_LOGIN, MYSQL_MDP, MYSQL_BDD);
     $db->set_charset('utf8mb4');
     $db->query('SET NAMES utf8mb4');
 
     $conf = new Configuration($db);
     $config = $conf->getAll();
+
+    $template = 'influx';
+    $templatePath = __DIR__ . '/templates/' . $template;
+
+    $loader = new \Twig\Loader\FilesystemLoader($templatePath);
+    $twig = new \Twig\Environment($loader, ['cache' => __DIR__ . '/cache', 'debug' => true,]);
+
+    $twig->addExtension(new \Twig\Extension\DebugExtension());
 
     $fluxObject = new Flux($db, $logger);
     $itemsObject = new Items($db, $logger);
@@ -86,7 +93,7 @@ if (file_exists('conf/config.php')) {
 
     $synchronisationCode = $config['synchronisationCode'];
 
-    mb_internal_encoding('UTF-8'); // UTF8 pour fonctions mb_*
+    mb_internal_encoding('UTF-8');
     $start = microtime(true);
 
     /* ---------------------------------------------------------------- */
@@ -98,7 +105,7 @@ if (file_exists('conf/config.php')) {
 
     $scroll = false;
     $unreadEventsForCategory = 0;
-    $hightlighted = 0;
+    $highlighted = 0;
 
     $page = 1;
 
@@ -122,20 +129,6 @@ function getClientIP()
     }
 
     return '';
-}
-
-/* ---------------------------------------------------------------- */
-// Reverse proxy
-/* ---------------------------------------------------------------- */
-
-// @todo
-
-// Use X-Forwarded-For HTTP Header to Get Visitor's Real IP Address
-
-if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
-    $http_x_headers = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR']);
-
-    $_SERVER['REMOTE_ADDR'] = $http_x_headers[0];
 }
 
 /* ---------------------------------------------------------------- */
@@ -184,12 +177,14 @@ $router->before('GET|POST|PUT|DELETE|PATCH|OPTIONS', '/.*', function () use ($lo
     if (!isset($_SESSION['install']) && !isset($_SESSION['user']) && $_SERVER['REQUEST_URI'] == '/password/recover') {
         header('Location: /password/recover');
         exit();
-    }
-    elseif (!isset($_SESSION['install']) && !isset($_SESSION['user']) && $_SERVER['REQUEST_URI'] !== '/login') {
+    } elseif (!isset($_SESSION['install']) && !isset($_SESSION['user']) && $_SERVER['REQUEST_URI'] !== '/login') {
         header('Location: /login');
         exit();
     } else if (isset($_SESSION['install']) && $_SESSION['install'] && $_SERVER['REQUEST_URI'] !== '/install') {
         header('Location: /install');
+        exit();
+    } else if (isset($_SESSION['install']) && $_SESSION['install'] == false && $_SERVER['REQUEST_URI'] !== '/install') {
+        header('Location: /');
         exit();
     }
 });
@@ -249,11 +244,7 @@ $router->post('/login', function () use ($db, $config, $logger, $userObject) {
 
     $userObject->setLogin($_POST['login']);
 
-    //$logger->info("login: " . $_POST['login']);
-    //$logger->info("password: " . $_POST['password']);
-
-    if($userObject->checkPassword($_POST['password']))
-    {
+    if ($userObject->checkPassword($_POST['password'])) {
 
         $_SESSION['user'] = $_POST['login'];
         $_SESSION['userId'] = $userObject->getId();
@@ -263,41 +254,9 @@ $router->post('/login', function () use ($db, $config, $logger, $userObject) {
         }
         header('location: /');
 
-    }
-    else{
-        header('location: /login');
-    }
-    /*
-    $salt = $config['cryptographicSalt'];
-
-    if ($stmt = $db->prepare("select id,login,password from user where login = ? and password = ?")) {
-        $stmt->bind_param("ss", $_POST['login'], sha1($_POST['password'] . $salt));
-
-        $stmt->execute();
-
-
-        $result = $stmt->get_result();
-
-        while ($row = $result->fetch_array()) {
-            $_SESSION['user'] = $row['login'];
-            $_SESSION['userid'] = $row['id'];
-            $user = $row['login'];
-        }
-    }
-
-
-    if (!isset($_SESSION['user'])) {
-        $logger->info("wrong login for '" . $_POST['login'] . "'");
-        header('location: /login');
     } else {
-        $_SESSION['user'] = $user;
-        if (isset($_POST['rememberMe'])) {
-            setcookie('InfluxChocolateCookie', sha1($_POST['password'] . $_POST['login']), time() + 31536000);
-        }
-        header('location: /');
+        header('location: /login');
     }
-    */
-
 
 });
 
@@ -323,7 +282,6 @@ $router->get('/password/new/{token}', function ($token) use ($db, $twig, $config
 });
 
 $router->post('/password/new', function () use ($db, $twig, $config, $logger, $trans, $userObject) {
-
 
     $userObject->setToken($_POST['token']);
     $userInfos = $userObject->createHash($_POST['password']);
@@ -431,7 +389,6 @@ $router->get('/update', function () {
 $router->get('/favorites', function () use (
     $twig, $logger,
     $scroll,
-    $unreadEventsForcategory,
     $config,
     $db,
     $categoryObject,
@@ -509,7 +466,6 @@ $router->mount('/article', function () use ($router, $twig, $db, $logger, $trans
     $router->post('/flux', function () use ($twig, $db, $logger, $config) {
 
         $scroll = $_POST['scroll'];
-        $nblus = isset($_POST['nblus']) ? $_POST['nblus'] : 0;
         $hightlighted = $_POST['hightlighted'];
         $action = $_POST['action'];
         $category = $_POST['category'];
@@ -530,8 +486,8 @@ $router->mount('/article', function () use ($router, $twig, $db, $logger, $trans
         }
 
         $q = 'SELECT le.guid,le.title,le.creator,le.content,le.description,le.link,le.unread,le.flux,le.favorite,le.pubdate,le.syncId, lf.name as flux_name
-                FROM items le 
-                    inner join flux lf on lf.id = le.flux 
+                FROM influx.items le 
+                    inner join influx.flux lf on lf.id = le.flux 
                 where le.flux = ' . $flux . ' 
                 ORDER BY pubdate desc,unread desc LIMIT ' . $offset . ',' . $rowcount;
 
@@ -610,22 +566,13 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
     $router->get('/synchronize', function ($option) use ($twig, $trans, $logger, $config, $cookiedir) {
 
 
-
     });
 
     /* ---------------------------------------------------------------- */
     // Route: /statistics (GET)
     /* ---------------------------------------------------------------- */
 
-    $router->get('/statistics', function () use ($twig, $trans, $logger, $config) {
-
-        echo '
-	<section id="leedStatslBloc" class="leedStatslBloc" style="display:none;">
-		<h2>' . _t('P_LEEDSTATS_TITLE') . '</h2>
-
-		<section class="preferenceBloc">
-		<h3>' . _t('P_LEEDSTATS_RESUME') . '</h3>
-	';
+    $router->get('/statistics', function () use ($twig, $trans, $logger, $config, $db) {
 
         //Nombre global d'article lus / non lus / total / favoris
         $requete = 'SELECT
@@ -635,34 +582,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
                 (SELECT count(1) FROM `' . MYSQL_PREFIX . 'items`) as nbTotal,
                 (SELECT count(1) FROM `' . MYSQL_PREFIX . 'items` WHERE favorite = 1) as nbFavorite
                 ';
-        $query = $mysqli->customQuery($requete);
-        if ($query != null) {
-            echo '<div id="result_leedStats1" class="result_leedStats1">
-                 <table>
-                        <th class="leedStats_border leedStats_th">' . _t('P_LEEDSTATS_NBFEED') . '</th>
-                        <th class="leedStats_border leedStats_th">' . _t('P_LEEDSTATS_NBART') . '</th>
-                        <th class="leedStats_border leedStats_th">' . _t('P_LEEDSTATS_NBART_NONLU') . '</th>
-                        <th class="leedStats_border leedStats_th">' . _t('P_LEEDSTATS_NBART_LU') . '</th>
-                        <th class="leedStats_border leedStats_th">' . _t('P_LEEDSTATS_NBFAV') . '</th>
-        ';
-            while ($data = $query->fetch_array()) {
-                echo '
-                <tr>
-                    <td class="leedStats_border leedStats_textright">' . $data['nbFlux'] . '</td>
-                    <td class="leedStats_border leedStats_textright">' . $data['nbTotal'] . '</td>
-                    <td class="leedStats_border leedStats_textright">' . $data['nbUnread'] . '</td>
-                    <td class="leedStats_border leedStats_textright">' . $data['nbRead'] . '</td>
-                    <td class="leedStats_border leedStats_textright">' . $data['nbFavorite'] . '</td>
-                </tr>
-            ';
-            }
-            echo '</table>
-            </div>';
-        }
-        echo '
-            <h3>' . _t('P_LEEDSTATS_NBART_BY_FEED_TITLE') . '</h3>
 
-    ';
         //Nombre global d'article lus / non lus / total / favoris
         $requete = 'SELECT name, count(1) as nbTotal,
                 (SELECT count(1) FROM `' . MYSQL_PREFIX . 'items` le2 WHERE le2.unread=1 and le1.flux = le2.flux) as nbUnread,
@@ -673,61 +593,8 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
                 GROUP BY name
                 ORDER BY name
                 ';
-        $query = $mysqli->customQuery($requete);
-        if ($query != null) {
-            echo '<div id="result_leedStats1" class="result_leedStats1">
-                 <table>
-                        <th class="leedStats_border leedStats_th">' . _t('P_LEEDSTATS_FEED') . '</th>
-                        <th class="leedStats_border leedStats_th">' . _t('P_LEEDSTATS_NBART') . '</th>
-                        <th class="leedStats_border leedStats_th">' . _t('P_LEEDSTATS_NBART_NONLU') . '</th>
-                        <th class="leedStats_border leedStats_th">' . _t('P_LEEDSTATS_NBART_LU') . '</th>
-                        <th class="leedStats_border leedStats_th">' . _t('P_LEEDSTATS_NBFAV') . '</th>
-        ';
-            while ($data = $query->fetch_array()) {
-                echo '
-                <tr>
-                    <td class="leedStats_border leedStats_textright">' . short_name($data['name'], 32) . '</td>
-                    <td class="leedStats_border leedStats_textright">' . $data['nbTotal'] . '</td>
-                    <td class="leedStats_border leedStats_textright">' . $data['nbUnread'] . '</td>
-                    <td class="leedStats_border leedStats_textright">' . $data['nbRead'] . '</td>
-                    <td class="leedStats_border leedStats_textright">' . $data['nbFavorite'] . '</td>
-                </tr>
-            ';
-            }
-            echo '</table>
-            </div>';
-        }
-
-        echo '
-            <h3>' . _t('P_LEEDSTATS_LASTPUB_BY_FEED_TITLE') . '</h3>
-
-    ';
 
         $requete = 'select lf.name, FROM_UNIXTIME(max(le.pubdate)) last_published from flux lf inner join items le on lf.id = le.flux group by lf.name order by 2';
-
-        $query = $mysqli->customQuery($requete);
-        if ($query != null) {
-            echo '<div id="result_leedStats1" class="result_leedStats1">
-                 <table>
-                        <th class="leedStats_border leedStats_th">' . _t('P_LEEDSTATS_FEED') . '</th>
-                        <th class="leedStats_border leedStats_th">' . _t('P_LEEDSTATS_LASTPUB') . '</th>
-        ';
-            while ($data = $query->fetch_array()) {
-                echo '
-                <tr>
-                    <td class="leedStats_border leedStats_textright">' . short_name($data['name'], 32) . '</td>
-                    <td class="leedStats_border leedStats_textright">' . $data['last_published'] . '</td>
-                </tr>
-            ';
-            }
-            echo '</table>
-            </div>';
-        }
-
-        echo '
-        </section>
-	</section>
-	';
 
     });
 
@@ -796,7 +663,6 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
         $fluxObject->setCategory($_GET['id']);
         $fluxObject->setName($_GET['name']);
         $fluxObject->setUrl($_GET['url']);
-
         $fluxObject->changeCategory();
 
         header('location: /settings');
@@ -822,7 +688,6 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
     /* ---------------------------------------------------------------- */
 
     $router->get('/category/remove/{id}', function ($id) use ($twig, $db, $logger, $trans, $config) {
-
 
         if (isset($id) && is_numeric($id) && $id > 0) {
             //$eventManager->customQuery('DELETE FROM `' . MYSQL_PREFIX . 'items` WHERE `' . MYSQL_PREFIX . 'event`.`flux` in (SELECT `' . MYSQL_PREFIX . 'flux`.`id` FROM `' . MYSQL_PREFIX . 'flux` WHERE `' . MYSQL_PREFIX . 'flux`.`category` =\'' . intval($_['id']) . '\') ;');
@@ -867,7 +732,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
 
     });
 
-    $router->get('/fluxs/import', function () use ($twig, $db, $logger, $trans, $config) {
+    $router->get('/flux/import', function () use ($twig, $db, $logger, $trans, $config) {
 
 
         /*
@@ -999,7 +864,6 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
 // Route: /action/read/all (GET)
 /* ---------------------------------------------------------------- */
 
-
 $router->get('/action/read/all', function () use ($twig, $db, $logger, $trans, $config, $fluxObject) {
 
     $fluxObject->markAllRead();
@@ -1095,6 +959,7 @@ $router->get('/action/updateConfiguration', function () use ($twig, $db, $logger
 
 /* ---------------------------------------------------------------- */
 // Route: /qrcode
+// @TODO
 /* ---------------------------------------------------------------- */
 
 $router->mount('/qrcode', function () use ($router, $twig, $db, $logger, $trans, $config) {
@@ -1183,13 +1048,13 @@ $router->get('/flux/{id}', function ($id) use (
 // Route: /install
 /* ---------------------------------------------------------------- */
 
-$router->mount('/install', function () use ($router, $trans, $twig, $cookiedir, $logger) {
+$router->mount('/install', function () use ($router, $trans, $twig, $cookieDir, $logger) {
 
     /* ---------------------------------------------------------------- */
     // Route: /install (GET)
     /* ---------------------------------------------------------------- */
 
-    $router->get('/', function () use ($twig, $cookiedir, $trans) {
+    $router->get('/', function () use ($twig, $cookieDir, $trans) {
 
         $_SESSION['install'] = true;
 
@@ -1227,22 +1092,22 @@ $router->mount('/install', function () use ($router, $trans, $twig, $cookiedir, 
     // Route: /install/ (POST)
     /* ---------------------------------------------------------------- */
 
-    $router->post('/', function () use ($twig, $cookiedir,$trans) {
+    $router->post('/', function () use ($twig, $cookieDir, $trans) {
 
 
-        if($_POST['action'] == 'database') {
+        if ($_POST['action'] == 'database') {
             $_SESSION['language'] = $_POST['install_changeLng'];
             $_SESSION['template'] = $_POST['template'];
             $_SESSION['root'] = $_POST['root'];
         }
 
-        if($_POST['action'] == 'check') {
+        if ($_POST['action'] == 'check') {
             $_SESSION['language'] = $_POST['install_changeLng'];
             $_SESSION['template'] = $_POST['template'];
             $_SESSION['root'] = $_POST['root'];
         }
 
-        if($_POST['action'] == 'admin') {
+        if ($_POST['action'] == 'admin') {
             $_SESSION['login'] = $_POST['login'];
             $_SESSION['password'] = $_POST['password'];
         }
@@ -1259,7 +1124,7 @@ $router->mount('/install', function () use ($router, $trans, $twig, $cookiedir, 
     // Route: /install/database (GET)
     /* ---------------------------------------------------------------- */
 
-    $router->get('/database', function () use ($twig, $cookiedir,$trans) {
+    $router->get('/database', function () use ($twig, $cookieDir, $trans) {
 
         $_SESSION['install'] = true;
 
@@ -1289,7 +1154,7 @@ $router->mount('/install', function () use ($router, $trans, $twig, $cookiedir, 
     // Route: /install/user (GET)
     /* ---------------------------------------------------------------- */
 
-    $router->get('/user', function () use ($twig, $cookiedir,$trans) {
+    $router->get('/user', function () use ($twig, $cookieDir, $trans) {
 
         $_SESSION['install'] = true;
 
@@ -1320,7 +1185,7 @@ $router->mount('/install', function () use ($router, $trans, $twig, $cookiedir, 
     // @todo
     /* ---------------------------------------------------------------- */
 
-    $router->post('/', function () use ($twig, $cookiedir) {
+    $router->post('/', function () use ($twig, $cookieDir) {
 
         $install = new Install();
         /* Prend le choix de langue de l'utilisateur, soit :
@@ -1344,7 +1209,7 @@ $router->mount('/install', function () use ($router, $trans, $twig, $cookiedir, 
         $currentLanguage = i18n_init($languageList, $installDirectory);
         $languageList = array_unique($i18n->languages);
         if (file_exists('constant.php')) {
-            die(_t('ALREADY_INSTALLED'));
+            die('ALREADY_INSTALLED');
         }
         define('DEFAULT_TEMPLATE', 'influx');
         $templates = scandir('templates');
@@ -1377,7 +1242,9 @@ define('MYSQL_PREFIX','{$this->options['db']['mysqlPrefix']}');
 
         file_put_contents(self::CONSTANT_FILE, $constant);
         if (!is_readable(self::CONSTANT_FILE))
+        {
             die('"' . self::CONSTANT_FILE . '" not found!');
+        }
 
         header('location: /login');
 
