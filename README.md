@@ -21,7 +21,7 @@ Please see
 * PHP 7
 
 ## Example for Nginx server
-
+~~~~ 
 server
 {
 
@@ -93,7 +93,7 @@ server {
   }
 
 }
-
+~~~~ 
 ## Upgrading
 
 ## TODO
