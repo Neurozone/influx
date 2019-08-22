@@ -479,7 +479,7 @@ $router->mount('/article', function () use ($router, $twig, $db, $logger, $trans
         if ($articleConf['startArticle'] < 0) {
             $articleConf['startArticle'] = 0;
         }
-        
+
         $itemsObject->setFlux($flux);
         $items = $itemsObject->loadUnreadItemPerFlux($offset, $rowcount);
 
