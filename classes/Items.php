@@ -106,8 +106,12 @@ class Items
     public function loadUnreadItemPerFlux($offset, $row_count)
     {
 
-        $results = $this->db->query('SELECT le.guid,le.title,le.creator,le.content,le.description,le.link,le.unread,le.fluxId,le.favorite,le.pubdate,le.syncId, lf.name as flux_name
-    FROM items le inner join flux lf on lf.id = le.fluxId where le.fluxId = ' . $this->flux . ' ORDER BY unread desc,pubdate desc LIMIT  ' . $offset . ',' . $row_count);
+        $query = 'SELECT le.guid,le.title,le.creator,le.content,le.description,le.link,le.unread,le.fluxId,le.favorite,le.pubdate,le.syncId, lf.name as flux_name
+    FROM items le inner join flux lf on lf.id = le.fluxId where le.fluxId = ' . $this->flux . ' ORDER BY unread desc,pubdate desc LIMIT  ' . $offset . ',' . $row_count
+
+        $results = $this->db->query($query);
+
+        $this->logger->info($query);
 
         while ($rows = $results->fetch_array()) {
 

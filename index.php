@@ -177,7 +177,7 @@ $router->before('GET|POST|PUT|DELETE|PATCH|OPTIONS', '/.*', function () use ($lo
     } else if (isset($_SESSION['install']) && $_SESSION['install'] && $_SERVER['REQUEST_URI'] !== '/install') {
         header('Location: /install');
         exit();
-    } else  {
+    } else {
         $logger->info("on passe dans ce before");
         //header('Location: /');
         //exit();
@@ -422,7 +422,7 @@ $router->get('/favorites', function () use (
 
 // @todo
 
-$router->mount('/article', function () use ($router, $twig, $db, $logger, $trans, $config) {
+$router->mount('/article', function () use ($router, $twig, $db, $logger, $trans, $config, $itemsObject) {
 
     /* ---------------------------------------------------------------- */
     // Route: /article (GET)
@@ -458,7 +458,7 @@ $router->mount('/article', function () use ($router, $twig, $db, $logger, $trans
     // Route: /article/flux/ (POST)
     /* ---------------------------------------------------------------- */
 
-    $router->post('/flux', function () use ($twig, $db, $logger, $config) {
+    $router->post('/flux', function () use ($twig, $db, $logger, $config, $itemsObject) {
 
         $scroll = $_POST['scroll'];
         $hightlighted = $_POST['hightlighted'];
@@ -479,36 +479,9 @@ $router->mount('/article', function () use ($router, $twig, $db, $logger, $trans
         if ($articleConf['startArticle'] < 0) {
             $articleConf['startArticle'] = 0;
         }
-
-        $q = 'SELECT le.guid,le.title,le.creator,le.content,le.description,le.link,le.unread,le.flux,le.favorite,le.pubdate,le.syncId, lf.name as flux_name
-                FROM influx.items le 
-                    inner join influx.flux lf on lf.id = le.flux 
-                where le.flux = ' . $flux . ' 
-                ORDER BY pubdate desc,unread desc LIMIT ' . $offset . ',' . $rowcount;
-
-        $logger->info($q);
-
-        $results = $db->query($q);
-
-        while ($rows = $results->fetch_array()) {
-
-            $items[] = array(
-                'id' => $rows['guid'],
-                'guid' => $rows['guid'],
-                'title' => $rows['title'],
-                'creator' => $rows['creator'],
-                'content' => $rows['content'],
-                'description' => $rows['description'],
-                'link' => $rows['link'],
-                'unread' => $rows['unread'],
-                'flux' => $rows['flux'],
-                'favorite' => $rows['favorite'],
-                'pubdate' => date('Y-m-d H:i:s', $rows['pubdate']),
-                'syncId' => $rows['syncId'],
-                'flux_name' => $rows['flux_name'],
-            );
-
-        }
+        
+        $itemsObject->setFlux($flux);
+        $items = $itemsObject->loadUnreadItemPerFlux($offset, $rowcount);
 
         echo $twig->render('article.twig',
             [
@@ -532,6 +505,7 @@ $router->mount('/article', function () use ($router, $twig, $db, $logger, $trans
         header('location: /settings/manage');
 
     });
+
 
 });
 
@@ -569,27 +543,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
 
     $router->get('/statistics', function () use ($twig, $trans, $logger, $config, $db) {
 
-        //Nombre global d'article lus / non lus / total / favoris
-        $requete = 'SELECT
-                (SELECT count(1) FROM `' . MYSQL_PREFIX . 'flux`) as nbFlux,
-                (SELECT count(1) FROM `' . MYSQL_PREFIX . 'items` WHERE unread = 1) as nbUnread,
-                (SELECT count(1) FROM `' . MYSQL_PREFIX . 'items` WHERE unread = 0) as nbRead,
-                (SELECT count(1) FROM `' . MYSQL_PREFIX . 'items`) as nbTotal,
-                (SELECT count(1) FROM `' . MYSQL_PREFIX . 'items` WHERE favorite = 1) as nbFavorite
-                ';
-
-        //Nombre global d'article lus / non lus / total / favoris
-        $requete = 'SELECT name, count(1) as nbTotal,
-                (SELECT count(1) FROM `' . MYSQL_PREFIX . 'items` le2 WHERE le2.unread=1 and le1.flux = le2.flux) as nbUnread,
-                (SELECT count(1) FROM `' . MYSQL_PREFIX . 'items` le2 WHERE le2.unread=0 and le1.flux = le2.flux) as nbRead,
-                (SELECT count(1) FROM `' . MYSQL_PREFIX . 'items` le2 WHERE le2.favorite=1 and le1.flux = le2.flux) as nbFavorite
-                FROM `' . MYSQL_PREFIX . 'flux` lf1
-                INNER JOIN `' . MYSQL_PREFIX . 'items` le1 on le1.flux = lf1.id
-                GROUP BY name
-                ORDER BY name
-                ';
-
-        $requete = 'select lf.name, FROM_UNIXTIME(max(le.pubdate)) last_published from flux lf inner join items le on lf.id = le.flux group by lf.name order by 2';
+        echo '';
 
     });
 
@@ -825,9 +779,8 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
         }
         sort($themeList);
 
-        $results = $db->query('SELECT * FROM categories c ORDER BY name ');
-
-        $resultsFlux = $db->query('SELECT * FROM flux f ORDER BY name ');
+        // @todo
+        $resultsFlux = $db->query('SELECT id FROM flux f ORDER BY name ');
         while ($rows = $resultsFlux->fetch_array()) {
             $flux['id'] = $rows['id'];
         }
@@ -1259,8 +1212,7 @@ define('MYSQL_PREFIX','{$this->options['db']['mysqlPrefix']}');
 ?>";
 
         file_put_contents(self::CONSTANT_FILE, $constant);
-        if (!is_readable(self::CONSTANT_FILE))
-        {
+        if (!is_readable(self::CONSTANT_FILE)) {
             die('"' . self::CONSTANT_FILE . '" not found!');
         }
 
