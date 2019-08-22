@@ -70,12 +70,11 @@ if (file_exists('conf/config.php')) {
     $conf = new Configuration($db);
     $config = $conf->getAll();
 
-    $template = 'influx';
-    $templatePath = __DIR__ . '/templates/' . $template;
+    $templateName = 'influx';
+    $templatePath = __DIR__ . '/templates/' . $templateName;
 
     $loader = new \Twig\Loader\FilesystemLoader($templatePath);
     $twig = new \Twig\Environment($loader, ['cache' => __DIR__ . '/cache', 'debug' => true,]);
-
     $twig->addExtension(new \Twig\Extension\DebugExtension());
 
     $fluxObject = new Flux($db, $logger);
@@ -133,17 +132,17 @@ $language = new Language();
 if (isset($config['language'])) {
     if ($language->getLanguage() == $config['language'] && is_file('locales/' . $config['language'] . '.json')) {
         $_SESSION['language'] = $language->getLanguage();
-        $l_trans = json_decode(file_get_contents('templates/influx/locales/' . $config['language'] . '.json'), true);
+        $l_trans = json_decode(file_get_contents('templates/' . $templateName . '/locales/' . $config['language'] . '.json'), true);
     } elseif ($language->getLanguage() != $config['language'] && is_file('locales/' . $config['language'] . '.json')) {
         $_SESSION['language'] = $language->getLanguage();
-        $l_trans = json_decode(file_get_contents('templates/influx/locales/' . $config['language'] . '.json'), true);
+        $l_trans = json_decode(file_get_contents('templates/' . $templateName . '/locales/' . $config['language'] . '.json'), true);
     } elseif (!is_file('locales/' . $config['language'] . '.json')) {
         $_SESSION['language'] = 'en';
-        $l_trans = json_decode(file_get_contents('templates/influx/locales/' . $_SESSION['language'] . '.json'), true);
+        $l_trans = json_decode(file_get_contents('templates/' . $templateName . '/locales/' . $_SESSION['language'] . '.json'), true);
     }
 } else {
     $_SESSION['language'] = 'en';
-    $l_trans = json_decode(file_get_contents('templates/influx/locales/' . $_SESSION['language'] . '.json'), true);
+    $l_trans = json_decode(file_get_contents('templates/' . $templateName . '/locales/' . $_SESSION['language'] . '.json'), true);
 }
 
 $trans = $l_trans;

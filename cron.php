@@ -35,8 +35,6 @@ $logger->pushHandler($stream);
 $logger->pushHandler($handler);
 $logger->info('Sync started');
 
-$router = new \Bramus\Router\Router();
-
 function convertFileSize($bytes)
 {
     if ($bytes < 1024) {
@@ -85,6 +83,7 @@ function getEnclosureHtml($enclosure)
 $sp = new \SimplePie();
 $sp->set_cache_location(__DIR__ . '/cache');
 $sp->enable_cache(true);
+$sp->set_cache_location (__DIR__ . '/cache');
 $sp->set_useragent('Mozilla/5.0 (compatible; Exabot/3.0; +http://www.exabot.com/go/robot)');
 
 $db = new mysqli(MYSQL_HOST, MYSQL_LOGIN, MYSQL_MDP, MYSQL_BDD);
@@ -153,8 +152,10 @@ while ($row = $result_feed->fetch_array()) {
                 $author .= $creator->get_name() . ',';
             }
         } else {
-            $author = $link;
+            $author = mb_strimwidth($link, 0, 252, "...");
         }
+
+        $author = mb_strimwidth($author, 0, 252, "...");
 
         if (is_numeric($item->get_date())) {
             $pubdate = $item->get_date();
