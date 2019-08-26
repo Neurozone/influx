@@ -26,7 +26,7 @@ class Flux
     private $website;
     private $url;
     private $lastupdate;
-    private $folder;
+    private $category;
     private $isverbose;
     private $lastSyncInError;
     private $logger;
@@ -92,7 +92,7 @@ class Flux
 
     public function markAllRead()
     {
-        $q = "UPDATE items set unread = 0 where feed = '" . $this->getId() . "'";
+        $q = "UPDATE items set unread = 0 where fluxId = " . $this->getId();
 
         $this->logger->info($q);
 
@@ -120,7 +120,7 @@ class Flux
         $desc = $sp->get_description();
 
         $q = "INSERT INTO flux(name, description, website, url,lastUpdate,categoryId,isverbose) 
-                VALUES ('" . $title . "', '" . $desc . "', '" . $link . "', '" . $this->getUrl() . "', 0," . $this->getFolder() . ", 1)";
+                VALUES ('" . $title . "', '" . $desc . "', '" . $link . "', '" . $this->getUrl() . "', 0," . $this->getCategory() . ", 1)";
 
         $this->logger->info($q);
 
@@ -191,7 +191,7 @@ class Flux
                 'website' => $rows['website'],
                 'url' => $rows['url'],
                 'lastupdate' => $rows['lastupdate'],
-                'folder' => $rows['folder'],
+                'folder' => $rows['categoryId'],
                 'isverbose' => $rows['isverbose'],
                 'lastSyncInError' => $rows['lastSyncInError'],
             );
@@ -322,17 +322,17 @@ class Flux
     /**
      * @return mixed
      */
-    public function getFolder()
+    public function getCategory()
     {
-        return $this->folder;
+        return $this->category;
     }
 
     /**
-     * @param mixed $folder
+     * @param mixed category
      */
-    public function setFolder($folder)
+    public function setCategory($cat)
     {
-        $this->folder = $folder;
+        $this->category = $cat;
     }
 
     /**

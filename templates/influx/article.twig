@@ -24,7 +24,7 @@
             {% endif %}
             <a class="pointer" id="btnDisplayMode_{{ event.id }}" onclick="toggleArticleDisplayMode(this,{{ event.id }})" title="Affichage mode complet">|||</a>
 
-            <a class="pointer right readUnreadButton"><i class="icon-eye" style="font-size:15px;"></i> Lu/Non lu</a>
+            <a class="pointer right readUnreadButton" onclick="readThis(this,{{ event.id }},'item');"><i class="icon-eye" style="font-size:15px;"></i> Lu/Non lu</a>
 
         </h3>
 

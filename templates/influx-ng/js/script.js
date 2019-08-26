@@ -775,7 +775,7 @@ function markAllAsRead(el) {
         case 'flux':
             infoLink = el.siblings('.fluxLink');
             translation = 'CONFIRM_MARK_FEED_AS_READ';
-            action = 'readAll';
+            action = 'read/flux';
             break;
     }
     if (confirm("Mark as Read") + '\n\n' + infoLink.html()) {

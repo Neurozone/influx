@@ -20,7 +20,7 @@ use Monolog\Logger;
 use Monolog\Handler\RotatingFileHandler;
 use SimplePie\SimplePie;
 
-include_once('conf/config.php');
+include_once(__DIR__ . '/conf/config.php');
 require __DIR__ . '/vendor/autoload.php';
 
 if (defined('LOGS_DAYS_TO_KEEP')) {
@@ -81,6 +81,7 @@ function getEnclosureHtml($enclosure)
 
 
 $sp = new \SimplePie();
+$sp->set_cache_location(__DIR__ . '/cache');
 $sp->enable_cache(true);
 $sp->set_cache_location (__DIR__ . '/cache');
 $sp->set_useragent('Mozilla/5.0 (compatible; Exabot/3.0; +http://www.exabot.com/go/robot)');
