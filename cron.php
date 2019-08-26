@@ -141,7 +141,6 @@ while ($row = $result_feed->fetch_array()) {
 
         $enclosure = getEnclosureHtml($item->get_enclosure());
 
-
         $author = '';
 
         if ($creator = $item->get_author()) {
@@ -193,7 +192,6 @@ while ($row = $result_feed->fetch_array()) {
 }
 
 $totalTime = microtime(true) - $start;
-
 $totalTimeStr = number_format($totalTime, 3);
 $currentDate = date('d/m/Y H:i:s');
 
