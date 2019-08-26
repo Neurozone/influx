@@ -289,31 +289,19 @@ $router->post('/password/new', function () use ($db, $twig, $config, $logger, $t
 // Route: /password/recover (POST)
 /* ---------------------------------------------------------------- */
 
-$router->post('/password/recover', function () use ($db, $config, $logger) {
+$router->post('/password/recover', function () use ($db, $config, $logger,$userObject) {
 
     $token = bin2hex(random_bytes(50));
 
-    if ($stmt = $db->prepare("select id,login,email from user where email = ?")) {
-        $stmt->bind_param("s", $_POST['email']);
-        /* execute query */
-        $stmt->execute();
+    $userObject->setEmail($_POST['email']);
 
-        /* instead of bind_result: */
-        $result = $stmt->get_result();
-
-        while ($row = $result->fetch_array()) {
-            $login = $row['login'];
-            $email = $row['email'];
-
-        }
+    if ($userObject->userExistBy('email')) {
+        $userObject->createTokenForUser();
     }
-
-    if (!empty($login)) {
-        $db->query("UPDATE user SET token = '" . $token . "' where email = '" . $email . "'");
-    }
-
+    else{
     $logger->error("Message could not be sent to: " . $email);
     $logger->error("Message could not be sent to: " . $_POST['email']);
+    }
 
     $mail = new PHPMailer(true);
 
@@ -997,7 +985,7 @@ $router->get('/flux/{id}', function ($id) use (
 
     echo $twig->render('index.twig',
         [
-            'action' => 'items',
+            'action' => 'item',
             'events' => $itemsObject->loadUnreadItemPerFlux($offset, $row_count),
             'flux' => $flux,
             'fluxId' => $id,
