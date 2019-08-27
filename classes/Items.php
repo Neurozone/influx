@@ -173,8 +173,11 @@ class Items
     public function getAllFavorites($offset, $row_count)
     {
 
-        $results = $this->db->query('SELECT le.guid,le.title,le.creator,le.content,le.description,le.link,le.unread,le.fluxId,le.favorite,le.pubdate,le.syncId, lf.name as flux_name
-    FROM items le inner join flux lf on lf.id = le.fluxId where favorite = 1 ORDER BY pubdate desc,unread desc LIMIT   ' . $offset . ', ' . $row_count);
+        $results = $this->db->query('SELECT '
+        . 'le.guid,le.title,le.creator,le.content,le.description,le.link,le.unread,le.fluxId,le.favorite,le.pubdate,le.syncId, lf.name as flux_name '
+        . 'FROM items le '
+        . 'inner join flux lf on lf.id = le.fluxId where favorite = 1 '
+        . 'ORDER BY pubdate desc,unread desc LIMIT   ' . $offset . ', ' . $row_count);
 
         while ($rows = $results->fetch_array()) {
 
