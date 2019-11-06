@@ -98,7 +98,7 @@ server {
 
 ## TODO
 
-* Forgotten password change with email link
+* Installation
 * API with JWT 
 
 ## License
