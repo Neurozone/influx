@@ -828,11 +828,11 @@ $router->get('/action/unread/flux/{id}', function ($id) use ($twig, $db, $logger
 // Route: /action/read/item/{id} (GET)
 /* ---------------------------------------------------------------- */
 
-$router->get('/action/read/item/{id}', function ($id) use ($twig, $db, $logger, $trans, $config, $itemsObject) {
+$router->get('/action/read/item/{id}', function ($id) use ($logger, $itemsObject) {
 
     $itemsObject->setGuid($id);
     $itemsObject->markItemAsReadByGuid();
-    header('location: /');
+    //header('location: /');
 
 });
 
