@@ -43,9 +43,7 @@ if (defined('LOGS_DAYS_TO_KEEP')) {
     $handler = new RotatingFileHandler(__DIR__ . '/logs/influx.log', 7);
 }
 
-$stream = new StreamHandler(__DIR__ . '/logs/influx.log', Logger::DEBUG);
 $logger = new Logger('influxLogger');
-$logger->pushHandler($handler);
 $logger->pushHandler($stream);
 
 $router = new \Bramus\Router\Router();
