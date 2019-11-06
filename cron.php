@@ -29,9 +29,7 @@ if (defined('LOGS_DAYS_TO_KEEP')) {
     $handler = new RotatingFileHandler(__DIR__ . '/logs/influx.log', 7);
 }
 
-$stream = new StreamHandler(__DIR__ . '/logs/synchronization.log', Logger::DEBUG);
 $logger = new Logger('SyncLogger');
-$logger->pushHandler($stream);
 $logger->pushHandler($handler);
 $logger->info('Sync started');
 
