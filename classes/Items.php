@@ -107,7 +107,7 @@ class Items
     {
 
         $query = 'SELECT le.guid,le.title,le.creator,le.content,le.description,le.link,le.unread,le.fluxId,le.favorite,le.pubdate,le.syncId, lf.name as flux_name
-    FROM items le inner join flux lf on lf.id = le.fluxId where le.fluxId = ' . $this->flux . ' ORDER BY unread desc,pubdate desc LIMIT  ' . $offset . ',' . $row_count
+    FROM items le inner join flux lf on lf.id = le.fluxId where le.fluxId = ' . $this->flux . ' ORDER BY unread desc,pubdate desc LIMIT  ' . $offset . ',' . $row_count;
 
         $results = $this->db->query($query);
 
