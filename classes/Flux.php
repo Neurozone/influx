@@ -134,6 +134,12 @@ class Flux
 
         }
 
+        /*
+        if (!$sp->init()) {
+
+        }
+        */
+
         return "200";
     }
 

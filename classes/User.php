@@ -57,13 +57,27 @@ class User
     }
 
 
-    public function userExist()
+    public function userExistBy($param = NULL)
     {
+
+        switch($param) {
+            case 'login':
+                $cond = 'login';
+                $needle = $this->getLogin();
+                break;
+            case 'email':
+                $cond = 'email';
+                $needle = $this->getEmail();
+                break;
+            default:
+                $cond = 'login';
+                $needle = $this->getLogin();
+        }
 
         $count = 0;
 
-        if ($stmt = $this->db->prepare("select count(login) as cn from user where login = ?")) {
-            $stmt->bind_param("s", $_POST['login']);
+        if ($stmt = $this->db->prepare("select count(" . $cond . ") as cn from user where " . $cond . " = ?")) {
+            $stmt->bind_param("s", $needle);
 
             $stmt->execute();
 
@@ -81,6 +95,15 @@ class User
             return false;
         }
 
+    }
+
+    public function createTokenForUser()
+    {
+        $token = bin2hex(random_bytes(50));
+
+        $this->db->query("UPDATE user SET token = '" . $token . "' where email = '" . $this->getEmail() . "'");
+
+        return true;
     }
 
     public function getUserInfosByToken()

@@ -43,13 +43,9 @@ if (defined('LOGS_DAYS_TO_KEEP')) {
     $handler = new RotatingFileHandler(__DIR__ . '/logs/influx.log', 7);
 }
 
-$stream = new StreamHandler(__DIR__ . '/logs/influx.log', Logger::DEBUG);
-
 $logger = new Logger('influxLogger');
 $logger->pushHandler($handler);
-$logger->pushHandler($stream);
 
-// Create Router instance
 $router = new \Bramus\Router\Router();
 
 session_start();
@@ -164,29 +160,29 @@ $router->before('GET|POST|PUT|DELETE|PATCH|OPTIONS', '/.*', function () use ($lo
 
     $logger->info("before");
     $logger->info($_SERVER['REQUEST_URI']);
-    $logger->info(getClientIP());
-    $logger->info($_SESSION['install']);
     $logger->info($_SESSION['user']);
+    $logger->info($_SERVER['REQUEST_METHOD']);
+    $logger->info($_SERVER['HTTP_HOST']);
 
-    if (!isset($_SESSION['install']) && !isset($_SESSION['user']) && $_SERVER['REQUEST_URI'] == '/password/recover') {
+    if (file_exists('installed') && !isset($_SESSION['user']) && $_SERVER['REQUEST_URI'] == '/password/recover') {
         header('Location: /password/recover');
         exit();
-    } elseif (!isset($_SESSION['install']) && !isset($_SESSION['user']) && $_SERVER['REQUEST_URI'] !== '/login') {
+    } elseif (file_exists('installed') && !isset($_SESSION['user']) && $_SERVER['REQUEST_URI'] !== '/login') {
         header('Location: /login');
         exit();
-    } else if (isset($_SESSION['install']) && $_SESSION['install'] && $_SERVER['REQUEST_URI'] !== '/install') {
+    } else if (!file_exists('installed') && $_SERVER['REQUEST_URI'] !== '/install') {
         header('Location: /install');
         exit();
     } else {
         $logger->info("on passe dans ce before");
-        //header('Location: /');
-        //exit();
     }
+
 });
 
 /* ---------------------------------------------------------------- */
 // Route: / (GET)
 /* ---------------------------------------------------------------- */
+
 $router->get('/', function () use (
     $twig,
     $logger,
@@ -265,6 +261,7 @@ $router->get('/password/recover', function () use ($db, $twig, $config, $logger,
 
 });
 
+/* ---------------------------------------------------------------- */
 // Route: /password/new/{id} (GET)
 /* ---------------------------------------------------------------- */
 
@@ -284,36 +281,22 @@ $router->post('/password/new', function () use ($db, $twig, $config, $logger, $t
 
 });
 
-
 /* ---------------------------------------------------------------- */
 // Route: /password/recover (POST)
 /* ---------------------------------------------------------------- */
 
-$router->post('/password/recover', function () use ($db, $config, $logger) {
+$router->post('/password/recover', function () use ($db, $config, $logger, $userObject) {
 
     $token = bin2hex(random_bytes(50));
 
-    if ($stmt = $db->prepare("select id,login,email from user where email = ?")) {
-        $stmt->bind_param("s", $_POST['email']);
-        /* execute query */
-        $stmt->execute();
+    $userObject->setEmail($_POST['email']);
 
-        /* instead of bind_result: */
-        $result = $stmt->get_result();
-
-        while ($row = $result->fetch_array()) {
-            $login = $row['login'];
-            $email = $row['email'];
-
-        }
+    if ($userObject->userExistBy('email')) {
+        $userObject->createTokenForUser();
+    } else {
+        $logger->error("Message could not be sent to: " . $email);
+        $logger->error("Message could not be sent to: " . $_POST['email']);
     }
-
-    if (!empty($login)) {
-        $db->query("UPDATE user SET token = '" . $token . "' where email = '" . $email . "'");
-    }
-
-    $logger->error("Message could not be sent to: " . $email);
-    $logger->error("Message could not be sent to: " . $_POST['email']);
 
     $mail = new PHPMailer(true);
 
@@ -419,8 +402,6 @@ $router->get('/favorites', function () use (
 /* ---------------------------------------------------------------- */
 // Route: /article (GET)
 /* ---------------------------------------------------------------- */
-
-// @todo
 
 $router->mount('/article', function () use ($router, $twig, $db, $logger, $trans, $config, $itemsObject) {
 
@@ -577,7 +558,6 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
 
     $router->get('/flux/remove/{id}', function ($id) use ($twig, $trans, $logger, $config, $fluxObject) {
 
-
         $fluxObject->setId($id);
         $logger->info($fluxObject->getId($id));
         $fluxObject->remove();
@@ -604,7 +584,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
 
     /* ---------------------------------------------------------------- */
     // Route: /settings/flux/category/{id} (GET)
-    // Action: Rename flux
+    // Action: Change category
     /* ---------------------------------------------------------------- */
 
     $router->get('/flux/category/{id}', function ($id) use ($twig, $trans, $logger, $config, $db, $fluxObject) {
@@ -846,11 +826,11 @@ $router->get('/action/unread/flux/{id}', function ($id) use ($twig, $db, $logger
 // Route: /action/read/item/{id} (GET)
 /* ---------------------------------------------------------------- */
 
-$router->get('/action/read/item/{id}', function ($id) use ($twig, $db, $logger, $trans, $config, $itemsObject) {
+$router->get('/action/read/item/{id}', function ($id) use ($logger, $itemsObject) {
 
     $itemsObject->setGuid($id);
     $itemsObject->markItemAsReadByGuid();
-    header('location: /');
+    //header('location: /');
 
 });
 
@@ -870,7 +850,7 @@ $router->get('/action/unread/item/{id}', function ($id) use ($twig, $db, $logger
 // Route: /search (GET)
 /* ---------------------------------------------------------------- */
 
-$router->get('/search', function () use ($twig, $db, $logger, $trans, $config) {
+$router->post('/search', function () use ($twig, $db, $logger, $trans, $config) {
 
     $search = $this->escape_string($_GET['plugin_search']);
     $requete = "SELECT title,guid,content,description,link,pubdate,unread, favorite FROM items 
@@ -997,7 +977,7 @@ $router->get('/flux/{id}', function ($id) use (
 
     echo $twig->render('index.twig',
         [
-            'action' => 'items',
+            'action' => 'item',
             'events' => $itemsObject->loadUnreadItemPerFlux($offset, $row_count),
             'flux' => $flux,
             'fluxId' => $id,
@@ -1009,7 +989,6 @@ $router->get('/flux/{id}', function ($id) use (
             'scroll' => $scroll,
             'trans' => $trans,
             'config' => $config
-
         ]
     );
 
@@ -1044,8 +1023,6 @@ $router->mount('/install', function () use ($router, $trans, $twig, $cookieDir, 
             $list_lang[] = $locale[0];
         }
 
-        //  echo $install->getDefaultRoot();
-
         $root = $installObject->getRoot();
 
         echo $twig->render('install.twig',
@@ -1064,7 +1041,6 @@ $router->mount('/install', function () use ($router, $trans, $twig, $cookieDir, 
     /* ---------------------------------------------------------------- */
 
     $router->post('/', function () use ($twig, $cookieDir, $trans) {
-
 
         if ($_POST['action'] == 'database') {
             $_SESSION['language'] = $_POST['install_changeLng'];
