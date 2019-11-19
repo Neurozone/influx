@@ -44,7 +44,7 @@ if (defined('LOGS_DAYS_TO_KEEP')) {
 }
 
 $logger = new Logger('influxLogger');
-$logger->pushHandler($stream);
+$logger->pushHandler($handler);
 
 $router = new \Bramus\Router\Router();
 
@@ -160,29 +160,29 @@ $router->before('GET|POST|PUT|DELETE|PATCH|OPTIONS', '/.*', function () use ($lo
 
     $logger->info("before");
     $logger->info($_SERVER['REQUEST_URI']);
-    $logger->info(getClientIP());
-    $logger->info($_SESSION['install']);
     $logger->info($_SESSION['user']);
+    $logger->info($_SERVER['REQUEST_METHOD']);
+    $logger->info($_SERVER['HTTP_HOST']);
 
-    if (!isset($_SESSION['install']) && !isset($_SESSION['user']) && $_SERVER['REQUEST_URI'] == '/password/recover') {
+    if (file_exists('installed') && !isset($_SESSION['user']) && $_SERVER['REQUEST_URI'] == '/password/recover') {
         header('Location: /password/recover');
         exit();
-    } elseif (!isset($_SESSION['install']) && !isset($_SESSION['user']) && $_SERVER['REQUEST_URI'] !== '/login') {
+    } elseif (file_exists('installed') && !isset($_SESSION['user']) && $_SERVER['REQUEST_URI'] !== '/login') {
         header('Location: /login');
         exit();
-    } else if (isset($_SESSION['install']) && $_SESSION['install'] && $_SERVER['REQUEST_URI'] !== '/install') {
+    } else if (!file_exists('installed') && $_SERVER['REQUEST_URI'] !== '/install') {
         header('Location: /install');
         exit();
     } else {
         $logger->info("on passe dans ce before");
-        //header('Location: /');
-        //exit();
     }
+
 });
 
 /* ---------------------------------------------------------------- */
 // Route: / (GET)
 /* ---------------------------------------------------------------- */
+
 $router->get('/', function () use (
     $twig,
     $logger,

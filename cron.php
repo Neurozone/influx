@@ -24,9 +24,9 @@ include_once(__DIR__ . '/conf/config.php');
 require __DIR__ . '/vendor/autoload.php';
 
 if (defined('LOGS_DAYS_TO_KEEP')) {
-    $handler = new RotatingFileHandler(__DIR__ . '/logs/influx.log', LOGS_DAYS_TO_KEEP);
+    $handler = new RotatingFileHandler(__DIR__ . '/logs/synchronization.log', LOGS_DAYS_TO_KEEP);
 } else {
-    $handler = new RotatingFileHandler(__DIR__ . '/logs/influx.log', 7);
+    $handler = new RotatingFileHandler(__DIR__ . '/logs/synchronization.log', 7);
 }
 
 $logger = new Logger('SyncLogger');
