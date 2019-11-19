@@ -850,7 +850,7 @@ $router->get('/action/unread/item/{id}', function ($id) use ($twig, $db, $logger
 // Route: /search (GET)
 /* ---------------------------------------------------------------- */
 
-$router->get('/search', function () use ($twig, $db, $logger, $trans, $config) {
+$router->post('/search', function () use ($twig, $db, $logger, $trans, $config) {
 
     $search = $this->escape_string($_GET['plugin_search']);
     $requete = "SELECT title,guid,content,description,link,pubdate,unread, favorite FROM items 
