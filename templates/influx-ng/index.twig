@@ -104,7 +104,7 @@
             {% for category in categories %}
             <h6 class="dropdown-header">Login Screens:</h6>
             {% for flux in category.flux %}
-          <a class="dropdown-item" href="/flux/{{ flux.id }}">{{ flux.url }}">{{ flux.name }}</a>
+          <a class="dropdown-item" href="/flux/{{ flux.id }}" title="{{ flux.url }}">{{ flux.name }}</a>
                 {% endfor %}
 
           <div class="dropdown-divider"></div>
