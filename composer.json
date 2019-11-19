@@ -12,7 +12,8 @@
     "phpmailer/phpmailer": "^6.0",
     "ext-mysqli": "*",
     "ext-mbstring": "*",
-    "ext-json": "*"
+    "ext-json": "*",
+    "ext-gettext": "*"
   },
   "autoload": {
     "psr-4": {

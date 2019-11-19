@@ -44,6 +44,7 @@ if (defined('LOGS_DAYS_TO_KEEP')) {
 }
 
 $stream = new StreamHandler(__DIR__ . '/logs/influx.log', Logger::DEBUG);
+
 $logger = new Logger('influxLogger');
 $logger->pushHandler($handler);
 $logger->pushHandler($stream);
@@ -296,7 +297,7 @@ $router->post('/password/recover', function () use ($db, $config, $logger, $user
     if ($userObject->userExistBy('email')) {
         $userObject->createTokenForUser();
     } else {
-        $logger->error("Message could not be sent to: " . $email);
+        $logger->error("Message could not be sent to: " . $userObject->getEmail());
         $logger->error("Message could not be sent to: " . $_POST['email']);
     }
 
@@ -315,7 +316,7 @@ $router->post('/password/recover', function () use ($db, $config, $logger, $user
 
         //Recipients
         $mail->setFrom('rss@neurozone.fr', 'no-reply@neurozone.fr');
-        $mail->addAddress($email, $login);
+        $mail->addAddress($userObject->getEmail(), $userObject->getLogin());
 
         // Content
         $mail->isHTML(true);                                  // Set email format to HTML
@@ -451,7 +452,7 @@ $router->mount('/article', function () use ($router, $twig, $db, $logger, $trans
 
         $nblus = isset($_POST['nblus']) ? $_POST['nblus'] : 0;
 
-        $articleConf['startArticle'] = ($scroll * 50) - $nblus;
+        $articleConf['startArticle'] = ($scroll * 10) - $nblus;
 
         $logger->info($articleConf['startArticle']);
         $logger->info($config['articlePerPages']);
