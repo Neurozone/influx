@@ -163,18 +163,46 @@ class Items
 
     }
 
-    public function search()
+    public function search($search)
     {
-        $search = $this->escape_string($_GET['plugin_search']);
-        $requete = "SELECT title,guid,content,description,link,pubdate,unread, favorite FROM items 
-            WHERE title like '%" . htmlentities($search) . '%\'  OR content like \'%' . htmlentities($search) . '%\' ORDER BY pubdate desc';
+
+        $query = "SELECT le.guid,le.title,le.creator,le.content,le.description,le.link,le.unread,le.fluxId,le.favorite,le.pubdate,le.syncId, lf.name as flux_name
+        FROM items le inner join flux lf on lf.id = le.fluxId WHERE title like '%" . htmlentities($search) . '%\'  OR content like \'%' . htmlentities($search) . '%\' ORDER BY pubdate desc';
+
+        $results = $this->db->query($query);
+
+        while ($rows = $results->fetch_array()) {
+
+            $items[] = array(
+                'id' => $rows['guid'],
+                'guid' => $rows['guid'],
+                'title' => $rows['title'],
+                'creator' => $rows['creator'],
+                'content' => $rows['content'],
+                'description' => $rows['description'],
+                'link' => $rows['link'],
+                'unread' => $rows['unread'],
+                'flux' => $rows['fluxId'],
+                'favorite' => $rows['favorite'],
+                'pubdate' => date('Y-m-d H:i:s', $rows['pubdate']),
+                'syncId' => $rows['syncId'],
+                'flux_name' => $rows['flux_name'],
+            );
+
+        }
+
+        return $items;
+
     }
 
     public function getAllFavorites($offset, $row_count)
     {
 
-        $results = $this->db->query('SELECT le.guid,le.title,le.creator,le.content,le.description,le.link,le.unread,le.fluxId,le.favorite,le.pubdate,le.syncId, lf.name as flux_name
-    FROM items le inner join flux lf on lf.id = le.fluxId where favorite = 1 ORDER BY pubdate desc,unread desc LIMIT   ' . $offset . ', ' . $row_count);
+        $results = $this->db->query('SELECT '
+        . 'le.guid,le.title,le.creator,le.content,le.description,le.link,le.unread,le.fluxId,le.favorite,le.pubdate,le.syncId, lf.name as flux_name '
+        . 'FROM items le '
+        . 'inner join flux lf on lf.id = le.fluxId where favorite = 1 '
+        . 'ORDER BY pubdate desc,unread desc LIMIT   ' . $offset . ', ' . $row_count);
 
         while ($rows = $results->fetch_array()) {
 

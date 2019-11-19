@@ -134,14 +134,11 @@ class Flux
 
         }
 
+        /*
         if (!$sp->init()) {
-            $error = $sp->error;
-            $lastSyncInError = 1;
-            $nbErrors += 1;
-            echo "\t\tFlux id: \t$sp->error()\n";
-            $logger->error("\t\tError: \t$sp->error()\n");
-            continue;
+
         }
+        */
 
         return "200";
     }
