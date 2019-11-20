@@ -101,12 +101,14 @@
             </a>
         </li>
         <li class="nav-item ">
-            <a class="nav-link " href="#" id="pagesDropdown" role="button" >
+            <a class="nav-link dropdown-toggle" href="#" id="pagesDropdown" role="button" data-toggle="dropdown"
+               aria-haspopup="true" aria-expanded="true">
                 <i class="fas fa-fw fa-folder"></i>
                 <span>Flux</span>
             </a>
             <div class="dropdown-menu" aria-labelledby="pagesDropdown">
                 {% for category in categories %}
+                  <i class="fas fa-fw fa-folder"></i>
                     <h6 class="dropdown-header">{{ category.name }}</h6>
                     {% for flux in category.flux %}
                       {% if flux.unread > 0 %}
