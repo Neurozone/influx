@@ -1,5 +1,4 @@
-
-
+<!--
 <div id="main" class="wrapper clearfix settings">
     <div id="menuBar">
         <aside>
@@ -14,90 +13,94 @@
             </ul>
         </aside>
     </div>
+-->
+{% if section == 'manage' %}
 
-    <article>
-        {% if section == 'manage' %}
-            <section class="manageBloc">
-                <h2>{{ trans.FEED_MANAGING }} :</h2>
-                <form action="/settings/flux/add" method="POST">
-                    <section class="addBloc">
-                        <h3>{{ trans.ADD_FEED }}</h3>
-                        <p>{{ trans.FEED_RSS_LINK }} : <input type="text" name="newUrl"
-                                                              placeholder="http://monflux.com/rss"/>&nbsp;
-                            <select name="newUrlCategory">
-                                {% for cat in categories %}
-                                    <option {% if cat.id == 1 %}selected="selected"{% endif %}
-                                            value="{{ cat.id }}">{{ cat.name }}</option>
-                                {% endfor %}
-                            </select>
-                            <button>{{ trans.ADD }}</button>
-                        </p>
+    <div class="card mb-3">
+        <div class="card-header">{{ trans.FEED_MANAGING }} </div>
+        <div class="card-body">
+            <form action="/settings/flux/add" method="POST">
 
-                    </section>
-                </form>
+                <h3>{{ trans.ADD_FEED }}</h3>
+                <p>{{ trans.FEED_RSS_LINK }} : <input type="text" name="newUrl"
+                                                      placeholder="http://monflux.com/rss"/>&nbsp;
+                    <select name="newUrlCategory">
+                        {% for cat in categories %}
+                            <option {% if cat.id == 1 %}selected="selected"{% endif %}
+                                    value="{{ cat.id }}">{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <button>{{ trans.ADD }}</button>
+                </p>
 
-                <section class="addBloc">
-                    <h3>{{ trans.ADD_FOLDER }}</h3>
-                    <form method="POST" action="/settings/category/add">
-                        {{ trans.NEW_FOLDER }} <input type="text" name="categoryName">
-                        <button>{{ trans.ADD }}</button>
-                    </form>
-                </section>
+            </form>
+        </div>
+    </div>
 
-                <section class="addBloc">
-                    <h3>{{ trans.FEED_OPTION }}</h3>
-                    <span>{{ trans.FEED_OPTION_ISVERBOSE }}</span>
-                    {% if optionFeedIsVerbose == 0 %}
-                        <input class="" onclick="toggleOptionFeedVerbose(this,1)" type="checkbox" checked>
-                    {% else %}
-                        <input class="" onclick="toggleOptionFeedVerbose(this,0)" type="checkbox">
-                    {% endif %}
-                </section>
+    <div class="card mb-3">
+        <div class="card-header">{{ trans.ADD_FOLDER }}</div>
+        <div class="card-body">
+            <form method="POST" action="/settings/category/add">
+                {{ trans.NEW_FOLDER }} <input type="text" name="categoryName">
+                <button>{{ trans.ADD }}</button>
+            </form>
+        </div>
+    </div>
 
-                <ul class="clear nochip">
-                    {% set feedsForFolder="" %}
-                    {% for folder in categories %}
-                        {% set feedsForFolder = folder.flux %}
-                        <li>
-                            <h1 class="folder left"><span>{{ folder.name }}</span>
-                                <button onclick="renameFolder(this,{{ folder.id }})">{{ trans.RENAME }}</button>
-                                <button onclick="if(confirm('{{ trans.CONFIRM_DELETE_FOLDER }}\n\n{{ folder.name }}'))window.location='/settings/folder/remove/{{ folder.id }}'">{{ trans.DELETE }}</button>
-                                <div class="clear"></div>
-                            </h1>
-                            <div class="clear"></div>
-                            <ul class="feedsList">
-                                {% for feed in folder.flux %}
-                                    <li class="feedListItem{% if feed.LastSyncInError == 1 %} errorSync{% endif %}">
+    <section class="addBloc">
+        <h3>{{ trans.FEED_OPTION }}</h3>
+        <span>{{ trans.FEED_OPTION_ISVERBOSE }}</span>
+        {% if optionFeedIsVerbose == 0 %}
+            <input class="" onclick="toggleOptionFeedVerbose(this,1)" type="checkbox" checked>
+        {% else %}
+            <input class="" onclick="toggleOptionFeedVerbose(this,0)" type="checkbox">
+        {% endif %}
+    </section>
+
+    <ul class="clear nochip">
+        {% set feedsForFolder="" %}
+        {% for folder in categories %}
+            {% set feedsForFolder = folder.flux %}
+            <li>
+                <h1 class="folder left"><span>{{ folder.name }}</span>
+                    <button onclick="renameFolder(this,{{ folder.id }})">{{ trans.RENAME }}</button>
+                    <button onclick="if(confirm('{{ trans.CONFIRM_DELETE_FOLDER }}\n\n{{ folder.name }}'))window.location='/settings/folder/remove/{{ folder.id }}'">{{ trans.DELETE }}</button>
+                    <div class="clear"></div>
+                </h1>
+                <div class="clear"></div>
+                <ul class="feedsList">
+                    {% for feed in folder.flux %}
+                        <li class="feedListItem{% if feed.LastSyncInError == 1 %} errorSync{% endif %}">
                             <span class="feedTitle js-fluxTitle" {% if feed.LastSyncInError == 1 %} title="{{ trans.SYNCHRONISATION_ERROR }}" {% endif %}>
                                     <a{% if folder.LastSyncInError == 1 %} class="inError"{% endif %} href="/flux/{{ feed.id }}"
                                                                                                       data-flux-id="{{ feed.id }}">{{ feed.name }}</a>
                                 <a href="{{ feed.url }}" class="underlink">{{ feed.url }}</a>
                                     </span>
-                                        <div class="feedAction">
-                                            <select class="feedFolder"
-                                                    onchange="changeFluxCategory(this,{{ feed.id }});">
-                                                {% for f in categories %}
-                                                    <option {% if feed.folder == f.id %}selected="selected"{% endif %}
-                                                            value="{{ f.id }}">{{ f.name }}</option>
-                                                {% endfor %}
-                                            </select>
+                            <div class="feedAction">
+                                <select class="feedFolder"
+                                        onchange="changeFluxCategory(this,{{ feed.id }});">
+                                    {% for f in categories %}
+                                        <option {% if feed.folder == f.id %}selected="selected"{% endif %}
+                                                value="{{ f.id }}">{{ f.name }}</option>
+                                    {% endfor %}
+                                </select>
 
-                                        </div>
-                                        <div class="feedButtons">
-                                            <button class="feedRename"
-                                                    onclick="renameFlux(this,{{ feed.id }})">{{ trans.RENAME }}</button>
-                                            <button class="feedDelete"
-                                                    onclick="if(confirm('{{ trans.CONFIRM_DELETE_FEED }}\n\n'+getFluxName({{ feed.id }}))){window.location='/settings/flux/remove/{{ feed.id }}';}">{{ trans.DELETE }}</button>
-                                        </div>
-                                    </li>
-                                {% endfor %}
-
-                            </ul>
+                            </div>
+                            <div class="feedButtons">
+                                <button class="feedRename"
+                                        onclick="renameFlux(this,{{ feed.id }})">{{ trans.RENAME }}</button>
+                                <button class="feedDelete"
+                                        onclick="if(confirm('{{ trans.CONFIRM_DELETE_FEED }}\n\n'+getFluxName({{ feed.id }}))){window.location='/settings/flux/remove/{{ feed.id }}';}">{{ trans.DELETE }}</button>
+                            </div>
                         </li>
                     {% endfor %}
+
                 </ul>
-            </section>
-        {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+    </section>
+{% endif %}
 
         {% if section == 'synchronize' %}
             <section class="synchronizeBloc">
@@ -274,9 +277,3 @@
                 </form>
             </section>
         {% endif %}
-
-
-    </article>
-
-</div> <!-- #main -->
-
