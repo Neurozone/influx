@@ -194,7 +194,10 @@
 
         <div class="container-fluid">
 
-            {{ if settings is not defined }}
+            {{ if settings is defined }}
+            {% include "settings.twig" %}
+            {{ else }}
+
             <!-- Breadcrumbs-->
             <ol class="breadcrumb">
                 <li class="breadcrumb-item">
@@ -222,8 +225,7 @@
 
             </ol>
             {% include "article.twig" %}
-            {{ else }}
-            {% include "settings.twig" %}
+
             {{ endif }}
 
 
