@@ -195,38 +195,38 @@
         <div class="container-fluid">
 
             {% if settings is defined %}
-            {% include "settings.twig" %}
-            {{ else }}
+                {% include "settings.twig" %}
+            {% else %}
 
-            <!-- Breadcrumbs-->
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item">
-                    {% if action == 'item' or action == 'flux' %}
+                <!-- Breadcrumbs-->
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        {% if action == 'item' or action == 'flux' %}
 
-                        <h2 class="articleSection"><a target="_blank" rel="noopener noreferrer"
-                                                      href="{{ flux.website }}">{{ flux.name }}</a> :</h2>
-                        {{ flux.description }}
+                            <h2 class="articleSection"><a target="_blank" rel="noopener noreferrer"
+                                                          href="{{ flux.website }}">{{ flux.name }}</a> :</h2>
+                            {{ flux.description }}
 
-                        <a href="/flux/{{ flux.id }}/page/{{ page }}/unread">Non lu</a> |
-                        <a href="/flux/{{ flux.id }}/page/{{ page }}/older">Plus vieux</a> en premier
-                    {% endif %}
+                            <a href="/flux/{{ flux.id }}/page/{{ page }}/unread">Non lu</a> |
+                            <a href="/flux/{{ flux.id }}/page/{{ page }}/older">Plus vieux</a> en premier
+                        {% endif %}
 
-                    {% if action == 'category' %}
-                        <h2 class="articleSection">Dossier : {{ category.name }}</h2>
-                        <p>Tous les &eacute;v&eacute;nements non lus pour le dossier {{ category.name }}</p>
-                    {% endif %}
+                        {% if action == 'category' %}
+                            <h2 class="articleSection">Dossier : {{ category.name }}</h2>
+                            <p>Tous les &eacute;v&eacute;nements non lus pour le dossier {{ category.name }}</p>
+                        {% endif %}
 
-                    {% if action == 'favorites' %}
+                        {% if action == 'favorites' %}
 
-                        <h2 class="articleSection">Articles favoris <span id="nbarticle">{{ numberOfItem }}</span>
-                        </h2>
-                    {% endif %}
-                </li>
+                            <h2 class="articleSection">Articles favoris <span id="nbarticle">{{ numberOfItem }}</span>
+                            </h2>
+                        {% endif %}
+                    </li>
 
-            </ol>
-            {% include "article.twig" %}
+                </ol>
+                {% include "article.twig" %}
 
-            {{% endif %}
+            {% endif %}
 
 
         </div>
