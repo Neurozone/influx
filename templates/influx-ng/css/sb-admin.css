@@ -10577,7 +10577,7 @@ body {
 
 #wrapper #content-wrapper {
   overflow-x: hidden;
-  width: 100%;
+  width: 80%;
   padding-top: 1rem;
   padding-bottom: 80px;
 }
@@ -10669,7 +10669,7 @@ body {
 }
 
 .sidebar {
-  width: 90px !important;
+  width: 20%;
   background-color: #212529;
   min-height: calc(100vh - 56px);
 }
