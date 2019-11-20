@@ -108,9 +108,11 @@
             </a>
             <div class="dropdown-menu" aria-labelledby="pagesDropdown">
                 {% for category in categories %}
-                    <h6 class="dropdown-header">Login Screens:</h6>
+                    <h6 class="dropdown-header">{{ category.name }}</h6>
                     {% for flux in category.flux %}
+                      {% if flux.unread > 0 %}
                         <a class="dropdown-item" href="/flux/{{ flux.id }}" title="{{ flux.url }}">{{ flux.name }}</a> <span class="badge badge-danger">{{ flux.unread }}</span>
+                      {% endif %}
                     {% endfor %}
 
                     <div class="dropdown-divider"></div>
