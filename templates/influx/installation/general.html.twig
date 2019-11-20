@@ -1,0 +1,35 @@
+{% extends '_base_layout_installation.html.twig' %}
+
+{% block body %}
+    <form action="/install/general" method="POST" class="install">
+        <h1>{{ trans.INSTALL_TITLE }}</h1>
+        <h2>{{ trans.INSTALL_TAB_GENERAL }}</h2>
+        <ul>
+            <li>
+                <span>{{ trans.INSTALL_LANGUAGE }}</span>
+                <select name="{{ constant('Influx\\Constants::GENERAL_LANGUAGE') }}">
+                    {% for ln in list_lang %}
+                        <option value='{{ ln }}'
+                                {% if general_informations[constant('Influx\\Constants::GENERAL_LANGUAGE')] is defined and ln == general_informations[constant('Influx\\Constants::GENERAL_LANGUAGE')] %}selected{% endif %}>{{ ln }}</option>
+                    {% endfor %}
+                </select>
+            </li>
+            <li>
+                <span>{{ trans.INSTALL_TEMPLATE }}</span>
+                <select name='{{ constant('Influx\\Constants::GENERAL_TEMPLATE') }}'>
+                    {% for tpl in list_templates %}
+                        <option value='{{ tpl }}'
+                                {% if general_informations[constant('Influx\\Constants::GENERAL_TEMPLATE')]  is defined and tpl == general_informations[constant('Influx\\Constants::GENERAL_TEMPLATE')] %}selected{% endif %}>{{ tpl }}</option>
+                    {% endfor %}
+                </select>
+            </li>
+            <li>
+                <span>{{ trans.PROJECT_ROOT }}</span>
+                <input type="text" name="root"
+                       value="{{ general_informations.root is defined ? general_informations.root : root }}">
+            </li>
+        </ul>
+        <input type="hidden" name="action" value="step.general"/>
+        <button id="installButton" name="{{ installActionName }}">{{ trans.INSTALL_BTN }}</button>
+    </form>
+{% endblock body %}

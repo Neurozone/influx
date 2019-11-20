@@ -22,6 +22,7 @@
             {% else %}
             <a class="pointer favorite" onclick="removeFavorite(this,{{ event.id }});" >Supprimer des favoris</a>
             {% endif %}
+            <a class="pointer" id="btnDisplayMode_{{ event.id }}" onclick="toggleArticleDisplayMode(this,{{ event.id }})" title="Affichage mode complet">|||</a>
 
             <a class="pointer right readUnreadButton" onclick="readThis(this,{{ event.id }},'item');"><i class="icon-eye" style="font-size:15px;"></i> Lu/Non lu</a>
 

@@ -1,0 +1,23 @@
+{% extends '_base_layout_installation.html.twig' %}
+
+{% block body %}
+    <form action="/install/user" method="POST" class="install">
+        <h2>{{ trans.INSTALL_TAB_ADMIN }}</h2>
+        <ul>
+            <li>
+                <span>{{ trans.LOGIN }}</span>
+                <input type="text" name="{{ constant('Influx\\Constants::ADMIN_USER') }}"
+                       placeholder="{{ trans.LOGIN }}"
+                       {% if user_informations[constant('Influx\\Constants::ADMIN_USER')] is defined %}value="{{ user_informations[constant('Influx\\Constants::ADMIN_USER')]}}"{% endif %}>
+            </li>
+            <li>
+                <span>{{ trans.PASSWORD }}</span>
+                <input type="text" autocomplete="off" name="{{ constant('Influx\\Constants::ADMIN_PASSWORD') }}"
+                       placeholder="{{ trans.INSTALL_DISPLAY_CLEAR }}"
+                       {% if user_informations[constant('Influx\\Constants::ADMIN_PASSWORD')] is defined %}value="{{ user_informations[constant('Influx\\Constants::ADMIN_PASSWORD')] }}"{% endif %}>
+            </li>
+        </ul>
+        <input type="hidden" name="action" value="step.value"/>
+        <button id="installButton" name="{{ installActionName }}">{{ trans.INSTALL_BTN }}</button>
+    </form>
+{% endblock body %}

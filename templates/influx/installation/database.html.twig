@@ -1,0 +1,36 @@
+{% extends '_base_layout_installation.html.twig' %}
+
+{% block body %}
+    <form action="/install/database" method="POST" class="install">
+        <h2>{{ trans.INSTALL_TAB_BDD }}</h2>
+        <ul>
+            <li>
+                <span>{{ trans.INSTALL_HOST }}</span>
+                <input type="text" name="{{ constant('Influx\\Constants::DB_HOST') }}" placeholder="{{ trans.INSTALL_COMMENT_HOST }}"
+                       {% if database_informations[constant('Influx\\Constants::DB_HOST')] is defined %}value="{{ database_informations[constant('Influx\\Constants::DB_HOST')] }}"{% endif %}>
+            </li>
+            <li>
+                <span>{{ trans.LOGIN }}</span>
+                <input type="text" name="{{ constant('Influx\\Constants::DB_LOGIN') }}"
+                       {% if database_informations[constant('Influx\\Constants::DB_LOGIN')] is defined %}value="{{ database_informations[constant('Influx\\Constants::DB_LOGIN')] }}"{% endif %}>
+            </li>
+            <li>
+                <span>{{ trans.PASSWORD }}</span>
+                <input type="text" autocomplete="off" name="{{ constant('Influx\\Constants::DB_PASSWORD') }}"
+                       placeholder="{{ trans.INSTALL_DISPLAY_CLEAR }}" {% if database_informations[constant('Influx\\Constants::DB_PASSWORD')] is defined %}value="{{ database_informations[constant('Influx\\Constants::DB_PASSWORD')] }}"{% endif %}>
+            </li>
+            <li>
+                <span>{{ trans.INSTALL_BDD }}</span>
+                <input type="text" name="{{ constant('Influx\\Constants::DB_DATABASE') }}" placeholder="{{ trans.INSTALL_COMMENT_BDD }}"
+                       {% if database_informations[constant('Influx\\Constants::DB_DATABASE')] is defined %}value="{{ database_informations[constant('Influx\\Constants::DB_DATABASE')] }}"{% endif %}>
+            </li>
+            <li>
+                <span>{{ trans.INSTALL_PREFIX_TABLE }}</span>
+                <input type="text" name="{{ constant('Influx\\Constants::DB_PREFIX') }}"
+                       {% if database_informations[constant('Influx\\Constants::DB_PREFIX')] is defined %}value="{{ database_informations[constant('Influx\\Constants::DB_PREFIX')] }}"{% endif %}>
+            </li>
+        </ul>
+        <input type="hidden" name="action" value="step.database"/>
+        <button id="installButton" name="{{ installActionName }}">{{ trans.INSTALL_BTN }}</button>
+    </form>
+{% endblock body %}

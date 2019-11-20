@@ -152,14 +152,14 @@
     <article>
         <header class="articleHead">
 
-            {% if action == 'item' %}
+            {% if action == 'flux' %}
 
                 <h1 class="articleSection"><a target="_blank" rel="noopener noreferrer" href="{{ flux.website }}">{{ flux.name }}</a> :</h1>
                 {{ flux.description }}
                 <div class="clear"></div>
 
-                <a href="/flux/{{ flux.id }}/page/unread">Non lu</a>
-
+                <a href="/flux/{{ flux.id }}/page/{{ page }}/unread">Non lu</a> |
+                <a href="/flux/{{ flux.id }}/page/{{ page }}/older">Plus vieux</a> en premier
             {% endif %}
 
             {% if action == 'category' %}

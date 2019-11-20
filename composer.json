@@ -13,11 +13,11 @@
     "ext-mysqli": "*",
     "ext-mbstring": "*",
     "ext-json": "*",
-    "ext-gettext": "*"
+    "pimple/pimple": "^3.2"
   },
   "autoload": {
     "psr-4": {
-      "Influx\\": "classes/"
+      "Influx\\": "src/"
     }
   }
 }

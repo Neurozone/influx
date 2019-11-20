@@ -1,5 +1,4 @@
 <?php
-
 /**
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published
@@ -17,74 +16,38 @@
 
 error_reporting(E_ALL & ~E_NOTICE);
 
+const CONF_FILE = __DIR__ . '/conf/conf.ini';
+
 require __DIR__ . '/vendor/autoload.php';
 
-use Endroid\QrCode\ErrorCorrectionLevel;
-use Endroid\QrCode\LabelAlignment;
-use Endroid\QrCode\QrCode;
-use Endroid\QrCode\Response\QrCodeResponse;
+use Influx\Classes\Category;
+use Influx\Classes\Configuration;
+use Influx\Classes\Flux;
+use Influx\Classes\Items;
+use Influx\Classes\Opml;
+use Influx\Classes\User;
+use Influx\ConfigurationService;
+use Influx\Constants;
+use Influx\Controllers\InstallController;
+use Influx\DependencyInjection;
+use Influx\Routing\InstallRouting;
+use Influx\Utils\Utils;
+use Pimple\Container;
 use Sinergi\BrowserDetector\Language;
-use Monolog\Logger;
-use Monolog\Handler\StreamHandler;
-use Monolog\Handler\RotatingFileHandler;
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
-use Influx\Flux;
-use Influx\Items;
-use Influx\User;
-use Influx\Category;
-use Influx\Opml;
-use Influx\Configuration;
-use Influx\Statistics;
 
-if (defined('LOGS_DAYS_TO_KEEP')) {
-    $handler = new RotatingFileHandler(__DIR__ . '/logs/influx.log', LOGS_DAYS_TO_KEEP);
-} else {
-    $handler = new RotatingFileHandler(__DIR__ . '/logs/influx.log', 7);
-}
+$configurationService = new ConfigurationService(CONF_FILE);
+$container = (new DependencyInjection(new Container(), $configurationService))->getContainer();
 
-<<<<<<< HEAD
-$stream = new StreamHandler(__DIR__ . '/logs/influx.log', Logger::DEBUG);
+if ($container['configuration_service']->hasConfigurationFile()) {
+    $userConfiguration = new Configuration($container['database_service']);
+    $fluxObject = new Flux($container['database_service'], $container['logger']);
+    $itemsObject = new Items($container['database_service'], $container['logger']);
+    $userObject = new User($container['database_service'], $container[Constants::DB_PREFIX], $container['logger']);
+    $categoryObject = new Category($container['database_service'], $container['logger']);
+    $opmlObject = new Opml($container['database_service'], $container['logger']);
 
-=======
->>>>>>> b6cc302a8c3008495a9ece19047128df924bd034
-$logger = new Logger('influxLogger');
-$logger->pushHandler($handler);
-
-$router = new \Bramus\Router\Router();
-
-session_start();
-
-if (file_exists('conf/config.php')) {
-    require_once('conf/config.php');
-
-    /* ---------------------------------------------------------------- */
-    // Database
-    /* ---------------------------------------------------------------- */
-
-    $_SESSION['install'] = false;
-
-    $db = new mysqli(MYSQL_HOST, MYSQL_LOGIN, MYSQL_MDP, MYSQL_BDD);
-    $db->set_charset('utf8mb4');
-    $db->query('SET NAMES utf8mb4');
-
-    $conf = new Configuration($db);
-    $config = $conf->getAll();
-
-    $templateName = 'influx';
-    $templatePath = __DIR__ . '/templates/' . $templateName;
-
-    $loader = new \Twig\Loader\FilesystemLoader($templatePath);
-    $twig = new \Twig\Environment($loader, ['cache' => __DIR__ . '/cache', 'debug' => true,]);
-    $twig->addExtension(new \Twig\Extension\DebugExtension());
-
-    $fluxObject = new Flux($db, $logger);
-    $itemsObject = new Items($db, $logger);
-    $userObject = new User($db, $logger);
-    $categoryObject = new Category($db, $logger);
-    $opmlObject = new Opml($db, $logger);
-
-    $synchronisationCode = $config['synchronisationCode'];
+    // @TODO Demander à Flo ce qu'est ce code de synchronisation
+    $synchronisationCode = $userConfiguration->get('synchronisationCode');
 
     mb_internal_encoding('UTF-8');
     $start = microtime(true);
@@ -102,48 +65,29 @@ if (file_exists('conf/config.php')) {
 
     $page = 1;
 
-} else {
-    if (!isset($_SESSION['install'])) {
-        $_SESSION['install'] = true;
-        header('location: /install');
-        exit();
-    }
-
-}
-
-function getClientIP()
-{
-    if (array_key_exists('HTTP_X_FORWARDED_FOR', $_SERVER)) {
-        return $_SERVER["HTTP_X_FORWARDED_FOR"];
-    } else if (array_key_exists('REMOTE_ADDR', $_SERVER)) {
-        return $_SERVER["REMOTE_ADDR"];
-    } else if (array_key_exists('HTTP_CLIENT_IP', $_SERVER)) {
-        return $_SERVER["HTTP_CLIENT_IP"];
-    }
-
-    return '';
+} else if (!$container['configuration_service']->hasConfigurationFile() && !in_array($container['router']->getCurrentUri(), InstallRouting::getRoutes('install'), true)) {
+    return header('location: /install');
 }
 
 /* ---------------------------------------------------------------- */
 // i18n
 /* ---------------------------------------------------------------- */
-
 $language = new Language();
 
-if (isset($config['language'])) {
-    if ($language->getLanguage() == $config['language'] && is_file('locales/' . $config['language'] . '.json')) {
+if ($container[Constants::GENERAL_LANGUAGE]) {
+    if ($language->getLanguage() == $container[Constants::GENERAL_LANGUAGE] && is_file('locales/' . $container[Constants::GENERAL_LANGUAGE] . '.json')) {
         $_SESSION['language'] = $language->getLanguage();
-        $l_trans = json_decode(file_get_contents('templates/' . $templateName . '/locales/' . $config['language'] . '.json'), true);
-    } elseif ($language->getLanguage() != $config['language'] && is_file('locales/' . $config['language'] . '.json')) {
+        $l_trans = json_decode(file_get_contents('templates/' . $container['template_name'] . '/locales/' . $container[Constants::GENERAL_LANGUAGE] . '.json'), true);
+    } elseif (($language->getLanguage() != $container[Constants::GENERAL_LANGUAGE]) && is_file('locales/' . $container[Constants::GENERAL_LANGUAGE] . '.json')) {
         $_SESSION['language'] = $language->getLanguage();
-        $l_trans = json_decode(file_get_contents('templates/' . $templateName . '/locales/' . $config['language'] . '.json'), true);
-    } elseif (!is_file('locales/' . $config['language'] . '.json')) {
+        $l_trans = json_decode(file_get_contents('templates/' . $container['template_name'] . '/locales/' . $container[Constants::GENERAL_LANGUAGE] . '.json'), true);
+    } elseif (!is_file('locales/' . $container[Constants::GENERAL_LANGUAGE] . '.json')) {
         $_SESSION['language'] = 'en';
-        $l_trans = json_decode(file_get_contents('templates/' . $templateName . '/locales/' . $_SESSION['language'] . '.json'), true);
+        $l_trans = json_decode(file_get_contents('templates/' . $container['template_name'] . '/locales/' . $_SESSION['language'] . '.json'), true);
     }
 } else {
     $_SESSION['language'] = 'en';
-    $l_trans = json_decode(file_get_contents('templates/' . $templateName . '/locales/' . $_SESSION['language'] . '.json'), true);
+    $l_trans = json_decode(file_get_contents('templates/' . $container['template_name'] . '/locales/' . $_SESSION['language'] . '.json'), true);
 }
 
 $trans = $l_trans;
@@ -151,35 +95,40 @@ $trans = $l_trans;
 /* ---------------------------------------------------------------- */
 // Cookie
 /* ---------------------------------------------------------------- */
-
 $cookiedir = '';
-if (dirname($_SERVER['SCRIPT_NAME']) != '/') {
+if (dirname($_SERVER['SCRIPT_NAME']) !== '/') {
     $cookiedir = dirname($_SERVER["SCRIPT_NAME"]) . '/';
 }
 
 /* ---------------------------------------------------------------- */
 // Route: Before for logging
 /* ---------------------------------------------------------------- */
+$container['router']->before('GET|POST|PUT|DELETE|PATCH|OPTIONS', '/.*', function () use ($container) {
+    session_start();
 
-$router->before('GET|POST|PUT|DELETE|PATCH|OPTIONS', '/.*', function () use ($logger) {
+    $container['logger']->info("before");
+    $container['logger']->info($_SERVER['REQUEST_URI']);
+    $container['logger']->info(Utils::getClientIP());
+    $container['logger']->info($_SESSION['install']);
+    $container['logger']->info($_SESSION['user']);
 
-    $logger->info("before");
-    $logger->info($_SERVER['REQUEST_URI']);
-    $logger->info($_SESSION['user']);
-    $logger->info($_SERVER['REQUEST_METHOD']);
-    $logger->info($_SERVER['HTTP_HOST']);
+    //L'existance du fichier de configuration conditionne le transfert vers l'installation ou non
+    if (!$container['configuration_service']->hasConfigurationFile()) {
+        if (!in_array($container['router']->getCurrentUri(), InstallRouting::getRoutes('install'), true)) {
+            $container['logger']->info('Aucun fichier de configuration trouvé on redirige vers l\'installation');
 
-    if (file_exists('installed') && !isset($_SESSION['user']) && $_SERVER['REQUEST_URI'] == '/password/recover') {
-        header('Location: /password/recover');
-        exit();
-    } elseif (file_exists('installed') && !isset($_SESSION['user']) && $_SERVER['REQUEST_URI'] !== '/login') {
-        header('Location: /login');
-        exit();
-    } else if (!file_exists('installed') && $_SERVER['REQUEST_URI'] !== '/install') {
-        header('Location: /install');
-        exit();
+            return header('Location: /install');
+        }
+
+        return true;
+    }
+
+    if (!isset($_SESSION['user']) && $_SERVER['REQUEST_URI'] == '/password/recover') {
+        return header('Location: /password/recover');
+    } elseif (!isset($_SESSION['user']) && $_SERVER['REQUEST_URI'] !== '/login') {
+        return header('Location: /login');
     } else {
-        $logger->info("on passe dans ce before");
+        $container['logger']->info("Aucune des conditions du before n'a été exécutée !");
     }
 
 });
@@ -187,18 +136,14 @@ $router->before('GET|POST|PUT|DELETE|PATCH|OPTIONS', '/.*', function () use ($lo
 /* ---------------------------------------------------------------- */
 // Route: / (GET)
 /* ---------------------------------------------------------------- */
-
-$router->get('/', function () use (
-    $twig,
-    $logger,
+$container['router']->get('/', function () use (
+    $container,
     $scroll,
     $config,
-    $db,
     $trans,
     $itemsObject,
     $categoryObject
 ) {
-
     $action = 'all';
     $numberOfItem = $itemsObject->countAllUnreadItem();
     $page = (isset($_GET['page']) ? $_GET['page'] : 1);
@@ -207,7 +152,7 @@ $router->get('/', function () use (
     $offset = ($page - 1) * 25; //$config['articlePerPages'];
     $row_count = 25; //$config['articlePerPages'];
 
-    echo $twig->render('index.twig',
+    echo $container['template_engine']->render('index.twig',
         [
             'action' => $action,
             'config' => $config,
@@ -221,87 +166,91 @@ $router->get('/', function () use (
             'trans' => $trans
         ]
     );
-
 });
 
 /* ---------------------------------------------------------------- */
 // Route: /login
 /* ---------------------------------------------------------------- */
 
-$router->get('/login', function () use ($twig) {
-    echo $twig->render('login.twig');
+$container['router']->get('/login', function () use ($container) {
+    echo $container['template_engine']->render('login.twig');
 });
 
 /* ---------------------------------------------------------------- */
 // Route: /login (POST)
 /* ---------------------------------------------------------------- */
 
-$router->post('/login', function () use ($db, $config, $logger, $userObject) {
-
+$container['router']->post('/login', function () use ($container, $config, $userObject) {
     $userObject->setLogin($_POST['login']);
 
     if ($userObject->checkPassword($_POST['password'])) {
-
         $_SESSION['user'] = $_POST['login'];
         $_SESSION['userId'] = $userObject->getId();
         $_SESSION['userEmail'] = $userObject->getEmail();
         if (isset($_POST['rememberMe'])) {
             setcookie('InfluxChocolateCookie', sha1($_POST['password'] . $_POST['login']), time() + 31536000);
         }
-        header('location: /');
 
+        return header('location: /');
     } else {
-        header('location: /login');
+        return header('location: /login');
     }
-
 });
 
 /* ---------------------------------------------------------------- */
 // Route: /password/recover (GET)
 /* ---------------------------------------------------------------- */
 
-$router->get('/password/recover', function () use ($db, $twig, $config, $logger, $trans) {
-
-    echo $twig->render('recover.twig', []);
-
+$container['router']->get('/password/recover', function () use ($container, $config, $trans) {
+    echo $container['template_engine']->render('recover.twig', []);
 });
 
-/* ---------------------------------------------------------------- */
 // Route: /password/new/{id} (GET)
 /* ---------------------------------------------------------------- */
 
-$router->get('/password/new/{token}', function ($token) use ($db, $twig, $config, $logger, $trans, $userObject) {
-
+$container['router']->get('/password/new/{token}', function ($token) use ($container, $config, $trans, $userObject) {
     $userObject->setToken($token);
     $userInfos = $userObject->getUserInfosByToken();
-    echo $twig->render('password.twig', ['token' => $token]);
 
+    echo $container['template_engine']->render('password.twig', ['token' => $token]);
 });
 
-$router->post('/password/new', function () use ($db, $twig, $config, $logger, $trans, $userObject) {
-
+$container['router']->post('/password/new', function () use ($container, $config, $trans, $userObject) {
     $userObject->setToken($_POST['token']);
     $userInfos = $userObject->createHash($_POST['password']);
-    header('location: /');
 
+    return header('location: /');
+    exit();
 });
 
 /* ---------------------------------------------------------------- */
 // Route: /password/recover (POST)
 /* ---------------------------------------------------------------- */
 
-$router->post('/password/recover', function () use ($db, $config, $logger, $userObject) {
-
+$container['router']->post('/password/recover', function () use ($container, $db, $config) {
     $token = bin2hex(random_bytes(50));
 
-    $userObject->setEmail($_POST['email']);
+    if ($stmt = $container['database']->prepare("select id,login,email from user where email = ?")) {
+        $stmt->bind_param('s', $_POST['email']);
+        /* execute query */
+        $stmt->execute();
 
-    if ($userObject->userExistBy('email')) {
-        $userObject->createTokenForUser();
-    } else {
-        $logger->error("Message could not be sent to: " . $userObject->getEmail());
-        $logger->error("Message could not be sent to: " . $_POST['email']);
+        /* instead of bind_result: */
+        $result = $stmt->get_result();
+
+        while ($row = $result->fetch_array()) {
+            $login = $row['login'];
+            $email = $row['email'];
+
+        }
     }
+
+    if (!empty($login)) {
+        $db->query("UPDATE user SET token = '" . $token . "' where email = '" . $email . "'");
+    }
+
+    $container['logger']->error('Message could not be sent to: ' . $email);
+    $container['logger']->error('Message could not be sent to: ' . $_POST['email']);
 
     $mail = new PHPMailer(true);
 
@@ -318,7 +267,7 @@ $router->post('/password/recover', function () use ($db, $config, $logger, $user
 
         //Recipients
         $mail->setFrom('rss@neurozone.fr', 'no-reply@neurozone.fr');
-        $mail->addAddress($userObject->getEmail(), $userObject->getLogin());
+        $mail->addAddress($email, $login);
 
         // Content
         $mail->isHTML(true);                                  // Set email format to HTML
@@ -330,7 +279,7 @@ $router->post('/password/recover', function () use ($db, $config, $logger, $user
         echo 'Message has been sent';
     } catch (Exception $e) {
         echo "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
-        $logger->error("Message could not be sent. Mailer Error: {$mail->ErrorInfo}");
+        $container['logger']->error("Message could not be sent. Mailer Error: {$mail->ErrorInfo}");
     }
 
 });
@@ -339,38 +288,36 @@ $router->post('/password/recover', function () use ($db, $config, $logger, $user
 // Route: /logout (GET)
 /* ---------------------------------------------------------------- */
 
-$router->get('/logout', function () {
-
+$container['router']->get('/logout', function () {
     setcookie('InfluxChocolateCookie', '', -1);
     $_SESSION = array();
     session_unset();
     session_destroy();
-    header('location: /login');
 
+    return header('location: /login');
+    exit();
 });
-
-// @TODO: à mettre en place
 
 /* ---------------------------------------------------------------- */
 // Route: /update (GET)
 /* ---------------------------------------------------------------- */
 
-$router->get('/update', function () {
-
+$container['router']->get('/update', function () {
     setcookie('InfluxChocolateCookie', '', -1);
     $_SESSION = array();
     session_unset();
     session_destroy();
-    header('location: /');
 
+    return header('location: /');
+    exit();
 });
 
 /* ---------------------------------------------------------------- */
 // Route: /favorites (GET)
 /* ---------------------------------------------------------------- */
 
-$router->get('/favorites', function () use (
-    $twig, $logger,
+$container['router']->get('/favorites', function () use (
+    $container,
     $scroll,
     $config,
     $db,
@@ -378,7 +325,6 @@ $router->get('/favorites', function () use (
     $itemsObject,
     $fluxObject
 ) {
-
     $numberOfItem = $itemsObject->getNumberOfFavorites();
     $flux = $fluxObject->getFluxById();
 
@@ -388,7 +334,7 @@ $router->get('/favorites', function () use (
     $offset = ($page - 1) * $config['articlePerPages'];
     $row_count = $config['articlePerPages'];
 
-    echo $twig->render('index.twig',
+    echo $container['template_engine']->render('index.twig',
         [
 
             'events' => $itemsObject->getAllFavorites($offset, $row_count),
@@ -401,51 +347,41 @@ $router->get('/favorites', function () use (
 
         ]
     );
-
 });
 
 /* ---------------------------------------------------------------- */
 // Route: /article (GET)
 /* ---------------------------------------------------------------- */
 
-$router->mount('/article', function () use ($router, $twig, $db, $logger, $trans, $config, $itemsObject) {
-
+$container['router']->mount('/article', function () use ($container, $trans, $config, $itemsObject) {
     /* ---------------------------------------------------------------- */
     // Route: /article (GET)
     /* ---------------------------------------------------------------- */
-
-    $router->get('/', function () use ($twig, $db, $logger, $trans, $config) {
-
-        header('location: /settings/manage');
-
+    $container['router']->get('/', function () use ($container, $trans, $config) {
+        return header('location: /settings/manage');
+        exit();
     });
 
     /* ---------------------------------------------------------------- */
     // Route: /article/favorite (GET)
     /* ---------------------------------------------------------------- */
-
-    $router->get('/favorites', function () use ($twig, $db, $logger, $trans, $config) {
-
-        header('location: /settings/manage');
-
+    $container['router']->get('/favorites', function () use ($container, $trans, $config) {
+        return header('location: /settings/manage');
+        exit();
     });
 
     /* ---------------------------------------------------------------- */
     // Route: /article/unread (GET)
     /* ---------------------------------------------------------------- */
-
-    $router->get('/unread', function () use ($twig, $db, $logger, $trans, $config) {
-
-        header('location: /settings/manage');
-
+    $container['router']->get('/unread', function () use ($container, $trans, $config) {
+        return header('location: /settings/manage');
+        exit();
     });
 
     /* ---------------------------------------------------------------- */
     // Route: /article/flux/ (POST)
     /* ---------------------------------------------------------------- */
-
-    $router->post('/flux', function () use ($twig, $db, $logger, $config, $itemsObject) {
-
+    $container['router']->post('/flux', function () use ($container, $config, $itemsObject) {
         $scroll = $_POST['scroll'];
         $hightlighted = $_POST['hightlighted'];
         $action = $_POST['action'];
@@ -454,10 +390,10 @@ $router->mount('/article', function () use ($router, $twig, $db, $logger, $trans
 
         $nblus = isset($_POST['nblus']) ? $_POST['nblus'] : 0;
 
-        $articleConf['startArticle'] = ($scroll * 10) - $nblus;
+        $articleConf['startArticle'] = ($scroll * 50) - $nblus;
 
-        $logger->info($articleConf['startArticle']);
-        $logger->info($config['articlePerPages']);
+        $container['logger']->info($articleConf['startArticle']);
+        $container['logger']->info($config['articlePerPages']);
 
         $offset = $articleConf['startArticle'];
         $rowcount = $articleConf['startArticle'] + $config['articlePerPages'];
@@ -469,76 +405,61 @@ $router->mount('/article', function () use ($router, $twig, $db, $logger, $trans
         $itemsObject->setFlux($flux);
         $items = $itemsObject->loadUnreadItemPerFlux($offset, $rowcount);
 
-        echo $twig->render('article.twig',
+        echo $container['template_engine']->render('article.twig',
             [
                 'events' => $items,
                 'scroll' => $scroll,
             ]
         );
-
     });
 
     /* ---------------------------------------------------------------- */
     // Route: /article/category/{id} (GET)
     /* ---------------------------------------------------------------- */
-
-    $router->get('/category/{id}', function () use ($twig, $db, $logger, $trans, $config) {
-
+    $container['router']->get('/category/{id}', function () use ($container, $trans, $config) {
         if (!$_SESSION['user']) {
-            header('location: /login');
+            return header('location: /login');
+            exit();
         }
 
-        header('location: /settings/manage');
-
+        return header('location: /settings/manage');
+        exit();
     });
-
-
 });
 
 /* ---------------------------------------------------------------- */
 // Route: /settings (GET)
 /* ---------------------------------------------------------------- */
 
-$router->mount('/settings', function () use ($router, $twig, $trans, $logger, $config, $db, $cookiedir, $categoryObject, $fluxObject, $opmlObject) {
-
-    $router->get('/', function () use ($twig, $cookiedir) {
-
-        header('location: /settings/manage');
-
+$container['router']->mount('/settings', function () use ($container, $trans, $config, $cookiedir, $categoryObject, $fluxObject, $opmlObject) {
+    $container['router']->get('/', function () use ($container, $cookiedir) {
+        return header('location: /settings/manage');
+        exit();
     });
 
-    $router->get('/settings/user', function () use ($twig, $cookiedir) {
-
-        header('location: /settings/manage');
-
+    $container['router']->get('/settings/user', function () use ($container, $cookiedir) {
+        return header('location: /settings/manage');
+        exit();
     });
-
 
     /* ---------------------------------------------------------------- */
     // Route: /settings/synchronize/all (GET)
     /* ---------------------------------------------------------------- */
-
-    $router->get('/synchronize', function ($option) use ($twig, $trans, $logger, $config, $cookiedir) {
-
-
+    $container['router']->get('/synchronize', function ($option) use ($container, $trans, $config, $cookiedir) {
+        $container['logger']->info('On entre dans /settings/synchronize/all');
     });
 
     /* ---------------------------------------------------------------- */
     // Route: /statistics (GET)
     /* ---------------------------------------------------------------- */
-
-    $router->get('/statistics', function () use ($twig, $trans, $logger, $config, $db) {
-
-        echo '';
-
+    $container['router']->get('/statistics', function () use ($container, $trans, $config) {
+        $container['logger']->info('On entre dans /statistics');
     });
 
     /* ---------------------------------------------------------------- */
     // Route: /settings/flux/add (POST)
     /* ---------------------------------------------------------------- */
-
-    $router->post('/flux/add', function () use ($twig, $trans, $logger, $config, $fluxObject) {
-
+    $container['router']->post('/flux/add', function () use ($container, $trans, $config, $fluxObject) {
         $cat = isset($_POST['newUrlCategory']) ? $_POST['newUrlCategory'] : 1;
         $sp = new SimplePie();
 
@@ -552,31 +473,30 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
 
         } else {
 
-            $logger->info($trans['FEED_ALREADY_STORED']);
+            $container['logger']->info($trans['FEED_ALREADY_STORED']);
         }
-        header('location: /settings/manage');
+
+        return header('location: /settings/manage');
+        exit();
     });
 
     /* ---------------------------------------------------------------- */
     // Route: /settings/flux/remove/{id} (GET)
     /* ---------------------------------------------------------------- */
-
-    $router->get('/flux/remove/{id}', function ($id) use ($twig, $trans, $logger, $config, $fluxObject) {
-
+    $container['router']->get('/flux/remove/{id}', function ($id) use ($container, $trans, $config, $fluxObject) {
         $fluxObject->setId($id);
-        $logger->info($fluxObject->getId($id));
+        $container['logger']->info($fluxObject->getId($id));
         $fluxObject->remove();
 
-        header('location: /settings/manage');
+        return header('location: /settings/manage');
+        exit();
     });
 
     /* ---------------------------------------------------------------- */
     // Route: /settings/flux/rename (POST)
     // Action: Rename flux
     /* ---------------------------------------------------------------- */
-
-    $router->post('/flux/rename', function () use ($logger, $fluxObject) {
-
+    $container['router']->post('/flux/rename', function () use ($container, $fluxObject) {
         // data:{id:flux,name:fluxNameValue,url:fluxUrlValue}
 
         $fluxObject->setId($_POST['id']);
@@ -584,29 +504,26 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
         $fluxObject->setUrl($_POST['url']);
 
         return $fluxObject->rename();
-
     });
 
     /* ---------------------------------------------------------------- */
     // Route: /settings/flux/category/{id} (GET)
-    // Action: Change category
+    // Action: Rename flux
     /* ---------------------------------------------------------------- */
-
-    $router->get('/flux/category/{id}', function ($id) use ($twig, $trans, $logger, $config, $db, $fluxObject) {
-
+    $container['router']->get('/flux/category/{id}', function ($id) use ($container, $trans, $config, $fluxObject) {
         $fluxObject->setCategory($_GET['id']);
         $fluxObject->setName($_GET['name']);
         $fluxObject->setUrl($_GET['url']);
         $fluxObject->changeCategory();
 
-        header('location: /settings');
+        return header('location: /settings');
+        exit();
     });
 
     /* ---------------------------------------------------------------- */
     // Route: /settings/category/add (POST)
     /* ---------------------------------------------------------------- */
-
-    $router->post('/category/add', function () use ($twig, $db, $logger, $trans, $config, $categoryObject) {
+    $container['router']->post('/category/add', function () use ($container, $trans, $config, $categoryObject) {
 
         $name = $_POST['categoryName'];
         $categoryObject->setName($name);
@@ -614,39 +531,40 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
 
             $categoryObject->add();
         }
-        header('location: /settings/manage');
+
+        return header('location: /settings/manage');
+        exit();
     });
 
     /* ---------------------------------------------------------------- */
     // Route: /settings/category/remove/{id} (GET)
     /* ---------------------------------------------------------------- */
-
-    $router->get('/category/remove/{id}', function ($id) use ($twig, $db, $logger, $trans, $config) {
-
+    $container['router']->get('/category/remove/{id}', function ($id) use ($container, $trans, $config) {
         if (isset($id) && is_numeric($id) && $id > 0) {
             //$eventManager->customQuery('DELETE FROM `' . MYSQL_PREFIX . 'items` WHERE `' . MYSQL_PREFIX . 'event`.`flux` in (SELECT `' . MYSQL_PREFIX . 'flux`.`id` FROM `' . MYSQL_PREFIX . 'flux` WHERE `' . MYSQL_PREFIX . 'flux`.`category` =\'' . intval($_['id']) . '\') ;');
             //$fluxManager->delete(array('category' => $id));
             //$categoryManager->delete(array('id' => $id));
         }
-        header('location: /settings/manage');
+
+        return header('location: /settings/manage');
+        exit();
     });
 
     /* ---------------------------------------------------------------- */
     // Route: /settings/category/rename (POST)
     /* ---------------------------------------------------------------- */
-
-    $router->post('/category/rename', function () use ($twig, $db, $logger, $trans, $config, $categoryObject) {
+    $container['router']->post('/category/rename', function () use ($container, $trans, $config, $categoryObject) {
 
         $id = $_POST['id'];
         $name = $_POST['name'];
         $categoryObject->setId($id);
         $categoryObject->setName($name);
 
-        $logger->info(" avant le if rename");
+        $container['logger']->info(" avant le if rename");
 
         if (isset($_POST['id']) && $categoryObject->exist()) {
 
-            $logger->info(" on rentre dans le if rename");
+            $container['logger']->info(" on rentre dans le if rename");
             $categoryObject->rename();
         }
         header('location: /settings/manage');
@@ -656,84 +574,15 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
     /* ---------------------------------------------------------------- */
     // Route: /settings/flux/export (GET)
     /* ---------------------------------------------------------------- */
-
-    $router->get('/flux/export', function () use ($twig, $db, $logger, $trans, $config, $opmlObject) {
-
+    $container['router']->get('/flux/export', function () use ($container, $trans, $config, $opmlObject) {
         header('Content-Disposition: attachment;filename=export.opml');
         header('Content-Type: text/xml');
 
         echo $opmlObject->export();
-
     });
 
-    $router->get('/flux/import', function () use ($twig, $db, $logger, $trans, $config) {
-
-
-        /*
-         * // On ne devrait pas mettre de style ici.
-        echo "<html>
-            <style>
-                a {
-                    color:#F16529;
-                }
-
-                html,body{
-                        font-family:Verdana;
-                        font-size: 11px;
-                }
-                .error{
-                        background-color:#C94141;
-                        color:#ffffff;
-                        padding:5px;
-                        border-radius:5px;
-                        margin:10px 0px 10px 0px;
-                        box-shadow: 0 0 3px 0 #810000;
-                    }
-                .error a{
-                        color:#ffffff;
-                }
-                </style>
-            </style><body>
-\n";
-        if ($myUser == false) exit(_t('YOU_MUST_BE_CONNECTED_ACTION'));
-        if (!isset($_POST['importButton'])) break;
-        $opml = new Opml();
-        echo "<h3>" . _t('IMPORT') . "</h3><p>" . _t('PENDING') . "</p>\n";
-        try {
-            $errorOutput = $opml->import($_FILES['newImport']['tmp_name']);
-        } catch (Exception $e) {
-            $errorOutput = array($e->getMessage());
-        }
-        if (empty($errorOutput)) {
-            echo "<p>" . _t('IMPORT_NO_PROBLEM') . "</p>\n";
-        } else {
-            echo "<div class='error'>" . _t('IMPORT_ERROR') . "\n";
-            foreach ($errorOutput as $line) {
-                echo "<p>$line</p>\n";
-            }
-            echo "</div>";
-        }
-        if (!empty($opml->alreadyKnowns)) {
-            echo "<h3>" . _t('IMPORT_FEED_ALREADY_KNOWN') . " : </h3>\n<ul>\n";
-            foreach ($opml->alreadyKnowns as $alreadyKnown) {
-                foreach ($alreadyKnown as &$elt) $elt = htmlspecialchars($elt);
-                $text = Functions::truncate($alreadyKnown->fluxName, 60);
-                echo "<li><a target='_parent' href='{$alreadyKnown->xmlUrl}'>"
-                    . "{$text}</a></li>\n";
-            }
-            echo "</ul>\n";
-        }
-        $syncLink = "action.php?action=synchronize&format=html";
-        echo "<p>";
-        echo "<a href='$syncLink' style='text-decoration:none;font-size:3em'>"
-            . "↺</a>";
-        echo "<a href='$syncLink'>" . _t('CLIC_HERE_SYNC_IMPORT') . "</a>";
-        echo "<p></body></html>\n";
-        break;
-         *
-         */
-
-        echo $twig->render('settings.twig',
+    $container['router']->get('/flux/import', function () use ($container, $trans, $config) {
+        echo $container['template_engine']->render('settings.twig',
             [
                 'action' => 'category',
                 'section' => 'fluxs/import',
@@ -743,15 +592,12 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
                 'config' => $config
             ]
         );
-
     });
 
     /* ---------------------------------------------------------------- */
     // Route: /settings/{option} (GET)
     /* ---------------------------------------------------------------- */
-
-    $router->get('/{option}', function ($option) use ($twig, $trans, $logger, $config, $cookiedir, $db, $categoryObject) {
-
+    $container['router']->get('/{option}', function ($option) use ($container, $trans, $config, $cookiedir, $categoryObject) {
         //$serviceUrl', rtrim($_SERVER['HTTP_HOST'] . $cookiedir, '/'));
 
         // gestion des thèmes
@@ -765,14 +611,14 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
         sort($themeList);
 
         // @todo
-        $resultsFlux = $db->query('SELECT id FROM flux f ORDER BY name ');
+        $resultsFlux = $container['database']->query('SELECT id FROM flux f ORDER BY name ');
         while ($rows = $resultsFlux->fetch_array()) {
             $flux['id'] = $rows['id'];
         }
 
-        $logger->info('Section: ' . $option);
+        $container['logger']->info('Section: ' . $option);
 
-        echo $twig->render('settings.twig',
+        echo $container['template_engine']->render('settings.twig',
             [
                 'action' => 'category',
                 'section' => $option,
@@ -788,127 +634,81 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
         );
 
     });
-
 });
-
-// @todo
 
 /* ---------------------------------------------------------------- */
 // Route: /action/read/all (GET)
 /* ---------------------------------------------------------------- */
-
-$router->get('/action/read/all', function () use ($twig, $db, $logger, $trans, $config, $fluxObject) {
-
+$container['router']->get('/action/read/all', function () use ($container, $trans, $config, $fluxObject) {
     $fluxObject->markAllRead();
 
-    header('location: /');
-
+    return header('location: /');
+    exit();
 });
 
 /* ---------------------------------------------------------------- */
 // Route: /action/read/flux/{id} (GET)
 /* ---------------------------------------------------------------- */
-
-$router->get('/action/read/flux/{id}', function ($id) use ($twig, $db, $logger, $trans, $config, $fluxObject) {
-
+$container['router']->get('/action/read/flux/{id}', function ($id) use ($container, $trans, $config, $fluxObject) {
     $fluxObject->setId($id);
     $fluxObject->markAllRead();
-    header('location: /');
 
+    return header('location: /');
+    exit();
 });
 
 /* ---------------------------------------------------------------- */
 // Route: /action/unread/flux/{id} (GET)
 /* ---------------------------------------------------------------- */
-
-$router->get('/action/unread/flux/{id}', function ($id) use ($twig, $db, $logger, $trans, $config) {
-
-    $result = $db->query("update items set unread = 1 where guid = '" . $id . "'");
-
+$container['router']->get('/action/unread/flux/{id}', function ($id) use ($container, $trans, $config) {
+    $result = $container['database']->query("update items set unread = 1 where guid = '" . $id . "'");
 });
 
 /* ---------------------------------------------------------------- */
 // Route: /action/read/item/{id} (GET)
 /* ---------------------------------------------------------------- */
-
-$router->get('/action/read/item/{id}', function ($id) use ($logger, $itemsObject) {
-
+$container['router']->get('/action/read/item/{id}', function ($id) use ($container, $trans, $config, $itemsObject) {
     $itemsObject->setGuid($id);
     $itemsObject->markItemAsReadByGuid();
-    //header('location: /');
 
+    return header('location: /');
+    exit();
 });
 
 /* ---------------------------------------------------------------- */
 // Route: /action/unread/item/{id} (GET)
 /* ---------------------------------------------------------------- */
 
-$router->get('/action/unread/item/{id}', function ($id) use ($twig, $db, $logger, $trans, $config) {
-
-    $result = $db->query("update items set unread = 1 where guid = '" . $id . "'");
-
+$container['router']->get('/action/unread/item/{id}', function ($id) use ($container, $trans, $config) {
+    $result = $container['database']->query("update items set unread = 1 where guid = '" . $id . "'");
 });
-
-// @todo
 
 /* ---------------------------------------------------------------- */
 // Route: /search (GET)
 /* ---------------------------------------------------------------- */
-
-$router->post('/search', function () use ($twig, $db, $logger, $trans, $config) {
-
+$container['router']->get('/search', function () use ($container, $trans, $config) {
     $search = $this->escape_string($_GET['plugin_search']);
     $requete = "SELECT title,guid,content,description,link,pubdate,unread, favorite FROM items 
             WHERE title like '%" . htmlentities($search) . '%\'  OR content like \'%' . htmlentities($search) . '%\' ORDER BY pubdate desc';
-
 });
-
-// @todo
 
 /* ---------------------------------------------------------------- */
 // Route: /action/read/category/{id} (GET)
 /* ---------------------------------------------------------------- */
-/*
-$router->get('/action/read/category/{id}', function () use ($twig, $db,$logger,$trans,$config) {
-
-    if (!$_SESSION['user']) {
-        header('location: /login');
-    }
-
-    $whereClause = array();
-    $whereClause['unread'] = '1';
-    if (isset($_['flux'])) $whereClause['flux'] = $_['flux'];
-    if (isset($_['last-event-id'])) $whereClause['id'] = '<= ' . $_['last-event-id'];
-    $eventManager->change(array('unread' => '0'), $whereClause);
-    if (!Functions::isAjaxCall()) {
-        header('location: ./index.php');
-    }
-
+$container['router']->get('/action/read/category/{id}', function () use ($container, $trans, $config) {
+    return header('Location: /');
+    exit();
 });
-*/
-// @todo
 
 /* ---------------------------------------------------------------- */
 // Route: /action/updateConfiguration (GET)
 /* ---------------------------------------------------------------- */
 
-$router->get('/action/updateConfiguration', function () use ($twig, $db, $logger, $trans, $config) {
-
+$container['router']->get('/action/updateConfiguration', function () use ($container, $trans, $config) {
     if (!$_SESSION['user']) {
-        header('location: /login');
+        return header('location: /login');
+        exit();
     }
-
-    /*
-    $whereClause = array();
-    $whereClause['unread'] = '1';
-    if (isset($_['flux'])) $whereClause['flux'] = $_['flux'];
-    if (isset($_['last-event-id'])) $whereClause['id'] = '<= ' . $_['last-event-id'];
-    $eventManager->change(array('unread' => '0'), $whereClause);
-    if (!Functions::isAjaxCall()) {
-        header('location: ./index.php');
-    }
-    */
-
 });
 
 // @todo
@@ -917,58 +717,28 @@ $router->get('/action/updateConfiguration', function () use ($twig, $db, $logger
 // Route: /qrcode
 // @TODO
 /* ---------------------------------------------------------------- */
-
-$router->mount('/qrcode', function () use ($router, $twig, $db, $logger, $trans, $config) {
-
-    $router->get('/qr', function () {
+$container['router']->mount('/qrcode', function () use ($container, $trans, $config) {
+    $container['router']->get('/qr', function () {
 
         if (!$_SESSION['user']) {
             header('location: /login');
         }
-
-        /*
-        Functions::chargeVarRequest('label', 'user', 'key', 'issuer', 'algorithm', 'digits', 'period');
-        if (empty($key)) {
-            $key = "**********";
-        }
-        $qrCode = "otpauth://totp/{$label}:{$user}?secret={$key}";
-        foreach (array('issuer', 'algorithm', 'digits', 'period') as $champ)
-            if (!empty(${$champ}))
-                $qrCode .= "&{$champ}={${$champ}}";
-
-
-        Functions::chargeVarRequest('_qrSize', '_qrMargin');
-        if (empty($_qrSize)) $_qrSize = 3;
-        if (empty($_qrMargin)) $_qrMargin = 4;
-
-        QRcode::png($qrCode, false, 'QR_LEVEL_H', $_qrSize, $_qrMargin);
     });
-
-    $router->get('/text', function () use ($twig, $trans, $logger, $config) {
-
-        $qrCode = substr($_SERVER['QUERY_STRING'], 1 + strlen($methode));
-        */
-
-    });
-
 });
 
 /* ---------------------------------------------------------------- */
 // Route: /flux/{id} (GET)
 /* ---------------------------------------------------------------- */
 
-$router->get('/flux/{id}', function ($id) use (
-    $twig,
-    $logger,
+$container['router']->get('/flux/{id}', function ($id) use (
+    $container,
     $trans,
     $scroll,
     $config,
-    $db,
     $itemsObject,
     $fluxObject,
     $categoryObject
 ) {
-
     $fluxObject->setId($id);
     $flux = $fluxObject->getFluxById();
     $itemsObject->setFlux($id);
@@ -980,9 +750,9 @@ $router->get('/flux/{id}', function ($id) use (
     $offset = ($page - 1) * $config['articlePerPages'];
     $row_count = $config['articlePerPages'];
 
-    echo $twig->render('index.twig',
+    echo $container['template_engine']->render('index.twig',
         [
-            'action' => 'item',
+            'action' => 'items',
             'events' => $itemsObject->loadUnreadItemPerFlux($offset, $row_count),
             'flux' => $flux,
             'fluxId' => $id,
@@ -994,213 +764,24 @@ $router->get('/flux/{id}', function ($id) use (
             'scroll' => $scroll,
             'trans' => $trans,
             'config' => $config
+
         ]
     );
-
 });
 
 /* ---------------------------------------------------------------- */
 // Route: /install
 /* ---------------------------------------------------------------- */
+$container['router']->mount('/install', function () use ($container, $trans) {
+    /** @var InstallController $InstallController */
+    $InstallController = $container['install_controller'];
+    $InstallController->addTrans($trans);
 
-$router->mount('/install', function () use ($router, $trans, $twig, $cookieDir, $logger) {
-
-    /* ---------------------------------------------------------------- */
-    // Route: /install (GET)
-    /* ---------------------------------------------------------------- */
-
-    $router->get('/', function () use ($twig, $cookieDir, $trans) {
-
-        $_SESSION['install'] = true;
-
-        $installObject = new \Influx\Install();
-
-        $templatesList = glob("templates/*");
-        foreach ($templatesList as $tpl) {
-            $tpl_array = explode(".", basename($tpl));
-            $listTemplates[] = $tpl_array[0];
-        }
-
-        $fileList = glob("templates/influx/locales/*.json");
-
-        foreach ($fileList as $file) {
-            $locale = explode(".", basename($file));
-            $list_lang[] = $locale[0];
-        }
-
-        $root = $installObject->getRoot();
-
-        echo $twig->render('install.twig',
-            [
-                'action' => 'general',
-                'list_lang' => $list_lang,
-                'list_templates' => $listTemplates,
-                'root' => $root,
-                'trans' => $trans,
-            ]);
-
-    });
-
-    /* ---------------------------------------------------------------- */
-    // Route: /install/ (POST)
-    /* ---------------------------------------------------------------- */
-
-    $router->post('/', function () use ($twig, $cookieDir, $trans) {
-
-        if ($_POST['action'] == 'database') {
-            $_SESSION['language'] = $_POST['install_changeLng'];
-            $_SESSION['template'] = $_POST['template'];
-            $_SESSION['root'] = $_POST['root'];
-        }
-
-        if ($_POST['action'] == 'check') {
-            $_SESSION['language'] = $_POST['install_changeLng'];
-            $_SESSION['template'] = $_POST['template'];
-            $_SESSION['root'] = $_POST['root'];
-        }
-
-        if ($_POST['action'] == 'admin') {
-            $_SESSION['login'] = $_POST['login'];
-            $_SESSION['password'] = $_POST['password'];
-        }
-
-        echo $twig->render('install.twig',
-            [
-                'action' => $_POST['action'],
-                'trans' => $trans
-            ]);
-
-    });
-
-    /* ---------------------------------------------------------------- */
-    // Route: /install/database (GET)
-    /* ---------------------------------------------------------------- */
-
-    $router->get('/database', function () use ($twig, $cookieDir, $trans) {
-
-        $_SESSION['install'] = true;
-
-        $filelist = glob("locales/*.json");
-
-        foreach ($filelist as $file) {
-            $locale = explode(".", basename($file));
-            $list_lang[] = $locale[0];
-        }
-
-        $templateslist = glob("templates/*");
-        foreach ($templateslist as $tpl) {
-            $tpl_array = explode(".", basename($tpl));
-            $listTemplates[] = $tpl_array[0];
-        }
-
-        echo $twig->render('install.twig',
-            [
-                'list_lang' => $list_lang,
-                'list_templates' => $listTemplates,
-                'trans' => $trans
-            ]);
-
-    });
-
-    /* ---------------------------------------------------------------- */
-    // Route: /install/user (GET)
-    /* ---------------------------------------------------------------- */
-
-    $router->get('/user', function () use ($twig, $cookieDir, $trans) {
-
-        $_SESSION['install'] = true;
-
-        $filelist = glob("locales/*.json");
-
-        foreach ($filelist as $file) {
-            $locale = explode(".", basename($file));
-            $list_lang[] = $locale[0];
-        }
-
-        $templateslist = glob("templates/*");
-        foreach ($templateslist as $tpl) {
-            $tpl_array = explode(".", basename($tpl));
-            $listTemplates[] = $tpl_array[0];
-        }
-
-        echo $twig->render('install.twig',
-            [
-                'list_lang' => $list_lang,
-                'list_templates' => $listTemplates,
-                'trans' => $trans
-            ]);
-
-    });
-
-    /* ---------------------------------------------------------------- */
-    // Route: /install (POST)
-    // @todo
-    /* ---------------------------------------------------------------- */
-
-    $router->post('/', function () use ($twig, $cookieDir) {
-
-        $install = new Install();
-        /* Prend le choix de langue de l'utilisateur, soit :
-         * - lorsqu'il vient de changer la langue du sélecteur ($lang)
-         * - lorsqu'il vient de lancer l'installeur ($install_changeLngLeed)
-         */
-        $lang = '';
-        if (isset($_GET['lang'])) $lang = $_GET['lang'];
-        elseif (isset($_POST['install_changeLngLeed'])) $lang = $_POST['install_changeLngLeed'];
-        $installDirectory = dirname(__FILE__) . '/install';
-        // N'affiche que les langues du navigateur
-        // @TODO: il faut afficher toutes les langues disponibles
-        //        avec le choix par défaut de la langue préférée
-        $languageList = Functions::getBrowserLanguages();
-        if (!empty($lang)) {
-            // L'utilisateur a choisi une langue, qu'on incorpore dans la liste
-            array_unshift($languageList, $lang);
-            $liste = array_unique($languageList);
-        }
-        unset($i18n); //@TODO: gérer un singleton et le choix de langue / liste de langue
-        $currentLanguage = i18n_init($languageList, $installDirectory);
-        $languageList = array_unique($i18n->languages);
-        if (file_exists('constant.php')) {
-            die('ALREADY_INSTALLED');
-        }
-        define('DEFAULT_TEMPLATE', 'influx');
-        $templates = scandir('templates');
-        if (!in_array(DEFAULT_TEMPLATE, $templates)) die('Missing default template : ' . DEFAULT_TEMPLATE);
-        $templates = array_diff($templates, array(DEFAULT_TEMPLATE, '.', '..')); // Répertoires non voulus sous Linux
-        sort($templates);
-        $templates = array_merge(array(DEFAULT_TEMPLATE), $templates); // le thème par défaut en premier
-// Cookie de la session
-        $cookiedir = '';
-        if (dirname($_SERVER['SCRIPT_NAME']) != '/') $cookiedir = dirname($_SERVER["SCRIPT_NAME"]) . '/';
-        session_set_cookie_params(0, $cookiedir);
-        session_start();
-// Protection des variables
-        $_ = array_merge($_GET, $_POST);
-        $installActionName = 'installButton';
-        $install->launch($_, $installActionName);
-
-        $constant = "<?php
-//Host de Mysql, le plus souvent localhost ou 127.0.0.1
-define('MYSQL_HOST','{$this->options['db']['mysqlHost']}');
-//Identifiant MySQL
-define('MYSQL_LOGIN','{$this->options['db']['mysqlLogin']}');
-//mot de passe MySQL
-define('MYSQL_MDP','{$this->options['db']['mysqlMdp']}');
-//Nom de la base MySQL ou se trouvera leed
-define('MYSQL_BDD','{$this->options['db']['mysqlBase']}');
-//Prefix des noms des tables leed pour les bases de données uniques
-define('MYSQL_PREFIX','{$this->options['db']['mysqlPrefix']}');
-?>";
-
-        file_put_contents(self::CONSTANT_FILE, $constant);
-        if (!is_readable(self::CONSTANT_FILE)) {
-            die('"' . self::CONSTANT_FILE . '" not found!');
-        }
-
-        header('location: /login');
-
-    });
-
+    $container['router']->get(InstallRouting::HOME_PAGE, [$InstallController, 'homepage']);
+    $container['router']->match('GET|POST', InstallRouting::GENERAL_PAGE, [$InstallController, 'general']);
+    $container['router']->match('GET|POST', InstallRouting::DATABASE_PAGE, [$InstallController, 'database']);
+    $container['router']->match('GET|POST', InstallRouting::USER_PAGE, [$InstallController, 'user']);
+    $container['router']->get(InstallRouting::INSTALLATION_PAGE, [$InstallController, 'install']);
 });
 
-$router->run();
+$container['router']->run();

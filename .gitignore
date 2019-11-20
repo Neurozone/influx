@@ -1,3 +1,11 @@
 vendor
 .idea
-/conf/config.php
+/cache/*
+!/cache/.gitkeep
+!/cache/.htaccess
+/conf/*
+!/conf/.gitkeep
+!/conf/.htaccess
+/logs/*
+!/logs/.gitkeep
+!/logs/.htaccess
