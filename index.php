@@ -778,7 +778,8 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
                 'categories' => $categoryObject->getFluxByCategories(),
                 'flux' => $flux,
                 'config' => $config,
-                'user' => $_SESSION['user']
+                'user' => $_SESSION['user'],
+                'settings' => true
             ]
         );
 

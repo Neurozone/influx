@@ -99,7 +99,7 @@
 <div id="wrapper">
 
     <!-- Sidebar -->
-  <!--
+    <!--
     <ul class="sidebar navbar-nav">
         <li class="nav-item active">
             <a class="nav-link" href="/">
@@ -131,68 +131,70 @@
             </div>
         </li>
     </ul>-->
-  <div class="vertical-nav bg-white" id="sidebar">
-    <div class="py-4 px-3 mb-4 bg-light">
-      <div class="media d-flex align-items-center"><img
-                src="https://res.cloudinary.com/mhmd/image/upload/v1556074849/avatar-1_tcnd60.png" alt="..."
-                width="65" class="mr-3 rounded-circle img-thumbnail shadow-sm">
-        <div class="media-body">
-          <h4 class="m-0">{{ user }}</h4>
-          <p class="font-weight-light text-muted mb-0">Web developer</p>
+    <div class="vertical-nav bg-white" id="sidebar">
+        <div class="py-4 px-3 mb-4 bg-light">
+            <div class="media d-flex align-items-center"><img
+                        src="https://res.cloudinary.com/mhmd/image/upload/v1556074849/avatar-1_tcnd60.png" alt="..."
+                        width="65" class="mr-3 rounded-circle img-thumbnail shadow-sm">
+                <div class="media-body">
+                    <h4 class="m-0">{{ user }}</h4>
+                    <p class="font-weight-light text-muted mb-0">Web developer</p>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
 
-    <p class="text-gray font-weight-bold text-uppercase px-3 small pb-4 mb-0">Main</p>
+        <p class="text-gray font-weight-bold text-uppercase px-3 small pb-4 mb-0">Main</p>
 
-    <ul class="nav flex-column bg-white mb-0">
-      <li class="nav-item">
-        <a href="/" class="nav-link text-dark font-italic bg-light">
-          <i class="fa fa-th-large mr-3 text-primary fa-fw"></i>
-          Home
-        </a>
-      </li>
-      <li class="nav-item">
-        <a href="/settings" class="nav-link text-dark font-italic">
-          <i class="fa fa-address-card mr-3 text-primary fa-fw"></i>
-          Settings
-        </a>
-      </li>
-      <li class="nav-item">
-        <a href="/statistics" class="nav-link text-dark font-italic">
-          <i class="fa fa-cubes mr-3 text-primary fa-fw"></i>
-          Statistics
-        </a>
-      </li>
-      <li class="nav-item">
-        <a href="/favorites" class="nav-link text-dark font-italic">
-          <i class="fa fa-cubes mr-3 text-primary fa-fw"></i>
-          Favorites
-        </a>
-      </li>
-    </ul>
-
-    {% for category in categories %}
-      <p class="text-gray font-weight-bold text-uppercase px-3 small py-4 mb-0">{{ category.name }}</p>
-      <ul class="nav flex-column bg-white mb-0">
-        {% for flux in category.flux %}
-          {% if flux.unread > 0 %}
+        <ul class="nav flex-column bg-white mb-0">
             <li class="nav-item">
-              <a href="/flux/{{ flux.id }}" class="nav-link text-dark font-italic" title="{{ flux.url }}">
-                <i class="fa fa-area-chart mr-3 text-primary fa-fw"></i>
-                <span class="badge badge-danger d-inline-block">{{ flux.unread }}</span>{{ flux.name }}</a>
+                <a href="/" class="nav-link text-dark font-italic bg-light">
+                    <i class="fa fa-th-large mr-3 text-primary fa-fw"></i>
+                    Home
+                </a>
             </li>
-          {% endif %}
-        {% endfor %}
-      </ul>
-    {% endfor %}
+            <li class="nav-item">
+                <a href="/settings" class="nav-link text-dark font-italic">
+                    <i class="fa fa-address-card mr-3 text-primary fa-fw"></i>
+                    Settings
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/statistics" class="nav-link text-dark font-italic">
+                    <i class="fa fa-cubes mr-3 text-primary fa-fw"></i>
+                    Statistics
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/favorites" class="nav-link text-dark font-italic">
+                    <i class="fa fa-cubes mr-3 text-primary fa-fw"></i>
+                    Favorites
+                </a>
+            </li>
+        </ul>
 
-  </div>
+        {% for category in categories %}
+            <p class="text-gray font-weight-bold text-uppercase px-3 small py-4 mb-0">{{ category.name }}</p>
+            <ul class="nav flex-column bg-white mb-0">
+                {% for flux in category.flux %}
+                    {% if flux.unread > 0 %}
+                        <li class="nav-item">
+                            <a href="/flux/{{ flux.id }}" class="nav-link text-dark font-italic" title="{{ flux.url }}">
+                                <i class="fa fa-area-chart mr-3 text-primary fa-fw"></i>
+                                <span class="badge badge-danger d-inline-block">{{ flux.unread }}</span>{{ flux.name }}
+                            </a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+            </ul>
+        {% endfor %}
+
+    </div>
 
     <div id="content-wrapper">
 
         <div class="container-fluid">
 
+            {{ if settings is not defined }}
             <!-- Breadcrumbs-->
             <ol class="breadcrumb">
                 <li class="breadcrumb-item">
@@ -219,8 +221,11 @@
                 </li>
 
             </ol>
-
             {% include "article.twig" %}
+            {{ else }}
+            {% include "settings.twig" %}
+            {{ endif }}
+
 
         </div>
         <!-- /.container-fluid -->
