@@ -961,7 +961,8 @@ $router->get('/flux/{id}', function ($id) use (
     $db,
     $itemsObject,
     $fluxObject,
-    $categoryObject
+    $categoryObject,
+    $userObject
 ) {
 
     $fluxObject->setId($id);

@@ -19,79 +19,92 @@
 
     <!-- Custom styles for this template-->
     <link href="/templates/influx-ng/css/sb-admin.css" rel="stylesheet">
-  <link href="/templates/influx-ng/css/menu.css" rel="stylesheet">
+    <link href="/templates/influx-ng/css/menu.css" rel="stylesheet">
 
 </head>
 
 <body id="page-top">
 
 <div class="vertical-nav bg-white" id="sidebar">
-  <div class="py-4 px-3 mb-4 bg-light">
-    <div class="media d-flex align-items-center"><img src="https://res.cloudinary.com/mhmd/image/upload/v1556074849/avatar-1_tcnd60.png" alt="..." width="65" class="mr-3 rounded-circle img-thumbnail shadow-sm">
-      <div class="media-body">
-        <h4 class="m-0">Jason Doe</h4>
-        <p class="font-weight-light text-muted mb-0">Web developer</p>
-      </div>
+    <div class="py-4 px-3 mb-4 bg-light">
+        <div class="media d-flex align-items-center"><img
+                    src="https://res.cloudinary.com/mhmd/image/upload/v1556074849/avatar-1_tcnd60.png" alt="..."
+                    width="65" class="mr-3 rounded-circle img-thumbnail shadow-sm">
+            <div class="media-body">
+                <h4 class="m-0">{{ user }}</h4>
+                <p class="font-weight-light text-muted mb-0">Web developer</p>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <p class="text-gray font-weight-bold text-uppercase px-3 small pb-4 mb-0">Main</p>
+    <p class="text-gray font-weight-bold text-uppercase px-3 small pb-4 mb-0">Main</p>
 
-  <ul class="nav flex-column bg-white mb-0">
-    <li class="nav-item">
-      <a href="#" class="nav-link text-dark font-italic bg-light">
-        <i class="fa fa-th-large mr-3 text-primary fa-fw"></i>
-        Home
-      </a>
-    </li>
-    <li class="nav-item">
-      <a href="#" class="nav-link text-dark font-italic">
-        <i class="fa fa-address-card mr-3 text-primary fa-fw"></i>
-        About
-      </a>
-    </li>
-    <li class="nav-item">
-      <a href="#" class="nav-link text-dark font-italic">
-        <i class="fa fa-cubes mr-3 text-primary fa-fw"></i>
-        Services
-      </a>
-    </li>
-    <li class="nav-item">
-      <a href="#" class="nav-link text-dark font-italic">
-        <i class="fa fa-picture-o mr-3 text-primary fa-fw"></i>
-        Gallery
-      </a>
-    </li>
-  </ul>
+    <ul class="nav flex-column bg-white mb-0">
+        <li class="nav-item">
+            <a href="/" class="nav-link text-dark font-italic bg-light">
+                <i class="fa fa-th-large mr-3 text-primary fa-fw"></i>
+                Home
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="#" class="nav-link text-dark font-italic">
+                <i class="fa fa-address-card mr-3 text-primary fa-fw"></i>
+                Settings
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="#" class="nav-link text-dark font-italic">
+                <i class="fa fa-cubes mr-3 text-primary fa-fw"></i>
+                Statistics
+            </a>
+        </li>
+    </ul>
 
-  <p class="text-gray font-weight-bold text-uppercase px-3 small py-4 mb-0">Charts</p>
+    {% for category in categories %}
+        <p class="text-gray font-weight-bold text-uppercase px-3 small py-4 mb-0">{{ category.name }}</p>
+        <ul class="nav flex-column bg-white mb-0">
+            {% for flux in category.flux %}
+                {% if flux.unread > 0 %}
+                    <li class="nav-item">
+                        <a href="/flux/{{ flux.id }}" class="nav-link text-dark font-italic" title="{{ flux.url }}">
+                            <i class="fa fa-area-chart mr-3 text-primary fa-fw"></i>
+                            <span class="badge badge-danger d-inline-block">{{ flux.unread }}</span>{{ flux.name }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+        </ul>
 
-  <ul class="nav flex-column bg-white mb-0">
-    <li class="nav-item">
-      <a href="#" class="nav-link text-dark font-italic">
-        <i class="fa fa-area-chart mr-3 text-primary fa-fw"></i>
-        Area charts
-      </a>
-    </li>
-    <li class="nav-item">
-      <a href="#" class="nav-link text-dark font-italic">
-        <i class="fa fa-bar-chart mr-3 text-primary fa-fw"></i>
-        Bar charts
-      </a>
-    </li>
-    <li class="nav-item">
-      <a href="#" class="nav-link text-dark font-italic">
-        <i class="fa fa-pie-chart mr-3 text-primary fa-fw"></i>
-        Pie charts
-      </a>
-    </li>
-    <li class="nav-item">
-      <a href="#" class="nav-link text-dark font-italic">
-        <i class="fa fa-line-chart mr-3 text-primary fa-fw"></i>
-        Line charts
-      </a>
-    </li>
-  </ul>
+
+    {% endfor %}
+
+    <p class="text-gray font-weight-bold text-uppercase px-3 small py-4 mb-0">Charts</p>
+
+    <ul class="nav flex-column bg-white mb-0">
+        <li class="nav-item">
+            <a href="#" class="nav-link text-dark font-italic">
+                <i class="fa fa-area-chart mr-3 text-primary fa-fw"></i>
+                Area charts
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="#" class="nav-link text-dark font-italic">
+                <i class="fa fa-bar-chart mr-3 text-primary fa-fw"></i>
+                Bar charts
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="#" class="nav-link text-dark font-italic">
+                <i class="fa fa-pie-chart mr-3 text-primary fa-fw"></i>
+                Pie charts
+            </a>
+        </li>
+        <li class="nav-item">
+            <a href="#" class="nav-link text-dark font-italic">
+                <i class="fa fa-line-chart mr-3 text-primary fa-fw"></i>
+                Line charts
+            </a>
+        </li>
+    </ul>
 </div>
 <!-- End vertical navbar -->
 
@@ -181,12 +194,14 @@
             </a>
             <div class="dropdown-menu" aria-labelledby="pagesDropdown">
                 {% for category in categories %}
-                  <i class="fas fa-fw fa-folder d-inline-block"></i>
+                    <i class="fas fa-fw fa-folder d-inline-block"></i>
                     <h6 class="dropdown-header">{{ category.name }}</h6>
                     {% for flux in category.flux %}
-                      {% if flux.unread > 0 %}
-                        <span class="badge badge-danger d-inline-block">{{ flux.unread }}</span><a class="dropdown-item" href="/flux/{{ flux.id }}" title="{{ flux.url }}">{{ flux.name }}</a>
-                      {% endif %}
+                        {% if flux.unread > 0 %}
+                            <span class="badge badge-danger d-inline-block">{{ flux.unread }}</span><a
+                                class="dropdown-item" href="/flux/{{ flux.id }}"
+                                title="{{ flux.url }}">{{ flux.name }}</a>
+                        {% endif %}
                     {% endfor %}
 
                     <div class="dropdown-divider"></div>
@@ -227,7 +242,7 @@
 
             </ol>
 
-          {% include "article.twig" %}
+            {% include "article.twig" %}
 
         </div>
         <!-- /.container-fluid -->
