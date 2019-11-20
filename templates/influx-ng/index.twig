@@ -108,11 +108,11 @@
             </a>
             <div class="dropdown-menu" aria-labelledby="pagesDropdown">
                 {% for category in categories %}
-                  <i class="fas fa-fw fa-folder"></i>
+                  <i class="fas fa-fw fa-folder d-inline-block"></i>
                     <h6 class="dropdown-header">{{ category.name }}</h6>
                     {% for flux in category.flux %}
                       {% if flux.unread > 0 %}
-                        <span class="badge badge-danger">{{ flux.unread }}</span><a class="dropdown-item" href="/flux/{{ flux.id }}" title="{{ flux.url }}">{{ flux.name }}</a>
+                        <span class="badge badge-danger d-inline-block">{{ flux.unread }}</span><a class="dropdown-item" href="/flux/{{ flux.id }}" title="{{ flux.url }}">{{ flux.name }}</a>
                       {% endif %}
                     {% endfor %}
 
