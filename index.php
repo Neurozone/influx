@@ -767,7 +767,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
 
         $logger->info('Section: ' . $option);
 
-        echo $twig->render('settings.twig',
+        echo $twig->render('index.twig',
             [
                 'action' => 'category',
                 'section' => $option,
