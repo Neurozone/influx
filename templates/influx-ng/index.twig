@@ -60,6 +60,7 @@
                 <a class="dropdown-item" href="#">Something else here</a>
             </div>
         </li>
+      <!--
         <li class="nav-item dropdown no-arrow mx-1">
             <a class="nav-link dropdown-toggle" href="#" id="messagesDropdown" role="button" data-toggle="dropdown"
                aria-haspopup="true" aria-expanded="false">
@@ -72,7 +73,7 @@
                 <div class="dropdown-divider"></div>
                 <a class="dropdown-item" href="#">Something else here</a>
             </div>
-        </li>
+        </li>-->
         <li class="nav-item dropdown no-arrow">
             <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown"
                aria-haspopup="true" aria-expanded="false">
@@ -126,7 +127,7 @@
             <!-- Breadcrumbs-->
             <ol class="breadcrumb">
                 <li class="breadcrumb-item">
-                    {% if action == 'flux' %}
+                    {% if action == 'items' or action == 'flux' %}
 
                         <h1 class="articleSection"><a target="_blank" rel="noopener noreferrer"
                                                       href="{{ flux.website }}">{{ flux.name }}</a> :</h1>
