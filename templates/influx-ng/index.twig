@@ -102,7 +102,7 @@
         </li>
         <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" id="pagesDropdown" role="button" data-toggle="dropdown"
-               aria-haspopup="true" aria-expanded="false">
+               aria-haspopup="true" aria-expanded="true">
                 <i class="fas fa-fw fa-folder"></i>
                 <span>Flux</span>
             </a>
@@ -129,8 +129,8 @@
                 <li class="breadcrumb-item">
                     {% if action == 'item' or action == 'flux' %}
 
-                        <h1 class="articleSection"><a target="_blank" rel="noopener noreferrer"
-                                                      href="{{ flux.website }}">{{ flux.name }}</a> :</h1>
+                        <h2 class="articleSection"><a target="_blank" rel="noopener noreferrer"
+                                                      href="{{ flux.website }}">{{ flux.name }}</a> :</h2>
                         {{ flux.description }}
 
                         <a href="/flux/{{ flux.id }}/page/{{ page }}/unread">Non lu</a> |
@@ -138,14 +138,14 @@
                     {% endif %}
 
                     {% if action == 'category' %}
-                        <h1 class="articleSection">Dossier : {{ category.name }}</h1>
+                        <h2 class="articleSection">Dossier : {{ category.name }}</h2>
                         <p>Tous les &eacute;v&eacute;nements non lus pour le dossier {{ category.name }}</p>
                     {% endif %}
 
                     {% if action == 'favorites' %}
 
-                        <h1 class="articleSection">Articles favoris <span id="nbarticle">{{ numberOfItem }}</span>
-                        </h1>
+                        <h2 class="articleSection">Articles favoris <span id="nbarticle">{{ numberOfItem }}</span>
+                        </h2>
                     {% endif %}
                 </li>
                 <li class="breadcrumb-item active">Overview</li>

@@ -8,12 +8,12 @@
             <a title="Retourner au d&eacute;but" class="goTopButton" href="#pageTopAnvil"><i
                         class="icon-up-dir"></i></a>
             <!-- TITRE -->
-            <h6 class="articleTitle">
+            <h3 class="articleTitle">
                 <a onclick="readThis(this,'{{ event.id }}','title');" target="_blank" rel="noopener noreferrer"
                    href="{{ event.link }}" title="{{ plainDescription|escape }}">{{ event.title|escape }}</a>
-            </h6>
+            </h3>
             <!-- DETAILS + OPTIONS -->
-            <h3 class="articleDetails">
+            <h4 class="articleDetails">
                 <a href="{{ event.link }}" target="_blank" rel="noopener noreferrer">{{ event.flux_name }}</a>
 
                 {% if event.creator %}
@@ -33,7 +33,7 @@
                 <a class="pointer right readUnreadButton" onclick="readThis(this,{{ event.id }},'item');"><i
                             class="icon-eye" style="font-size:15px;"></i> Lu/Non lu</a>
 
-            </h3>
+            </h4>
         </div>
         <!-- CONTENU/DESCRIPTION -->
 
@@ -44,7 +44,7 @@
         </div>
 
         <div class="card-footer small text-muted"><!-- RAPPEL DETAILS + OPTIONS POUR LES ARTICLES AFFICHES EN ENTIER -->
-            <h3 class="articleDetails">
+            <h4 class="articleDetails">
 
                 <a class="pointer right readUnreadButton"><i class="icon-eye" style="font-size:15px;"></i> Lu/Non lu</a>
                 {% if event.getFavorite != 1 %}
@@ -56,7 +56,7 @@
                 {% endif %}
                 <div class="clear"></div>
 
-            </h3>
+            </h4>
         </div>
 
     </div>
