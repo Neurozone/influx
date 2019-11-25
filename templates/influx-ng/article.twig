@@ -1,0 +1,70 @@
+{% for event in events %}
+    {% set plainDescription = event.description|striptags|escape %}
+
+    <!-- CORPS ARTICLE -->
+    <div class="card mb-3" id="{{ event.id }}" data-feed="{{ event.flux }}">
+        <div class="card-header">
+            <a title="Retourner au d&eacute;but" class="goTopButton" href="#pageTopAnvil"><i
+                        class="icon-up-dir"></i></a>
+            <!-- TITRE -->
+            <h3 class="articleTitle">
+                <a onclick="readThis(this,'{{ event.id }}','title');" target="_blank" rel="noopener noreferrer"
+                   href="{{ event.link }}" title="{{ plainDescription|escape }}">{{ event.title|escape }}</a>
+            </h3>
+            <!-- DETAILS + OPTIONS -->
+            <h4 class="articleDetails">
+                <a href="{{ event.link }}" target="_blank" rel="noopener noreferrer">{{ event.flux_name }}</a>
+
+                {% if event.creator %}
+                    par {{ event.creator }}
+                {% endif %}
+
+                {{ event.pubdate }}
+
+                {% if event.getFavorite != 1 %} -  <a class="pointer favorite"
+                                                      onclick="addFavorite(this,{{ event.id }});">Favoriser</a>
+                {% else %}
+                    <a class="pointer favorite" onclick="removeFavorite(this,{{ event.id }});">Supprimer des favoris</a>
+                {% endif %}
+                <a class="pointer" id="btnDisplayMode_{{ event.id }}"
+                   onclick="toggleArticleDisplayMode(this,{{ event.id }})" title="Affichage mode complet">|||</a>
+
+                <a class="pointer right readUnreadButton" onclick="readThis(this,{{ event.id }},'item');"><i
+                            class="icon-eye" style="font-size:15px;"></i> Lu/Non lu</a>
+
+            </h4>
+        </div>
+        <!-- CONTENU/DESCRIPTION -->
+
+        <div class="card-body">
+
+            {{ event.content|raw }}
+
+        </div>
+
+        <div class="card-footer small text-muted"><!-- RAPPEL DETAILS + OPTIONS POUR LES ARTICLES AFFICHES EN ENTIER -->
+            <h4 class="articleDetails">
+
+                <a class="pointer right readUnreadButton"><i class="icon-eye" style="font-size:15px;"></i> Lu/Non lu</a>
+                {% if event.getFavorite != 1 %}
+                    <a class="right pointer favorite" onclick="addFavorite(this,{{ event.id }});">Ajouter aux
+                        favoris</a>
+                {% else %}
+                    <a class="right pointer favorite" onclick="removeFavorite(this,{{ event.id }});">Supprimer des
+                        favoris</a>
+                {% endif %}
+                <div class="clear"></div>
+
+            </h4>
+        </div>
+
+    </div>
+
+    {% set hightlighted = hightlighted + 1 %}
+{% endfor %}
+
+{% if (scroll is defined) and (events is defined) %}
+    <div class='scriptaddbutton'>
+        <script>addEventsButtonLuNonLus;</script>
+    </div>
+{% endif %}

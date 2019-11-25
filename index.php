@@ -767,7 +767,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
 
         $logger->info('Section: ' . $option);
 
-        echo $twig->render('settings.twig',
+        echo $twig->render('index.twig',
             [
                 'action' => 'category',
                 'section' => $option,
@@ -778,7 +778,8 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
                 'categories' => $categoryObject->getFluxByCategories(),
                 'flux' => $flux,
                 'config' => $config,
-                'user' => $_SESSION['user']
+                'user' => $_SESSION['user'],
+                'settings' => true
             ]
         );
 
@@ -961,7 +962,8 @@ $router->get('/flux/{id}', function ($id) use (
     $db,
     $itemsObject,
     $fluxObject,
-    $categoryObject
+    $categoryObject,
+    $userObject
 ) {
 
     $fluxObject->setId($id);
