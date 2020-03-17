@@ -1,18 +1,18 @@
 <?php
 
 /**
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published
- * by the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published
+by the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 use Monolog\Handler\StreamHandler;
@@ -20,7 +20,7 @@ use Monolog\Logger;
 use Monolog\Handler\RotatingFileHandler;
 use SimplePie\SimplePie;
 
-include_once(__DIR__ . '/conf/config.php');
+include_once('conf/config.php');
 require __DIR__ . '/vendor/autoload.php';
 
 if (defined('LOGS_DAYS_TO_KEEP')) {
@@ -29,7 +29,9 @@ if (defined('LOGS_DAYS_TO_KEEP')) {
     $handler = new RotatingFileHandler(__DIR__ . '/logs/synchronization.log', 7);
 }
 
+#$stream = new StreamHandler(__DIR__ . '/logs/synchronization.log', Logger::DEBUG);
 $logger = new Logger('SyncLogger');
+#$logger->pushHandler($stream);
 $logger->pushHandler($handler);
 $logger->info('Sync started');
 
@@ -79,9 +81,8 @@ function getEnclosureHtml($enclosure)
 
 
 $sp = new \SimplePie();
-$sp->set_cache_location(__DIR__ . '/cache');
 $sp->enable_cache(true);
-$sp->set_cache_location(__DIR__ . '/cache');
+$sp->set_cache_location (__DIR__ . '/cache');
 $sp->set_useragent('Mozilla/5.0 (compatible; Exabot/3.0; +http://www.exabot.com/go/robot)');
 
 $db = new mysqli(MYSQL_HOST, MYSQL_LOGIN, MYSQL_MDP, MYSQL_BDD);
@@ -129,8 +130,8 @@ while ($row = $result_feed->fetch_array()) {
     $linesInserted = 0;
 
     foreach ($sp->get_items() as $item) {
-        $guid = $item->get_id(true);
-
+        #$guid = $item->get_id(true);
+        $guid = md5($item->get_permalink());
         $permalink = $item->get_permalink();
         $content = $db->real_escape_string($item->get_content());
         $title = $db->real_escape_string(mb_strimwidth($item->get_title(), 0, 250, "..."));
@@ -139,6 +140,7 @@ while ($row = $result_feed->fetch_array()) {
         $link = $item->get_link();
 
         $enclosure = getEnclosureHtml($item->get_enclosure());
+
 
         $author = '';
 
@@ -149,10 +151,10 @@ while ($row = $result_feed->fetch_array()) {
                 $author .= $creator->get_name() . ',';
             }
         } else {
-            $author = mb_strimwidth($link, 0, 250, "...");
+            $author = mb_strimwidth($link, 0, 152, "...");
         }
 
-        $author = mb_strimwidth($author, 0, 250, "...");
+        $author = mb_strimwidth($author, 0, 152, "...");
 
         if (is_numeric($item->get_date())) {
             $pubdate = $item->get_date();
@@ -191,6 +193,7 @@ while ($row = $result_feed->fetch_array()) {
 }
 
 $totalTime = microtime(true) - $start;
+
 $totalTimeStr = number_format($totalTime, 3);
 $currentDate = date('d/m/Y H:i:s');
 

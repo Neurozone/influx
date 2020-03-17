@@ -66,7 +66,7 @@ if (file_exists('conf/config.php')) {
     $conf = new Configuration($db);
     $config = $conf->getAll();
 
-    $templateName = 'influx';
+    $templateName = 'influx-adminlte-3';
     $templatePath = __DIR__ . '/templates/' . $templateName;
 
     $loader = new \Twig\Loader\FilesystemLoader($templatePath);
@@ -91,11 +91,7 @@ if (file_exists('conf/config.php')) {
     $timezone_default = 'Europe/Paris';
     date_default_timezone_set($timezone_default);
 
-    $scroll = false;
     $unreadEventsForCategory = 0;
-    $highlighted = 0;
-
-    $page = 1;
 
 } else {
     if (!isset($_SESSION['install'])) {
@@ -105,6 +101,21 @@ if (file_exists('conf/config.php')) {
     }
 
 }
+
+function siteURL()
+{
+    if (isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] == 'on' || $_SERVER['HTTPS'] == 1) || isset($_SERVER['HTTP_X_FORWARDED_PROTO']) &&
+        $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https') {
+        $protocol = 'https://';
+    } else {
+        $protocol = 'http://';
+    }
+    $domainName = $_SERVER['HTTP_HOST'];
+    return $protocol . $domainName;
+}
+
+define('SITE_URL', siteURL());
+$logger->info('url: ' . SITE_URL);
 
 function getClientIP()
 {
@@ -181,26 +192,16 @@ $router->before('GET|POST|PUT|DELETE|PATCH|OPTIONS', '/.*', function () use ($lo
 
 /* ---------------------------------------------------------------- */
 // Route: / (GET)
+// response: html
 /* ---------------------------------------------------------------- */
 
-$router->get('/', function () use (
-    $twig,
-    $logger,
-    $scroll,
-    $config,
-    $db,
-    $trans,
-    $itemsObject,
-    $categoryObject
-) {
+$router->get('/', function () use ($twig, $config, $trans, $itemsObject, $categoryObject) {
 
     $action = 'all';
     $numberOfItem = $itemsObject->countAllUnreadItem();
-    $page = (isset($_GET['page']) ? $_GET['page'] : 1);
-    $startArticle = ($page - 1) * $config['articlePerPages'];
 
-    $offset = ($page - 1) * 25; //$config['articlePerPages'];
-    $row_count = 25; //$config['articlePerPages'];
+    $offset = 0;
+    $row_count = $config['articlePerPages'] - 1;
 
     echo $twig->render('index.twig',
         [
@@ -209,11 +210,9 @@ $router->get('/', function () use (
             'events' => $itemsObject->loadAllUnreadItem($offset, $row_count),
             'categories' => $categoryObject->getFluxByCategories(),
             'numberOfItem' => $numberOfItem,
-            'page' => $page,
-            'startArticle' => $startArticle,
             'user' => $_SESSION['user'],
-            'scroll' => $scroll,
-            'trans' => $trans
+            'trans' => $trans,
+            'url' => SITE_URL
         ]
     );
 
@@ -252,85 +251,6 @@ $router->post('/login', function () use ($db, $config, $logger, $userObject) {
 });
 
 /* ---------------------------------------------------------------- */
-// Route: /password/recover (GET)
-/* ---------------------------------------------------------------- */
-
-$router->get('/password/recover', function () use ($db, $twig, $config, $logger, $trans) {
-
-    echo $twig->render('recover.twig', []);
-
-});
-
-/* ---------------------------------------------------------------- */
-// Route: /password/new/{id} (GET)
-/* ---------------------------------------------------------------- */
-
-$router->get('/password/new/{token}', function ($token) use ($db, $twig, $config, $logger, $trans, $userObject) {
-
-    $userObject->setToken($token);
-    $userInfos = $userObject->getUserInfosByToken();
-    echo $twig->render('password.twig', ['token' => $token]);
-
-});
-
-$router->post('/password/new', function () use ($db, $twig, $config, $logger, $trans, $userObject) {
-
-    $userObject->setToken($_POST['token']);
-    $userInfos = $userObject->createHash($_POST['password']);
-    header('location: /');
-
-});
-
-/* ---------------------------------------------------------------- */
-// Route: /password/recover (POST)
-/* ---------------------------------------------------------------- */
-
-$router->post('/password/recover', function () use ($db, $config, $logger, $userObject) {
-
-    $token = bin2hex(random_bytes(50));
-
-    $userObject->setEmail($_POST['email']);
-
-    if ($userObject->userExistBy('email')) {
-        $userObject->createTokenForUser();
-    } else {
-        $logger->error("Message could not be sent to: " . $email);
-        $logger->error("Message could not be sent to: " . $_POST['email']);
-    }
-
-    $mail = new PHPMailer(true);
-
-    try {
-        //Server settings
-        $mail->SMTPDebug = 2;                                       // Enable verbose debug output
-        $mail->isSMTP();                                            // Set mailer to use SMTP
-        $mail->Host = SMTP_HOST;  // Specify main and backup SMTP servers
-        $mail->SMTPAuth = SMTP_AUTH;                                   // Enable SMTP authentication
-        $mail->Username = SMTP_LOGIN;                     // SMTP username
-        $mail->Password = SMTP_PASSWORD;                               // SMTP password
-        $mail->SMTPSecure = SMTP_SECURE;                                  // Enable TLS encryption, `ssl` also accepted
-        $mail->Port = SMTP_PORT;                                    // TCP port to connect to
-
-        //Recipients
-        $mail->setFrom('rss@neurozone.fr', 'no-reply@neurozone.fr');
-        $mail->addAddress($email, $login);
-
-        // Content
-        $mail->isHTML(true);                                  // Set email format to HTML
-        $mail->Subject = 'Reset your password on InFlux';
-        $mail->Body = 'Hi there, click on this <a href="https://influx.neurozone.fr/password/new/' . $token . '">link</a> to reset your password on our site';
-        $mail->AltBody = 'This is the body in plain text for non-HTML mail clients';
-
-        $mail->send();
-        echo 'Message has been sent';
-    } catch (Exception $e) {
-        echo "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
-        $logger->error("Message could not be sent. Mailer Error: {$mail->ErrorInfo}");
-    }
-
-});
-
-/* ---------------------------------------------------------------- */
 // Route: /logout (GET)
 /* ---------------------------------------------------------------- */
 
@@ -345,7 +265,6 @@ $router->get('/logout', function () {
 });
 
 // @TODO: à mettre en place
-
 /* ---------------------------------------------------------------- */
 // Route: /update (GET)
 /* ---------------------------------------------------------------- */
@@ -360,42 +279,111 @@ $router->get('/update', function () {
 
 });
 
+// @TODO: à mettre en place
 /* ---------------------------------------------------------------- */
 // Route: /favorites (GET)
 /* ---------------------------------------------------------------- */
 
-$router->get('/favorites', function () use (
-    $twig, $logger,
-    $scroll,
-    $config,
-    $db,
-    $categoryObject,
-    $itemsObject,
-    $fluxObject
-) {
+$router->get('/favorites', function () use ($twig, $logger, $config, $categoryObject, $itemsObject, $fluxObject) {
 
     $numberOfItem = $itemsObject->getNumberOfFavorites();
     $flux = $fluxObject->getFluxById();
 
-    $page = (isset($_GET['page']) ? $_GET['page'] : 1);
-    $startArticle = ($page - 1) * $config['articlePerPages'];
-
-    $offset = ($page - 1) * $config['articlePerPages'];
-    $row_count = $config['articlePerPages'];
+    $offset = 0;
+    $row_count = $config['articlePerPages'] - 1;
 
     echo $twig->render('index.twig',
         [
-
             'events' => $itemsObject->getAllFavorites($offset, $row_count),
             'category' => $categoryObject->getFluxByCategories(),
             'numberOfItem' => $numberOfItem,
-            'page' => $page,
-            'startArticle' => $startArticle,
-            'user' => $_SESSION['user'],
-            'scroll' => $scroll
-
+            'user' => $_SESSION['user']
         ]
     );
+
+});
+
+$router->mount('/password', function () use ($router, $twig, $trans, $logger, $config, $userObject) {
+
+
+    /* ---------------------------------------------------------------- */
+    // Route: /password/new/{id} (GET)
+    /* ---------------------------------------------------------------- */
+
+    $router->get('/password/new/{token}', function ($token) use ($userObject) {
+
+        $userObject->setToken($token);
+        $userInfos = $userObject->getUserInfosByToken();
+        echo $twig->render('password.twig', ['token' => $token]);
+
+    });
+
+    $router->post('/password/new', function () use ($userObject) {
+
+        $userObject->setToken($_POST['token']);
+        $userInfos = $userObject->createHash($_POST['password']);
+        header('location: /');
+
+    });
+
+    /* ---------------------------------------------------------------- */
+    // Route: /password/recover (GET)
+    // Response: html
+    /* ---------------------------------------------------------------- */
+
+    $router->get('/recover', function () use ($twig, $config, $logger, $trans) {
+
+        echo $twig->render('recover.twig', []);
+
+    });
+
+    /* ---------------------------------------------------------------- */
+    // Route: /password/recover (POST)
+    /* ---------------------------------------------------------------- */
+
+    $router->post('/password/recover', function () use ($config, $logger, $userObject) {
+
+        $token = bin2hex(random_bytes(50));
+
+        $userObject->setEmail($_POST['email']);
+
+        if ($userObject->userExistBy('email')) {
+            $userObject->createTokenForUser();
+        } else {
+            $logger->error("Message could not be sent to: " . $_POST['email']);
+        }
+
+        $mail = new PHPMailer(true);
+
+        try {
+            //Server settings
+            $mail->SMTPDebug = 2;                                       // Enable verbose debug output
+            $mail->isSMTP();                                            // Set mailer to use SMTP
+            $mail->Host = SMTP_HOST;  // Specify main and backup SMTP servers
+            $mail->SMTPAuth = SMTP_AUTH;                                   // Enable SMTP authentication
+            $mail->Username = SMTP_LOGIN;                     // SMTP username
+            $mail->Password = SMTP_PASSWORD;                               // SMTP password
+            $mail->SMTPSecure = SMTP_SECURE;                                  // Enable TLS encryption, `ssl` also accepted
+            $mail->Port = SMTP_PORT;                                    // TCP port to connect to
+
+            //Recipients
+            $mail->setFrom('rss@neurozone.fr', 'no-reply@neurozone.fr');
+            $mail->addAddress($_POST['email'], $_POST['login']);
+
+            // Content
+            $mail->isHTML(true);                                  // Set email format to HTML
+            $mail->Subject = 'Reset your password on InFlux';
+            $mail->Body = 'Hi there, click on this <a href="https://influx.neurozone.fr/password/new/' . $token . '">link</a> to reset your password on our site';
+            $mail->AltBody = 'This is the body in plain text for non-HTML mail clients';
+
+            $mail->send();
+            echo 'Message has been sent';
+        } catch (Exception $e) {
+            echo "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
+            $logger->error("Message could not be sent. Mailer Error: {$mail->ErrorInfo}");
+        }
+
+    });
 
 });
 
@@ -409,7 +397,7 @@ $router->mount('/article', function () use ($router, $twig, $db, $logger, $trans
     // Route: /article (GET)
     /* ---------------------------------------------------------------- */
 
-    $router->get('/', function () use ($twig, $db, $logger, $trans, $config) {
+    $router->get('/', function () use ($twig, $logger, $trans, $config) {
 
         header('location: /settings/manage');
 
@@ -441,33 +429,37 @@ $router->mount('/article', function () use ($router, $twig, $db, $logger, $trans
 
     $router->post('/flux', function () use ($twig, $db, $logger, $config, $itemsObject) {
 
-        $scroll = $_POST['scroll'];
-        $hightlighted = $_POST['hightlighted'];
-        $action = $_POST['action'];
-        $category = $_POST['category'];
+        $page = $_POST['page'];
         $flux = (int)$_POST['flux'];
-
-        $nblus = isset($_POST['nblus']) ? $_POST['nblus'] : 0;
-
-        $articleConf['startArticle'] = ($scroll * 50) - $nblus;
-
-        $logger->info($articleConf['startArticle']);
         $logger->info($config['articlePerPages']);
 
+        /*
         $offset = $articleConf['startArticle'];
         $rowcount = $articleConf['startArticle'] + $config['articlePerPages'];
 
         if ($articleConf['startArticle'] < 0) {
             $articleConf['startArticle'] = 0;
         }
+        */
+
+        /*
+         *
+            1 0 9
+            2 10 19
+            3 20 29
+            4 30 39
+         */
+        $offset = $page * $config['articlePerPages'] - $config['articlePerPages'];
+        $rowCount = $page * $config['articlePerPages'] - 1;
+        $logger->info('offset: ' . $offset);
+        $logger->info('rowCount: ' . $rowCount);
 
         $itemsObject->setFlux($flux);
-        $items = $itemsObject->loadUnreadItemPerFlux($offset, $rowcount);
+        $items = $itemsObject->loadUnreadItemPerFlux($offset, $rowCount);
 
         echo $twig->render('article.twig',
             [
                 'events' => $items,
-                'scroll' => $scroll,
             ]
         );
 
@@ -491,6 +483,421 @@ $router->mount('/article', function () use ($router, $twig, $db, $logger, $trans
 });
 
 /* ---------------------------------------------------------------- */
+// Route: /category
+// /category
+// /category/insert	        post return 201 on success or 512 on failure
+// /category/update/name    post return 200 on success or 512 on failure
+// /category/read	        post return 200 on success or 512 on failure
+// /category/delete	        post return 200 on success or 512 on failure
+// POST: Create
+// PUT: Replace/Update global (ex toute une ligne)
+// PATCH: Update partiel (ex une colonne)
+/* ---------------------------------------------------------------- */
+
+$router->mount('/category', function () use ($router, $twig, $trans, $logger, $config, $db, $categoryObject, $fluxObject) {
+
+    /* ---------------------------------------------------------------- */
+    // Route: /category (GET)
+    // Response: 404
+    /* ---------------------------------------------------------------- */
+
+    $router->get('/', function () {
+        header('location: /settings/manage');
+    });
+
+    /* ---------------------------------------------------------------- */
+    // Route: /category/insert (POST)
+    // Response: success 200 failure 512
+    /* ---------------------------------------------------------------- */
+
+    $router->post('/insert', function () use ($categoryObject) {
+
+        $name = $_POST['categoryName'];
+        $categoryObject->setCategoryName($name);
+        if (isset($_POST['categoryName']) && !$categoryObject->existingCategory()) {
+
+            return $categoryObject->insertCategory();
+        }
+
+    });
+
+    /* ---------------------------------------------------------------- */
+    // Route: /category/update/name (PATCH)
+    // Response: success 200 failure 512
+    /* ---------------------------------------------------------------- */
+
+    $router->post('/update/name', function () use ($categoryObject) {
+
+        $categoryObject->setCategoryId($_POST['id']);
+        $categoryObject->setCategoryName($_POST['name']);
+        return $categoryObject->updateCategoryName();
+
+    });
+
+    /* ---------------------------------------------------------------- */
+    // Route: /category/read (PATCH)
+    // Response: success 200 failure 512
+    /* ---------------------------------------------------------------- */
+
+    $router->post('/read', function () use ($categoryObject) {
+
+        $categoryObject->setCategoryId($_POST['id']);
+        return $categoryObject->markCategoryAsRead();
+
+    });
+
+    /* ---------------------------------------------------------------- */
+    // Route: /category/delete (DELETE)
+    // Response: success 200 failure 512
+    /* ---------------------------------------------------------------- */
+
+    $router->post('/delete', function () use ($categoryObject) {
+
+        $categoryObject->setCategoryId($_POST['id']);
+        return $categoryObject->deleteCategory();
+
+    });
+
+});
+
+/* ---------------------------------------------------------------- */
+// Route: /flux
+// /flux
+// /flux/insert	                post return 201 on success or 512 on failure
+// /flux/update/name            post return 200 on success or 512 on failure
+// /flux/update/description     post return 200 on success or 512 on failure
+// /flux/update/website         post return 200 on success or 512 on failure
+// /flux/update/url             post return 200 on success or 512 on failure
+// /flux/update/category        post return 200 on success or 512 on failure
+// /flux/update/all             post return 200 on success or 512 on failure
+// /flux/read	                post return 200 on success or 512 on failure
+// /flux/delete	                post return 200 on success or 512 on failure
+// POST: Create
+// PUT: Replace/Update global (ex toute une ligne)
+// PATCH: Update partiel (ex une colonne)
+/* ---------------------------------------------------------------- */
+
+$router->mount('/flux', function () use ($router, $twig, $trans, $logger, $config, $db, $fluxObject, $itemsObject, $categoryObject) {
+
+    /* ---------------------------------------------------------------- */
+    // Route: /category (GET)
+    // Response: 404
+    /* ---------------------------------------------------------------- */
+
+    $router->get('/', function () {
+
+        return http_response_code(404);
+
+    });
+
+    /* ---------------------------------------------------------------- */
+    // Route: /flux/insert (POST)
+    // Response: success 200 failure 512
+    /* ---------------------------------------------------------------- */
+
+    $router->post('/insert', function () use ($fluxObject, $logger, $trans) {
+
+        $sp = new SimplePie();
+        $fluxObject->setFluxUrl($_POST['newUrl']);
+
+        if ($fluxObject->notRegistered()) {
+
+            $fluxObject->setFluxcategory((isset($_POST['newUrlCategory']) ? $_POST['newUrlCategory'] : 1));
+            $fluxObject->add($sp);
+        } else {
+            $logger->info($trans['FEED_ALREADY_STORED']);
+        }
+
+    });
+
+    /* ---------------------------------------------------------------- */
+    // Route: /flux/update/name (PATCH)
+    // Response: success 200 failure 512
+    /* ---------------------------------------------------------------- */
+
+    $router->patch('/update/name', function () use ($fluxObject) {
+
+        // data:{id:flux,name:fluxNameValue,url:fluxUrlValue}
+        $fluxObject->setId($_POST['id']);
+        $fluxObject->setName($_POST['name']);
+        return $fluxObject->updateFluxName();
+
+    });
+
+    /* ---------------------------------------------------------------- */
+    // Route: /flux/update/description (PATCH)
+    // Response: success 200 failure 512
+    /* ---------------------------------------------------------------- */
+
+    $router->patch('/update/description', function () use ($fluxObject) {
+
+        // data:{id:flux,name:fluxNameValue,url:fluxUrlValue}
+        $fluxObject->setId($_POST['id']);
+        $fluxObject->setDescription($_POST['description']);
+        return $fluxObject->updateFluxDescription();
+
+    });
+
+    /* ---------------------------------------------------------------- */
+    // Route: /flux/update/website (PATCH)
+    // Response: success 200 failure 512
+    /* ---------------------------------------------------------------- */
+
+    $router->patch('/update/website', function () use ($fluxObject) {
+
+        // data:{id:flux,name:fluxNameValue,url:fluxUrlValue}
+        $fluxObject->setId($_POST['id']);
+        $fluxObject->setWebsite($_POST['website']);
+        return $fluxObject->updateFluxWebsite();
+
+    });
+
+    /* ---------------------------------------------------------------- */
+    // Route: /flux/update/url (PATCH)
+    // Response: success 200 failure 512
+    /* ---------------------------------------------------------------- */
+
+    $router->patch('/update/url', function () use ($fluxObject) {
+
+        // data:{id:flux,name:fluxNameValue,url:fluxUrlValue}
+        $fluxObject->setId($_POST['id']);
+        $fluxObject->setUrl($_POST['url']);
+        return $fluxObject->updateFluxUrl();
+
+    });
+
+    /* ---------------------------------------------------------------- */
+    // Route: /flux/update/category (PATCH)
+    // Response: success 200 failure 512
+    /* ---------------------------------------------------------------- */
+
+    $router->patch('/update/category', function () use ($fluxObject) {
+
+        // data:{id:flux,name:fluxNameValue,url:fluxUrlValue}
+        $fluxObject->setId($_POST['id']);
+        $fluxObject->setCategory($_POST['category']);
+        return $fluxObject->updateFluxCategory();
+
+    });
+
+    /* ---------------------------------------------------------------- */
+    // Route: /flux/update/all (PATCH)
+    // Response: success 200 failure 512
+    /* ---------------------------------------------------------------- */
+
+    $router->patch('/update/all', function () use ($fluxObject) {
+
+        // data:{id:flux,name:fluxNameValue,url:fluxUrlValue}
+        $fluxObject->setId($_POST['id']);
+        $fluxObject->setName($_POST['name']);
+        $fluxObject->setDescription($_POST['description']);
+        $fluxObject->setWebsite($_POST['website']);
+        $fluxObject->setUrl($_POST['url']);
+        $fluxObject->setCategory($_POST['category']);
+        return $fluxObject->updateAll();
+
+    });
+
+    /* ---------------------------------------------------------------- */
+    // Route: /flux/read (PATCH)
+    // Response: success 200 failure 512
+    /* ---------------------------------------------------------------- */
+
+    $router->patch('/read', function () use ($fluxObject) {
+
+        // data:{id:flux,name:fluxNameValue,url:fluxUrlValue}
+        $fluxObject->setId($_POST['id']);
+        return $fluxObject->readFlux();
+
+    });
+
+    /* ---------------------------------------------------------------- */
+    // Route: /flux/delete (DELETE)
+    // Response: success 200 failure 512
+    /* ---------------------------------------------------------------- */
+
+    $router->delete('/delete', function () use ($fluxObject, $logger) {
+
+        $fluxObject->setId($_POST['id']);
+        $logger->info($fluxObject->getId($_POST['id']));
+        $fluxObject->deleteFlux();
+
+    });
+
+    /* ---------------------------------------------------------------- */
+    // Route: /flux/{id} (GET)
+    // Response: success 200 failure 512
+    /* ---------------------------------------------------------------- */
+
+    $router->get('/{id}', function ($id) use ($twig, $logger, $trans, $config, $itemsObject, $fluxObject, $categoryObject) {
+
+        $fluxObject->setId($id);
+        $flux = $fluxObject->getFluxById();
+        $itemsObject->setFlux($id);
+        $numberOfItem = $itemsObject->countUnreadItemPerFlux();
+
+        $page = (isset($_GET['page']) ? $_GET['page'] : 1);
+        $offset = 0;
+        $row_count = $config['articlePerPages'] - 1;
+
+        echo $twig->render('index.twig',
+            [
+                'action' => 'item',
+                'events' => $itemsObject->loadUnreadItemPerFlux($offset, $row_count),
+                'flux' => $flux,
+                'fluxId' => $id,
+                'categories' => $categoryObject->getFluxByCategories(),
+                'numberOfItem' => $numberOfItem,
+                'user' => $_SESSION['user'],
+                'trans' => $trans,
+                'config' => $config,
+                'url' => SITE_URL
+            ]
+        );
+
+    });
+
+});
+
+/* ---------------------------------------------------------------- */
+// Route: /item
+// /item
+// /item/update/flag	        post return 201 on success or 512 on failure
+// /item/update/unflag	        post return 201 on success or 512 on failure
+// /item/update/read	        post return 200 on success or 512 on failure
+// /item/update/unread	        post return 200 on success or 512 on failure
+// POST: Create
+// PUT: Replace/Update global (ex toute une ligne)
+// PATCH: Update partiel (ex une colonne)
+/* ---------------------------------------------------------------- */
+
+$router->mount('/item', function () use ($router, $twig, $trans, $logger, $config, $db, $itemsObject, $categoryObject, $fluxObject) {
+
+    /* ---------------------------------------------------------------- */
+    // Route: /item (GET)
+    // Response:
+    /* ---------------------------------------------------------------- */
+
+    $router->get('/', function () use ($itemsObject) {
+
+        return http_response_code(404);
+
+    });
+
+    /* ---------------------------------------------------------------- */
+    // Route: /item/update/flag (PATCH)
+    // Response:
+    /* ---------------------------------------------------------------- */
+
+    $router->post('/update/flag', function () use ($itemsObject) {
+
+        $itemsObject->setItemGuid($_POST['guid']);
+        $itemsObject->updateItemAsReadByGuid();
+
+    });
+
+    /* ---------------------------------------------------------------- */
+    // Route: /item/update/unflag (PATCH)
+    // Response:
+    /* ---------------------------------------------------------------- */
+
+    $router->post('/update/unflag', function () use ($itemsObject) {
+
+        $itemsObject->setItemGuid($_POST['guid']);
+        $itemsObject->updateItemAsReadByGuid();
+
+    });
+
+    /* ---------------------------------------------------------------- */
+    // Route: /item/update/read (PATCH)
+    // Response:
+    /* ---------------------------------------------------------------- */
+
+    $router->post('/update/read', function () use ($itemsObject) {
+
+        $itemsObject->setItemGuid($_POST['guid']);
+        $itemsObject->updateItemAsReadByGuid();
+
+    });
+
+    /* ---------------------------------------------------------------- */
+    // Route: /item/update/unread (PATCH)
+    // Response:
+    /* ---------------------------------------------------------------- */
+
+    $router->post('/update/unread', function () use ($itemsObject) {
+
+        $itemsObject->setItemGuid($_POST['guid']);
+        $itemsObject->updateItemAsUnreadByGuid();
+
+    });
+
+    /* ---------------------------------------------------------------- */
+    // Route: /item/update/readUnread (PATCH)
+    // Response:
+    /* ---------------------------------------------------------------- */
+
+    $router->post('/update/readUnread', function () use ($itemsObject) {
+
+        $itemsObject->setItemGuid($_POST['guid']);
+        $itemsObject->updateItemReadUnreadByGuid();
+
+    });
+
+    /* ---------------------------------------------------------------- */
+    // Route: /item/select (POST)
+    // Response: success 200 failure 512
+    /* ---------------------------------------------------------------- */
+
+    $router->post('/select', function () use ($fluxObject, $logger, $config, $itemsObject, $twig) {
+
+        $page = $_POST['page'];
+        if(isset($_POST['flux']) && !empty($_POST['flux'])){
+            $flux = (int)$_POST['flux'];
+            $isFlux = true;
+        }
+
+        $logger->info($config['articlePerPages']);
+
+        /*
+        $offset = $articleConf['startArticle'];
+        $rowcount = $articleConf['startArticle'] + $config['articlePerPages'];
+
+        if ($articleConf['startArticle'] < 0) {
+            $articleConf['startArticle'] = 0;
+        }
+        */
+
+        /*
+         *
+            1 0 9
+            2 10 19
+            3 20 29
+            4 30 39
+         */
+        $offset = $page * $config['articlePerPages'] - $config['articlePerPages'];
+        $rowCount = $page * $config['articlePerPages'] - 1;
+        $logger->info('offset: ' . $offset);
+        $logger->info('rowCount: ' . $rowCount);
+
+        if($isFlux){
+            $itemsObject->setFlux($flux);
+            $items = $itemsObject->loadUnreadItemPerFlux($offset, $rowCount);
+        } else {
+            $items = $itemsObject->loadAllUnreadItem($offset, $rowCount);
+        }
+
+        echo $twig->render('article.twig',
+            [
+                'events' => $items,
+            ]
+        );
+
+    });
+
+});
+
+/* ---------------------------------------------------------------- */
 // Route: /settings (GET)
 /* ---------------------------------------------------------------- */
 
@@ -502,24 +909,18 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
 
     });
 
-    $router->get('/settings/user', function () use ($twig, $cookiedir) {
+    /* ---------------------------------------------------------------- */
+    // Route: /settings/user (GET)
+    /* ---------------------------------------------------------------- */
+
+    $router->get('/user', function () use ($twig, $cookiedir) {
 
         header('location: /settings/manage');
 
     });
 
-
     /* ---------------------------------------------------------------- */
-    // Route: /settings/synchronize/all (GET)
-    /* ---------------------------------------------------------------- */
-
-    $router->get('/synchronize', function ($option) use ($twig, $trans, $logger, $config, $cookiedir) {
-
-
-    });
-
-    /* ---------------------------------------------------------------- */
-    // Route: /statistics (GET)
+    // Route: /settings/statistics (GET)
     /* ---------------------------------------------------------------- */
 
     $router->get('/statistics', function () use ($twig, $trans, $logger, $config, $db) {
@@ -657,7 +1058,7 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
         header('Content-Disposition: attachment;filename=export.opml');
         header('Content-Type: text/xml');
 
-        echo $opmlObject->export();
+        echo $opmlObject->renderOpml();
 
     });
 
@@ -778,7 +1179,8 @@ $router->mount('/settings', function () use ($router, $twig, $trans, $logger, $c
                 'categories' => $categoryObject->getFluxByCategories(),
                 'flux' => $flux,
                 'config' => $config,
-                'user' => $_SESSION['user']
+                'user' => $_SESSION['user'],
+                'url' => SITE_URL
             ]
         );
 
@@ -915,6 +1317,10 @@ $router->get('/action/updateConfiguration', function () use ($twig, $db, $logger
 
 $router->mount('/qrcode', function () use ($router, $twig, $db, $logger, $trans, $config) {
 
+    /* ---------------------------------------------------------------- */
+    // Route: /qrcode/qr (GET)
+    /* ---------------------------------------------------------------- */
+
     $router->get('/qr', function () {
 
         if (!$_SESSION['user']) {
@@ -949,62 +1355,16 @@ $router->mount('/qrcode', function () use ($router, $twig, $db, $logger, $trans,
 });
 
 /* ---------------------------------------------------------------- */
-// Route: /flux/{id} (GET)
-/* ---------------------------------------------------------------- */
-
-$router->get('/flux/{id}', function ($id) use (
-    $twig,
-    $logger,
-    $trans,
-    $scroll,
-    $config,
-    $db,
-    $itemsObject,
-    $fluxObject,
-    $categoryObject
-) {
-
-    $fluxObject->setId($id);
-    $flux = $fluxObject->getFluxById();
-    $itemsObject->setFlux($id);
-    $numberOfItem = $itemsObject->countUnreadItemPerFlux();
-
-    $page = (isset($_GET['page']) ? $_GET['page'] : 1);
-    $startArticle = ($page - 1) * $config['articlePerPages'];
-
-    $offset = ($page - 1) * $config['articlePerPages'];
-    $row_count = $config['articlePerPages'];
-
-    echo $twig->render('index.twig',
-        [
-            'action' => 'item',
-            'events' => $itemsObject->loadUnreadItemPerFlux($offset, $row_count),
-            'flux' => $flux,
-            'fluxId' => $id,
-            'categories' => $categoryObject->getFluxByCategories(),
-            'numberOfItem' => $numberOfItem,
-            'page' => $page,
-            'startArticle' => $startArticle,
-            'user' => $_SESSION['user'],
-            'scroll' => $scroll,
-            'trans' => $trans,
-            'config' => $config
-        ]
-    );
-
-});
-
-/* ---------------------------------------------------------------- */
 // Route: /install
 /* ---------------------------------------------------------------- */
 
-$router->mount('/install', function () use ($router, $trans, $twig, $cookieDir, $logger) {
+$router->mount('/install', function () use ($router, $trans, $twig, $logger) {
 
     /* ---------------------------------------------------------------- */
     // Route: /install (GET)
     /* ---------------------------------------------------------------- */
 
-    $router->get('/', function () use ($twig, $cookieDir, $trans) {
+    $router->get('/', function () use ($twig, $trans) {
 
         $_SESSION['install'] = true;
 
@@ -1040,7 +1400,7 @@ $router->mount('/install', function () use ($router, $trans, $twig, $cookieDir, 
     // Route: /install/ (POST)
     /* ---------------------------------------------------------------- */
 
-    $router->post('/', function () use ($twig, $cookieDir, $trans) {
+    $router->post('/', function () use ($twig, $trans) {
 
         if ($_POST['action'] == 'database') {
             $_SESSION['language'] = $_POST['install_changeLng'];
@@ -1071,7 +1431,7 @@ $router->mount('/install', function () use ($router, $trans, $twig, $cookieDir, 
     // Route: /install/database (GET)
     /* ---------------------------------------------------------------- */
 
-    $router->get('/database', function () use ($twig, $cookieDir, $trans) {
+    $router->get('/database', function () use ($twig, $trans) {
 
         $_SESSION['install'] = true;
 
@@ -1101,7 +1461,7 @@ $router->mount('/install', function () use ($router, $trans, $twig, $cookieDir, 
     // Route: /install/user (GET)
     /* ---------------------------------------------------------------- */
 
-    $router->get('/user', function () use ($twig, $cookieDir, $trans) {
+    $router->get('/user', function () use ($twig, $trans) {
 
         $_SESSION['install'] = true;
 
@@ -1132,7 +1492,7 @@ $router->mount('/install', function () use ($router, $trans, $twig, $cookieDir, 
     // @todo
     /* ---------------------------------------------------------------- */
 
-    $router->post('/', function () use ($twig, $cookieDir) {
+    $router->post('/', function () use ($twig) {
 
         $install = new Install();
         /* Prend le choix de langue de l'utilisateur, soit :
@@ -1154,7 +1514,7 @@ $router->mount('/install', function () use ($router, $trans, $twig, $cookieDir, 
         }
         unset($i18n); //@TODO: gérer un singleton et le choix de langue / liste de langue
         $currentLanguage = i18n_init($languageList, $installDirectory);
-        $languageList = array_unique($i18n->languages);
+        //$languageList = array_unique($i18n->languages);
         if (file_exists('constant.php')) {
             die('ALREADY_INSTALLED');
         }

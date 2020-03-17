@@ -31,6 +31,15 @@ class Flux
     private $lastSyncInError;
     private $logger;
     private $db;
+    private $fluxId;
+    private $fluxName;
+    private $fluxDescription;
+    private $fluxWebsite;
+    private $fluxUrl;
+    private $fluxLastUpdate;
+    private $fluxCategory;
+    private $fluxIsVerbose;
+    private $fluxLastSyncInError;
 
     function __construct($db, $logger)
     {
@@ -229,6 +238,50 @@ class Flux
         return $flux;
     }
 
+    public function updateFluxName()
+    {
+        $q = "UPDATE flux set name = '" . $this->db->real_escape_string($this->getName()) . "', lastupdate = " . time() . " where id = " . $this->getId();
+
+        $this->logger->info($q);
+
+        $return = $this->db->query($q);
+
+        if ($this->db->errno) {
+            $this->logger->info("\t\tFailure: \t$this->db->error\n");
+            $this->logger->error($q);
+            return "\t\tFailure: \t$this->db->error\n";
+        }
+        return "200";
+    }
+
+    public function readFlux()
+    {
+        $q = "UPDATE items set unread = 0 where fluxId = " . $this->getFluxId();
+        $this->logger->info($q);
+        $this->db->query($q);
+
+        if ($this->db->errno) {
+            $this->logger->info("\t\tFailure: \t$this->db->error\n");
+            $this->logger->error($q);
+            return "\t\tFailure: \t$this->db->error\n";
+        }
+        return "200";
+    }
+
+    public function deleteFlux()
+    {
+        $q = "DELETE FROM flux where id = " . $this->getFluxId();
+        $this->logger->info($q);
+        $this->db->query($q);
+
+        if ($this->db->errno) {
+            $this->logger->info("\t\tFailure: \t$this->db->error\n");
+            $this->logger->error($q);
+            return "\t\tFailure: \t$this->db->error\n";
+        }
+        return "200";
+    }
+
     /**
      * @return mixed
      */
@@ -372,6 +425,135 @@ class Flux
     {
         $this->lastSyncInError = $lastSyncInError;
     }
+
+    /**
+     * @return mixed
+     */
+    public function getFluxId()
+    {
+        return $this->fluxId;
+    }
+
+    /**
+     * @param mixed $fluxId
+     */
+    public function setFluxId($fluxId)
+    {
+        $this->fluxId = $fluxId;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getFluxName()
+    {
+        return $this->fluxName;
+    }
+
+    /**
+     * @param mixed $fluxName
+     */
+    public function setFluxName($fluxName)
+    {
+        $this->fluxName = $fluxName;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getFluxDescription()
+    {
+        return $this->fluxDescription;
+    }
+
+    /**
+     * @param mixed $fluxDescription
+     */
+    public function setFluxDescription($fluxDescription)
+    {
+        $this->fluxDescription = $fluxDescription;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getFluxWebsite()
+    {
+        return $this->fluxWebsite;
+    }
+
+    /**
+     * @param mixed $fluxWebsite
+     */
+    public function setFluxWebsite($fluxWebsite)
+    {
+        $this->fluxWebsite = $fluxWebsite;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getFluxLastUpdate()
+    {
+        return $this->fluxLastUpdate;
+    }
+
+    /**
+     * @param mixed $fluxLastUpdate
+     */
+    public function setFluxLastUpdate($fluxLastUpdate)
+    {
+        $this->fluxLastUpdate = $fluxLastUpdate;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getFluxCategory()
+    {
+        return $this->fluxCategory;
+    }
+
+    /**
+     * @param mixed $fluxCategory
+     */
+    public function setFluxCategory($fluxCategory)
+    {
+        $this->fluxCategory = $fluxCategory;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getFluxIsVerbose()
+    {
+        return $this->fluxIsVerbose;
+    }
+
+    /**
+     * @param mixed $fluxIsVerbose
+     */
+    public function setFluxIsVerbose($fluxIsVerbose)
+    {
+        $this->fluxIsVerbose = $fluxIsVerbose;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getFluxLastSyncInError()
+    {
+        return $this->fluxLastSyncInError;
+    }
+
+    /**
+     * @param mixed $fluxLastSyncInError
+     */
+    public function setFluxLastSyncInError($fluxLastSyncInError)
+    {
+        $this->fluxLastSyncInError = $fluxLastSyncInError;
+    }
+
 
 
 }

@@ -30,7 +30,7 @@ class Opml
 
     }
 
-    public function export()
+    public function renderOpml()
     {
 
         $qCategories = 'select id, name from categories order by name';

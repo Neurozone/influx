@@ -107,7 +107,7 @@ class Items
     {
 
         $query = 'SELECT le.guid,le.title,le.creator,le.content,le.description,le.link,le.unread,le.fluxId,le.favorite,le.pubdate,le.syncId, lf.name as flux_name
-    FROM items le inner join flux lf on lf.id = le.fluxId where le.fluxId = ' . $this->flux . ' ORDER BY unread desc,pubdate desc LIMIT  ' . $offset . ',' . $row_count
+    FROM items le inner join flux lf on lf.id = le.fluxId where le.fluxId = ' . $this->flux . ' ORDER BY unread desc,pubdate desc LIMIT  ' . $offset . ',' . $row_count;
 
         $results = $this->db->query($query);
 
@@ -141,6 +141,27 @@ class Items
     {
 
         $q = "UPDATE items set unread = 0 where guid = '" . $this->getGuid() . "'";
+
+        $this->logger->info($q);
+
+        $return = $this->db->query($q);
+
+        if ($this->db->errno) {
+            $this->logger->info("\t\tFailure: \t$this->db->error\n");
+            $this->logger->error($q);
+
+            return "\t\tFailure: \t$this->db->error\n";
+
+        }
+
+        return "200";
+
+    }
+
+    public function updateItemReadUnreadByGuid()
+    {
+
+        $q = "UPDATE items set unread = not unread where guid = '" . $this->getGuid() . "'";
 
         $this->logger->info($q);
 
