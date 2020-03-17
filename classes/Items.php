@@ -158,6 +158,27 @@ class Items
 
     }
 
+    public function updateItemFlaggedUnflaggedByGuid()
+    {
+
+        $q = "UPDATE items set favorite = not favorite where guid = '" . $this->getGuid() . "'";
+
+        $this->logger->info($q);
+
+        $return = $this->db->query($q);
+
+        if ($this->db->errno) {
+            $this->logger->info("\t\tFailure: \t$this->db->error\n");
+            $this->logger->error($q);
+
+            return "\t\tFailure: \t$this->db->error\n";
+
+        }
+
+        return "200";
+
+    }
+
     public function updateItemReadUnreadByGuid()
     {
 

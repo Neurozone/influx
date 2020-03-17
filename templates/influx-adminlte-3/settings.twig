@@ -170,7 +170,7 @@
               <div class="input-group input-group-sm">
                 <select name="newUrlCategory" class="form-control form-control-navbar>
                 {% for cat in categories %}
-                  <option {% if cat.id == 1 %}selected="selected"{% endif %} value="{{ cat.id }}">{{ cat.name }}</option>
+                  <option {% if cat.id == 1 %}selected=" selected"{% endif %} value="{{ cat.id }}">{{ cat.name }}</option>
                 {% endfor %}
                 </select>
                 <input class="form-control form-control-navbar" type="text" placeholder="Add flux"
@@ -265,18 +265,23 @@
                 {% for feed in folder.flux %}
                   <tr id="{{ feed.id }}">
                     <td>{{ feed.id }}</td>
-                    <td><div class="row_data" edit_type="click" col_name="name">{{ feed.name }}</div></td>
-                    <td><div class="row_data" edit_type="click" col_name="url"><a href="{{ feed.url }}">{{ feed.url }}</a></div></td>
-                    <td><div class="row_select" edit_type="click" col_name="category"><select class="form-control feedFolder">
-                        {% for f in categories %}
-                        <option {% if feed.folder == f.id %}selected="selected"{% endif %} value="{{ f.id }}">{{ f.name }}</option>
-                      {% endfor %}
+                    <td>
+                      <div class="row_data" edit_type="click" col_name="name">{{ feed.name }}</div>
+                    </td>
+                    <td>
+                      <div class="row_data" edit_type="click" col_name="url"><a href="{{ feed.url }}">{{ feed.url }}</a></div>
+                    </td>
+                    <td>
+                      <div class="row_select" edit_type="click" col_name="category"><select class="form-control feedFolder">
+                          {% for f in categories %}
+                            <option {% if feed.folder == f.id %}selected="selected"{% endif %} value="{{ f.id }}">{{ f.name }}</option>
+                          {% endfor %}
                         </select>
                       </div>
                     </td>
                     <td class="project-actions text-right">
-                      <span class="btn_edit" > <a href="#" class="btn btn-link " row_id="{{ feed.id }}" > Edit</a> </span>
-                      <span class="btn_save"> <a href="#" class="btn btn-link"  row_id="{{ feed.id }}"> Save</a> | </span>
+                      <span class="btn_edit"> <a href="#" class="btn btn-link " row_id="{{ feed.id }}"> Edit</a> </span>
+                      <span class="btn_save"> <a href="#" class="btn btn-link" row_id="{{ feed.id }}"> Save</a> | </span>
                       <span class="btn_cancel"> <a href="#" class="btn btn-link" row_id="{{ feed.id }}"> Cancel</a> | </span>
                       <!--
                       <a class="btn btn-info btn-sm" href="#" onclick="renameFlux(this,{{ feed.id }})">

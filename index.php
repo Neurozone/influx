@@ -785,30 +785,6 @@ $router->mount('/item', function () use ($router, $twig, $trans, $logger, $confi
     });
 
     /* ---------------------------------------------------------------- */
-    // Route: /item/update/flag (PATCH)
-    // Response:
-    /* ---------------------------------------------------------------- */
-
-    $router->post('/update/flag', function () use ($itemsObject) {
-
-        $itemsObject->setItemGuid($_POST['guid']);
-        $itemsObject->updateItemAsReadByGuid();
-
-    });
-
-    /* ---------------------------------------------------------------- */
-    // Route: /item/update/unflag (PATCH)
-    // Response:
-    /* ---------------------------------------------------------------- */
-
-    $router->post('/update/unflag', function () use ($itemsObject) {
-
-        $itemsObject->setItemGuid($_POST['guid']);
-        $itemsObject->updateItemAsReadByGuid();
-
-    });
-
-    /* ---------------------------------------------------------------- */
     // Route: /item/update/read (PATCH)
     // Response:
     /* ---------------------------------------------------------------- */
@@ -829,6 +805,18 @@ $router->mount('/item', function () use ($router, $twig, $trans, $logger, $confi
 
         $itemsObject->setItemGuid($_POST['guid']);
         $itemsObject->updateItemAsUnreadByGuid();
+
+    });
+
+    /* ---------------------------------------------------------------- */
+    // Route: /item/update/markFlaggedUnflagged (PATCH)
+    // Response:
+    /* ---------------------------------------------------------------- */
+
+    $router->post('/update/markFlaggedUnflagged', function () use ($itemsObject) {
+
+        $itemsObject->setItemGuid($_POST['guid']);
+        $itemsObject->updateItemFlaggedUnflaggedByGuid();
 
     });
 
@@ -858,15 +846,6 @@ $router->mount('/item', function () use ($router, $twig, $trans, $logger, $confi
         }
 
         $logger->info($config['articlePerPages']);
-
-        /*
-        $offset = $articleConf['startArticle'];
-        $rowcount = $articleConf['startArticle'] + $config['articlePerPages'];
-
-        if ($articleConf['startArticle'] < 0) {
-            $articleConf['startArticle'] = 0;
-        }
-        */
 
         /*
          *
