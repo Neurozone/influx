@@ -1,13 +1,11 @@
 vendor
 .idea
-pages
 docs
 LICENSE
 README.md
 node_modules
 .github
 build
-dist
 .travis.yml
 .eslintrc
 .eslintignore
