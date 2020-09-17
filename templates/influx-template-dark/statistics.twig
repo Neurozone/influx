@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Settings</title>
+  <!-- Tell the browser to be responsive to screen width -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="{{ url }}/templates/influx-adminlte-3/plugins/fontawesome-free/css/all.min.css">
+  <!-- Ionicons -->
+  <link rel="stylesheet" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+  <!-- overlayScrollbars -->
+  <link rel="stylesheet" href="{{ url }}/templates/influx-adminlte-3/dist/css/adminlte.min.css">
+  <!-- Google Font: Source Sans Pro -->
+  <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700" rel="stylesheet">
+</head>
+<body class="hold-transition sidebar-mini layout-navbar-fixed">
+<!-- Site wrapper -->
+<div class="wrapper">
+  <!-- Navbar -->
+  <nav class="main-header navbar navbar-expand navbar-dark">
+    <!-- Left navbar links -->
+    <ul class="navbar-nav">
+      <li class="nav-item">
+        <a class="nav-link" data-widget="pushmenu" href="#"><i class="fas fa-bars"></i></a>
+      </li>
+      <li class="nav-item d-none d-sm-inline-block"><a href="/" class="nav-link">Home</a></li>
+      <li class="nav-item d-none d-sm-inline-block"><a href="/statistics" class="nav-link">Statistics</a></li>
+      <li class="nav-item d-none d-sm-inline-block"><a href="/settings" class="nav-link">Settings</a></li>
+    </ul>
+
+    <!-- SEARCH FORM -->
+    <form class="form-inline ml-3">
+      <div class="input-group input-group-sm">
+        <input class="form-control form-control-navbar" type="search" placeholder="Search" aria-label="Search">
+        <div class="input-group-append">
+          <button class="btn btn-navbar" type="submit">
+            <i class="fas fa-search"></i>
+          </button>
+        </div>
+      </div>
+    </form>
+  </nav>
+  <!-- /.navbar -->
+
+  <!-- Main Sidebar Container -->
+  <aside class="main-sidebar sidebar-dark-primary elevation-4">
+    <!-- Brand Logo -->
+    <a href="{{ url }}" class="brand-link">
+      <img src="{{ url }}/templates/influx-adminlte-3/dist/img/black-rss-logo-icon-png-2.png"
+           alt="AdminLTE Logo"
+           class="brand-image img-circle elevation-3"
+           style="opacity: .8">
+      <span class="brand-text font-weight-light">InFlux</span>
+    </a>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <!-- Sidebar user (optional) -->
+      <div class="user-panel mt-3 pb-3 mb-3 d-flex">
+        <div class="image">
+          <img src="{{ url }}/templates/influx-adminlte-3/dist/img/user_account_profile_avatar_person_student_female-512.png"
+               class="img-circle elevation-2" alt="User Image">
+        </div>
+        <div class="info">
+          <a href="#" class="d-block">{{ user }}</a>
+        </div>
+      </div>
+
+      <!-- Sidebar Menu -->
+      <nav class="mt-2">
+        <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+          <!-- Add icons to the links using the .nav-icon class
+               with font-awesome or any other icon font library -->
+          <li class="nav-item has-treeview">
+            <a href="#" class="nav-link">
+              <i class="nav-icon fas fa-tachometer-alt"></i>
+              <p>
+                Settings
+                <i class="right fas fa-angle-left"></i>
+              </p>
+            </a>
+            <ul class="nav nav-treeview">
+              <li class="nav-item">
+                <a href="{{ url }}/settings/manage" class="nav-link">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>{{ trans.FEED_MANAGING }}</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{{ url }}/settings/manage/categories" class="nav-link">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>Categories</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{{ url }}/settings/manage/feeds" class="nav-link">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>Feeds</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{{ url }}/settings/preferences" class="nav-link">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>{{ trans.PREFERENCES }}</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{{ url }}/settings/flux/import" class="nav-link">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>{{ trans.IMPORT }}</p>
+                </a>
+              </li>
+              <li class="nav-item">
+                <a href="{{ url }}/settings/flux/import" class="nav-link">
+                  <i class="far fa-circle nav-icon"></i>
+                  <p>{{ trans.EXPORT }}</p>
+                </a>
+              </li>
+            </ul>
+          </li>
+
+        </ul>
+      </nav>
+      <!-- /.sidebar-menu -->
+    </div>
+    <!-- /.sidebar -->
+  </aside>
+
+  <!-- Content Wrapper. Contains page content -->
+  <div class="content-wrapper">
+    <!-- Content Header (Page header) -->
+    <section class="content-header">
+      <div class="container-fluid">
+        <div class="row mb-2">
+          <div class="col-sm-6">
+            <h1>Settings</h1>
+          </div>
+          <div class="col-sm-6">
+            <ol class="breadcrumb float-sm-right">
+              <li class="breadcrumb-item"><a href="#">Home</a></li>
+              <li class="breadcrumb-item active">Settings</li>
+            </ol>
+          </div>
+        </div>
+      </div><!-- /.container-fluid -->
+    </section>
+
+    <!-- Main content -->
+    <section class="content">
+
+      {% if section == 'manage' %}
+        <!-- Default box -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">{{ trans.FEED_MANAGING }}</h3>
+
+            <div class="card-tools">
+              <button type="button" class="btn btn-tool" data-card-widget="collapse" data-toggle="tooltip"
+                      title="Collapse">
+                <i class="fas fa-minus"></i></button>
+              <button type="button" class="btn btn-tool" data-card-widget="remove" data-toggle="tooltip" title="Remove">
+                <i class="fas fa-times"></i></button>
+            </div>
+          </div>
+          <div class="card-body">
+            <form class="form-horizontal form-inline ml-6" action="{{ url }}/settings/flux/add" method="POST">
+              <div class="input-group input-group-sm">
+                <select name="newUrlCategory" class="form-control form-control-navbar>
+                {% for cat in categories %}
+                  <option {% if cat.id == 1 %}selected=" selected"{% endif %} value="{{ cat.id }}">{{ cat.name }}</option>
+                {% endfor %}
+                </select>
+                <input class="form-control form-control-navbar" type="text" placeholder="Add flux"
+                       aria-label="Add flux">
+                <div class="input-group-append">
+                  <button class="btn btn-info btn-flat" type="submit">
+                    <i class="fas fa-bookmark"></i>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+          <!-- /.card-body -->
+          <div class="card-footer">
+            Footer
+          </div>
+          <!-- /.card-footer-->
+        </div>
+        <!-- /.card -->
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Category management</h3>
+            <div class="card-tools">
+              <button type="button" class="btn btn-tool" data-card-widget="collapse" data-toggle="tooltip" title="Collapse">
+                <i class="fas fa-minus"></i></button>
+              <button type="button" class="btn btn-tool" data-card-widget="remove" data-toggle="tooltip" title="Remove">
+                <i class="fas fa-times"></i></button>
+            </div>
+          </div>
+          <div class="card-body">
+            <form class="form-inline ml-6" action="{{ url }}/settings/category/add" method="POST">
+              <div class="input-group input-group-sm">
+                <label>{{ trans.NEW_FOLDER }} </label>
+                <input class="form-control form-control-navbar" type="text" name="categoryName" placeholder="Add flux"
+                       aria-label="Add flux">
+                <div class="input-group-append">
+                  <button class="btn btn-info btn-flat" type="submit">
+                    <i class="fas fa-bookmark"></i>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+          <!-- /.card-body -->
+          <div class="card-footer">
+            Footer
+          </div>
+          <!-- /.card-footer-->
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">{{ trans.ADD_FOLDER }} :</h3>
+
+            <div class="card-tools">
+              <button type="button" class="btn btn-tool" data-card-widget="collapse" data-toggle="tooltip"
+                      title="Collapse">
+                <i class="fas fa-minus"></i></button>
+              <button type="button" class="btn btn-tool" data-card-widget="remove" data-toggle="tooltip" title="Remove">
+                <i class="fas fa-times"></i></button>
+            </div>
+          </div>
+          <div class="card-body">
+            {% set feedsForFolder="" %}
+            {% for folder in categories %}
+              {% set feedsForFolder = folder.flux %}
+              <h1 class="folder left"><span>{{ folder.name }}</span>
+                <a class="btn btn-info btn-sm" href="#" onclick="renameCategory(this,{{ folder.id }})">
+                  <i class="fas fa-pencil-alt">
+                  </i>
+                  Edit
+                </a>
+                <a class="btn btn-danger btn-sm" href="#"
+                   onclick="if(confirm('{{ trans.CONFIRM_DELETE_FOLDER }}\n\n{{ folder.name }}'))window.location='/settings/folder/remove/{{ folder.id }}'">
+                  <i class="fas fa-trash">
+                  </i>
+                  Delete
+                </a>
+              </h1>
+              <table class="table table-striped projects">
+                <thead>
+                <tr>
+                  <th style="width: 1%">ID</th>
+                  <th style="width: 20%">Name</th>
+                  <th style="width: 30%">Url</th>
+                  <th>Category</th>
+                  <th style="width: 20%">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for feed in folder.flux %}
+                  <tr id="{{ feed.id }}">
+                    <td>{{ feed.id }}</td>
+                    <td>
+                      <div class="row_data" edit_type="click" col_name="name">{{ feed.name }}</div>
+                    </td>
+                    <td>
+                      <div class="row_data" edit_type="click" col_name="url"><a href="{{ feed.url }}">{{ feed.url }}</a></div>
+                    </td>
+                    <td>
+                      <div class="row_select" edit_type="click" col_name="category"><select class="form-control feedFolder">
+                          {% for f in categories %}
+                            <option {% if feed.folder == f.id %}selected="selected"{% endif %} value="{{ f.id }}">{{ f.name }}</option>
+                          {% endfor %}
+                        </select>
+                      </div>
+                    </td>
+                    <td class="project-actions text-right">
+                      <span class="btn_edit"> <a href="#" class="btn btn-link " row_id="{{ feed.id }}"> Edit</a> </span>
+                      <span class="btn_save"> <a href="#" class="btn btn-link" row_id="{{ feed.id }}"> Save</a> | </span>
+                      <span class="btn_cancel"> <a href="#" class="btn btn-link" row_id="{{ feed.id }}"> Cancel</a> | </span>
+                      <!--
+                      <a class="btn btn-info btn-sm" href="#" onclick="renameFlux(this,{{ feed.id }})">
+                        <i class="fas fa-pencil-alt">
+                        </i>
+                        Edit
+                      </a>
+                      <a class="btn btn-danger btn-sm" href="#"
+                         onclick="if(confirm('{{ trans.CONFIRM_DELETE_FEED }}\n\n'+getFluxName({{ feed.id }}))){window.location='/settings/flux/remove/{{ feed.id }}';}">
+                        <i class="fas fa-trash">
+                        </i>
+                        Delete
+                      </a> -->
+                    </td>
+                  </tr>
+                {% endfor %}
+                </tbody>
+              </table>
+            {% endfor %}
+          </div>
+          <!-- /.card-body -->
+          <div class="card-footer">
+            Footer
+          </div>
+          <!-- /.card-footer-->
+        </div>
+      {% endif %}
+
+      {% if section == 'preferences' %}
+        <section class="preferenceBloc">
+          <h2>{{ trans.PREFERENCES }} :</h2>
+          <form method="POST" action="{{ url }}/settings/configuration/update">
+            <section>
+              <h3>{{ trans.GENERALITY }}</h3>
+              <p><label for="root">{{ trans.PROJECT_ROOT }} :</label> <input type="text" id="root" name="root"
+                                                                             value="{{ config.root }}">
+              </p>
+              <h4>{{ trans.LET_SLASH_AT_END }}</h4>
+              <p>{{ trans.INSTALL_LANGUAGE }} :
+                <select name="ChgLanguage">
+                  {% for ln in languageList %}
+                    {% if ln == currentLanguage %}
+                      <option selected=selected value="{{ ln }}">{{ ln }}</option>
+                    {% else %}
+                      <option value='{{ ln }}'>{{ ln }}</option>
+
+                    {% endif %}
+                  {% endfor %}
+                </select></p>
+              <p>{{ trans.THEMES }} :
+                <select name="ChgTheme">
+                  {% for th in themeList %}
+                    {% if th == currentTheme %}
+                      <option selected=selected value='{{ th }}'>{{ th }}</option>
+                      ";
+                    {% else %}
+                      <option value='{{ th }}'>{{ th }}</option>
+                      ";
+                    {% endif %}
+                  {% endfor %}
+                </select></p>
+            </section>
+
+            <section>
+              <h3>{{ trans.USER }}</h3>
+              <p><label for="login">{{ trans.LOGIN }} :</label> <input type="text" id="login" name="login"
+                                                                       value="{{ user }}"></p>
+              <p><label for="password">{{ trans.PASSWORD }} :</label> <input type="text" id="password"
+                                                                             name="password"
+                                                                             autocomplete="off"
+                                                                             value=""
+                                                                             placeholder="{{ trans.INSTALL_DISPLAY_CLEAR }}">
+              </p>
+              <p>{{ trans.LET_EMPTY_IF_NO_PASS_CHANGE }}<br/>
+                {{ trans.HOWTO_RESET_PASSWORD }}</p>
+              <fieldset>
+
+                <img id="qrCodeOtp" class="qrcodeOtp"
+                     src="{{ url }}/qrcode/qr/label/{$serviceUrl}/user/{{ user }}/key/{{ config.OtpSecret }}/issuer/{$serviceUrl}/algorithm/sha1/digits/8/period/30/qrSize/4/qrMargin/1"/>
+
+                <legend>{{ trans.OTP_SETTINGS }}</legend>
+                <input type="radio" {% if otpEnabled is defined %} checked="checked" {% endif %} value="1"
+                       id="otpEnabledYes" name="otpEnabled"/><label
+                  for="otpEnabledYes">{{ trans.YES }}</label>
+                <input type="radio"{% if otpEnabled is not defined %} checked="checked" {% endif %}
+                       value="0"
+                       id="otpEnabledNo" name="otpEnabled"/><label for="otpEnabledNo">{{ trans.NO }}</label>
+                <p>{{ trans.OTP_SETTINGS_DESC }}myUser->getOtpKey(.</p>
+                <p><label for="otpSecret">{{ trans.OTP_SECRET }} :</label>
+                  <input type="text" id="otpSecret" name="otpSecret" autocomplete="off"
+                         placeholder="{{ trans.OTP_DISABLED_EMPTY }}" value="{{ user.OtpSecret }}">
+                  <i class="icon-random-otp" data-otp-generate="#otpSecret" data-otp-qrcode="#qrCodeOtp"
+                     title="Random OTP secret"></i>
+                </p>
+              </fieldset>
+            </section>
+
+            <section>
+              <h3>{{ trans.SYNCHRONISATION }}</h3>
+              <p>
+                <input type="radio" {% if config.synchronisationType == "auto" %} checked="checked" {% endif %}
+                       value="auto" id="synchronisationTypeComplete" name="synchronisationType"> <label
+                  for="synchronisationTypeComplete"><strong>
+                    {{ trans.AUTOMATIC_FULL }} :</strong></label> {{ trans.AUTOMATIC_FULL_DESC }}</p>
+              <p>
+                <input type="radio" {% if config.synchronisationType == 'graduate' %} checked="checked" {% endif %}
+                       value="graduate" id="synchronisationTypeGraduated" name="synchronisationType"> <label
+                  for="synchronisationTypeGraduated"><strong>{{ trans.AUTOMATIC_GRADUATE }}
+                    :</strong></label> {{ trans.AUTOMATIC_GRADUATE_DESC }}</p>
+
+
+              <p><strong>{{ trans.SYNCHRONISATION_CODE }} :</strong>
+                {{ config.synchronisationCode }}
+              </p>
+
+            </section>
+
+            <section>
+
+              <h3>{{ trans.PREFERENCES }}</h3>
+              <fieldset>
+                <legend><label for="articlePerPages">{{ trans.EVENT_NUMBER_PER_PAGES }}</label></legend>
+                <input type="text" value="{{ config.articlePerPages }}" id="articlePerPages"
+                       name="articlePerPages" size="4"/>
+              </fieldset>
+              <fieldset>
+                <legend>{{ trans.SORT_BY_RECENT_EVENT_HOME }}</legend>
+                <input type="radio" {% if config.articleDisplayHomeSort %} checked="checked" {% endif %}
+                       value="1"
+                       id="articleDisplayHomeSortYes" name="articleDisplayHomeSort"/><label
+                  for="articleDisplayHomeSortYes">{{ trans.YES }}</label>
+                <input type="radio" {% if not config.articleDisplayHomeSort %} checked=" checked" {% endif %}
+                       value="0" id="articleDisplayHomeSortNo" name="articleDisplayHomeSort"/><label
+                  for="articleDisplayHomeSortNo">{{ trans.NO }}</label>
+              </fieldset>
+              <fieldset>
+                <legend>{{ trans.SORT_BY_RECENT_EVENT_FOLDER }}</legend>
+                <input type="radio" {% if config.articleDisplayFolderSort %} checked="checked" {% endif %}
+                       value="1"
+                       id="articleDisplayFolderSortYes" name="articleDisplayFolderSort"/><label
+                  for="articleDisplayFolderSortYes">{{ trans.YES }}</label>
+                <input type="radio" {% if not config.articleDisplayFolderSort %} checked=" checked" {% endif %}
+                       value="0"
+                       id="articleDisplayFolderSorttNo" name="articleDisplayFolderSort"/><label
+                  for="articleDisplayFolderSortNo">{{ trans.NO }}</label>
+              </fieldset>
+              <fieldset>
+                <legend>{{ trans.SHOW_EVENT_CONTENT }}</legend>
+                <input type="radio" {% if config.articleDisplayMode=='title' %} checked="checked" {% endif %}
+                       value="title" id="articleDisplayModeTitle" name="articleDisplayMode"/><label
+                  for="articleDisplayModeTitle">{{ trans.TITLE }}</label>
+                <input type="radio" {% if config.articleDisplayMode=='summary' %} checked="checked" {% endif %}
+                       value="summary" id="articleDisplayModeSummary" name="articleDisplayMode"/><label
+                  for="articleDisplayModeSummary">{{ trans.SUMMARY }}</label>
+                <input type="radio" {% if config.articleDisplayMode=='content' %} checked="checked" {% endif %}
+                       value="content" id="articleDisplayModeContent" name="articleDisplayMode"/><label
+                  for="articleDisplayModeContent">{{ trans.CONTENT }}</label>
+              </fieldset>
+
+            </section>
+
+            <button name="installButton">{{ trans.SAVE }}</button>
+          </form>
+
+        </section>
+      {% endif %}
+
+      {% if section == 'feeds/import' %}
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">{{ trans.IMPORT_FEED_OPML_FORMAT }}</h3>
+
+            <div class="card-tools">
+              <button type="button" class="btn btn-tool" data-card-widget="collapse" data-toggle="tooltip"
+                      title="Collapse">
+                <i class="fas fa-minus"></i></button>
+              <button type="button" class="btn btn-tool" data-card-widget="remove" data-toggle="tooltip" title="Remove">
+                <i class="fas fa-times"></i></button>
+            </div>
+          </div>
+          <div class="card-body">
+            <form action="{{ url }}/settings/feeds/import" method="POST" enctype="multipart/form-data">
+              <p>{{ trans.OPML_FILE }} : <input name="newImport" type="file"/>
+                <button name="importButton">{{ trans.IMPORT }}</button>
+              </p>
+              <p>{{ trans.IMPORT_COFFEE_TIME }}</p>
+            </form>
+          </div>
+          <!-- /.card-body -->
+          <div class="card-footer">
+            Footer
+          </div>
+          <!-- /.card-footer-->
+        </div>
+        <!-- /.card -->
+      {% endif %}
+
+
+      {% if section == 'feeds/export' %}
+
+        <section class="exportBloc">
+          <form action="{{ url }}/settings/feed/export" method="POST">
+            <h2>{{ trans.EXPORT_FEED_OPML_FORMAT }}</h2>
+            <p>{{ trans.OPML_FILE }} :
+              <button name="exportButton">{{ trans.EXPORT }}</button>
+            </p>
+          </form>
+        </section>
+      {% endif %}
+
+
+    </section>
+    <!-- /.content -->
+  </div>
+  <!-- /.content-wrapper -->
+
+  <footer class="main-footer">
+    <div class="float-right d-none d-sm-block">
+      <b>Version</b> 3.0.2
+    </div>
+    <strong>Copyright &copy; 2014-2019 <a href="http://adminlte.io">AdminLTE.io</a>.</strong> All rights
+    reserved.
+  </footer>
+
+  <!-- Control Sidebar -->
+  <aside class="control-sidebar control-sidebar-dark">
+    <!-- Control sidebar content goes here -->
+  </aside>
+  <!-- /.control-sidebar -->
+</div>
+<!-- ./wrapper -->
+
+<!-- jQuery -->
+<script src="{{ url }}/templates/influx-adminlte-3/plugins/jquery/jquery.min.js"></script>
+<!-- jQuery UI 1.11.4 -->
+<script src="{{ url }}/templates/influx-adminlte-3/plugins/jquery-ui/jquery-ui.min.js"></script>
+<!-- Resolve conflict in jQuery UI tooltip with Bootstrap tooltip -->
+<script>
+  $.widget.bridge('uibutton', $.ui.button)
+</script>
+<!-- Bootstrap 4 -->
+<script src="{{ url }}/templates/influx-adminlte-3/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+<!-- ChartJS -->
+<script src="{{ url }}/templates/influx-adminlte-3/plugins/chart.js/Chart.min.js"></script>
+<!-- Sparkline -->
+<script src="{{ url }}/templates/influx-adminlte-3/plugins/sparklines/sparkline.js"></script>
+<!-- JQVMap -->
+<script src="{{ url }}/templates/influx-adminlte-3/plugins/jqvmap/jquery.vmap.min.js"></script>
+<script src="{{ url }}/templates/influx-adminlte-3/plugins/jqvmap/maps/jquery.vmap.usa.js"></script>
+<!-- jQuery Knob Chart -->
+<script src="{{ url }}/templates/influx-adminlte-3/plugins/jquery-knob/jquery.knob.min.js"></script>
+<!-- daterangepicker -->
+<script src="{{ url }}/templates/influx-adminlte-3/plugins/moment/moment.min.js"></script>
+<script src="{{ url }}/templates/influx-adminlte-3/plugins/daterangepicker/daterangepicker.js"></script>
+<!-- Tempusdominus Bootstrap 4 -->
+<script src="{{ url }}/templates/influx-adminlte-3/plugins/tempusdominus-bootstrap-4/js/tempusdominus-bootstrap-4.min.js"></script>
+<!-- Summernote -->
+<script src="{{ url }}/templates/influx-adminlte-3/plugins/summernote/summernote-bs4.min.js"></script>
+<!-- overlayScrollbars -->
+<script src="{{ url }}/templates/influx-adminlte-3/plugins/overlayScrollbars/js/jquery.overlayScrollbars.min.js"></script>
+<!-- AdminLTE App -->
+<script src="{{ url }}/templates/influx-adminlte-3/dist/js/adminlte.js"></script>
+<!-- AdminLTE dashboard demo (This is only for demo purposes) -->
+<script src="/templates/influx-adminlte-3/dist/js/pages/dashboard.js"></script>
+<!-- AdminLTE for demo purposes -->
+<script src="{{ url }}/templates/influx-adminlte-3/dist/js/demo.js"></script>
+<script src="{{ url }}/templates/influx-adminlte-3/js/script.js"></script>
+</body>
+</html>

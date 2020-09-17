@@ -1,0 +1,44 @@
+{% for event in events %}
+    {% set plainDescription = event.description|striptags|escape %}
+  <div class="row post" id="{{ event.id }}" data-feed="{{ event.flux }}">
+    <div class="col-md-12">
+      <!-- Box Comment -->
+      <div class="card card-widget text-dark {% if event.unread == 1 %}bg-gray disabled color-palette{%  else %}bg-gray-dark color-palette{% endif %}">
+        <div class="card-header">
+          <!--
+          <div class="user-block">
+            <img class="img-circle" src="/templates/influx-adminlte-3/dist/img/user1-128x128.jpg" alt="User Image">
+            <span class="username">{% if event.creator %}{{ event.creator }}{% endif %}</span>
+            <span class="description">{{ event.pubdate }} - <a href="{{ event.link }}">{{ event.title|escape }}</a></span>
+          </div>
+          -->
+          <h3 class="card-title bg-gray">{{ event.pubdate }} - <a href="{{ event.link }}">{{ event.title|escape }} </a></h3>
+          <span class="description"> by {% if event.creator %}{{ event.creator }}{% endif %}</span>
+          <!-- /.user-block -->
+          <div class="card-tools">
+            <button type="button" class="btn btn-tool readUnreadButton" data-toggle="tooltip" title="Mark as read" onclick="readThis(this,'{{ event.id }}','item');">
+              <i class="far fa-check-circle"></i></button>
+          </div>
+          <!-- /.card-tools -->
+        </div>
+        <!-- /.card-header -->
+        <div class="card-body">
+          {{ event.content|raw }}
+        </div>
+        <!-- /.card-body -->
+        <!-- /.card-footer -->
+        <div class="card-footer">
+          <div class="card-tools">
+            <button type="button" class="btn btn-tool readUnreadButton" data-toggle="tooltip" title="Mark as read" onclick="readThis(this,'{{ event.id }}','item');">
+              <i class="far fa-check-circle"></i></button>
+            <button type="button" class="btn btn-tool" data-toggle="tooltip" title="Bookmark" onclick="markFlaggedUnflagged(this,'{{ event.id }}');">
+              <i class="fa fa-heart"></i></button>
+          </div>
+        </div>
+        <!-- /.card-footer -->
+      </div>
+      <!-- /.card -->
+    </div>
+    <!-- /.col -->
+  </div>
+{% endfor %}

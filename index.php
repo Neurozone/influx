@@ -176,7 +176,8 @@ $router->before('GET|POST|PUT|DELETE|PATCH|OPTIONS', '/.*', function () use ($lo
     $logger->info($_SERVER['HTTP_HOST']);
 
     if(isset($_COOKIE['InfluxChocolateCookie'])) {
-        $_SESSION['user'] = $_COOKIE['InfluxChocolateCookie'];
+        $cookieData = $_COOKIE['InfluxChocolateCookie'];
+        list($_SESSION['user'],$_SESSION['userId'],$_SESSION['userEmail']) = explode('-',$cookieData);
     }
 
     if (file_exists('installed') && !isset($_SESSION['user']) && $_SERVER['REQUEST_URI'] == '/password/recover') {
@@ -243,9 +244,7 @@ $router->post('/login', function () use ($db, $config, $logger, $userObject) {
         $_SESSION['user'] = $_POST['login'];
         $_SESSION['userId'] = $userObject->getId();
         $_SESSION['userEmail'] = $userObject->getEmail();
-        if (isset($_POST['rememberMe'])) {
-            setcookie('InfluxChocolateCookie', $_POST['login'], time() + 31536000);
-        }
+        setcookie('InfluxChocolateCookie', $_POST['login'] . '-' . $_SESSION['userId'] . '-' . $_SESSION['userEmail'], time() + 31536000);
         header('location: /');
 
     } else {

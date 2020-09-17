@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <!-- Required meta tags -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
+</head>
+<body class="hold-transition skin-black sidebar-mini layout-navbar-fixed">
+<div class="wrapper">
+  <!-- Navbar -->
+  <nav class="main-header navbar navbar-expand navbar-dark">
+    <!-- Left navbar links -->
+    <ul class="navbar-nav">
+      <li class="nav-item">
+        <a class="nav-link" data-widget="pushmenu" href="#"><i class="fas fa-bars"></i></a>
+      </li>
+      <li class="nav-item d-none d-sm-inline-block"><a href="{{ url }}" class="nav-link">Home</a></li>
+      <li class="nav-item d-none d-sm-inline-block"><a href="{{ url }}/statistics" class="nav-link">Statistics</a></li>
+      <li class="nav-item d-none d-sm-inline-block"><a href="{{ url }}/settings" class="nav-link">Settings</a></li>
+    </ul>
+
+    <!-- SEARCH FORM -->
+    <form class="form-inline ml-3" method="post" action="{{ url }}">
+      <div class="input-group input-group-sm">
+        <input class="form-control form-control-navbar" type="search" placeholder="Search" aria-label="Search">
+        <div class="input-group-append">
+          <button class="btn btn-navbar" type="submit">
+            <i class="fas fa-search"></i>
+          </button>
+        </div>
+      </div>
+    </form>
+
+  </nav>
+  <!-- /.navbar -->
+
+  <!-- Main Sidebar Container -->
+  <aside class="main-sidebar sidebar-dark-primary elevation-4">
+    <!-- Brand Logo -->
+    <a href="{{ url }}" class="brand-link">
+      <img src="{{ url }}/templates/influx-adminlte-3/dist/img/black-rss-logo-icon-png-2.png" alt="AdminLTE Logo"
+           class="brand-image img-circle elevation-3"
+           style="opacity: .8">
+      <span class="brand-text font-weight-light">InFlux</span>
+    </a>
+
+    <!-- Sidebar -->
+    <div class="sidebar text-sm">
+      <!-- Sidebar user panel (optional) -->
+      <div class="user-panel mt-3 pb-3 mb-3 d-flex">
+        <div class="image">
+          <img src="{{ url }}/templates/influx-adminlte-3/dist/img/user_account_profile_avatar_person_student_female-512.png"
+               class="img-circle elevation-2" alt="User Image">
+        </div>
+        <div class="info">
+          <a href="{{ url }}/user" class="d-block">{{ user }}</a>
+        </div>
+      </div>
+
+      <!-- Sidebar Menu -->
+      <nav class="mt-2" id="menuBar">
+        <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+
+          {% for category in categories %}
+            <li class="nav-item has-treeview">
+              <a href="{{ url }}/category/{{ category.id }}" class="nav-link" data-id="{{ category.id }}">
+                <i class="nav-icon fas fa-copy"></i>
+                <p>
+                  {{ category.name }}
+                  <i class="fas fa-angle-left right"></i>
+                  <span class="badge badge-info right unreadForFolder">{{ category.unread }}</span>
+                </p>
+              </a>
+              <ul class="nav nav-treeview">
+                {% for flux in category.flux %}
+                  <li class="nav-item">
+                    <a href="{{ url }}/flux/{{ flux.id }}" class="nav-link {% if flux.id == fluxId %}selectedFlux{% endif %}"
+                       data-id="{{ flux.id }}">
+                      <i class="far fa-circle nav-icon"></i>
+                      <p>{{ flux.name }}</p>
+                      <i class="fas fa-angle-left right"></i>
+                      <span class="badge badge-info right unreadForFeed" data-mark-all-read="feed"
+                            data-flux-id="{{ flux.id }}">{{ flux.unread }}</span>
+                    </a>
+                  </li>
+                {% endfor %}
+              </ul>
+            </li>
+          {% endfor %}
+
+        </ul>
+      </nav>
+      <!-- /.sidebar-menu -->
+    </div>
+    <!-- /.sidebar -->
+  </aside>
+
+  <!-- Content Wrapper. Contains page content -->
+  <div class="content-wrapper bg-black color-palette">
+    <!-- Content Header (Page header) -->
+    <div class="content-header">
+      <div class="container-fluid">
+        <div class="row mb-2">
+          <div class="col-sm-6">
+            <a id="pageTop" class="hidden" style="display: none">{{ action }}</a>
+
+            {% if action == 'item' %}
+              <h1 class="m-0 text-dark"><a target="_blank" rel="noopener noreferrer" href="{{ flux.website }}" class="text-dark">{{ flux.name }}</a></h1>
+              {{ flux.description }}
+              <a href="{{ url }}/flux/{{ flux.id }}">Non lu</a>
+            {% endif %}
+
+            {% if action == 'category' %}
+              <h1 class="m-0 text-dark">{{ category.name }}</h1>
+              <p>Tous les &eacute;v&eacute;nements non lus pour le dossier {{ category.name }}</p>
+            {% endif %}
+
+            {% if action == 'favorites' %}
+              <h1 class="m-0 text-dark">Articles favoris <span id="nbarticle">{{ numberOfItem }}</span></h1>
+            {% endif %}
+
+          </div><!-- /.col -->
+          <div class="col-sm-6">
+
+          </div><!-- /.col -->
+        </div><!-- /.row -->
+      </div><!-- /.container-fluid -->
+    </div>
+    <!-- /.content-header -->
+
+    <!-- Main content -->
+    <section class="content bg-black color-palette">
+      <div class="container-fluid bg-black color-palette" id="articles">
+
+        {% include "item.twig" %}
+
+        <!-- /.row -->
+        <!-- Main row -->
+
+        <!-- /.row (main row) -->
+      </div><!-- /.container-fluid -->
+    </section>
+    <!-- /.content -->
+  </div>
+  <!-- /.content-wrapper -->
+  <!-- Control Sidebar -->
+  <aside class="control-sidebar control-sidebar-dark">
+    <!-- Control sidebar content goes here -->
+  </aside>
+  <!-- /.control-sidebar -->
+</div>
+<!-- ./wrapper -->
+
+<!-- jQuery -->
+<script src="https://unpkg.com/infinite-scroll@3/dist/infinite-scroll.pkgd.min.js"></script>
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js" integrity="sha384-9/reFTGAW83EW2RDu2S0VKaIzap3H66lZH81PoYlFhbGU+6BZp6G7niu735Sk7lN" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js" integrity="sha384-B4gt1jrGC7Jh4AgTPSdUtOBvfO8shuf57BaghqFfPlYxofvL8/KUEfYiJOMMV+rV" crossorigin="anonymous"></script>
+<script src="{{ url }}/templates/influx-adminlte-3/js/script-influx.js"></script>
+</body>
+</html>
