@@ -1,0 +1,170 @@
+<!doctype html>
+<!--[if lt IE 7]>
+<html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
+<!--[if IE 7]>
+<html class="no-js lt-ie9 lt-ie8" lang="en"> <![endif]-->
+<!--[if IE 8]>
+<html class="no-js lt-ie9" lang="en"> <![endif]-->
+<!--[if gt IE 8]><!-->
+<html class="no-js" lang="<en"> <!--<![endif]-->
+<head>
+    <meta charset="utf-8">
+    <meta name="referrer" content="no-referrer"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Installation de InFlux</title>
+    <meta name="viewport" content="width=device-width">
+    <link rel="stylesheet" href="templates/influx/css/style.css">
+    <style>
+        code {
+            color: #000;
+            font-size: 1em;
+        }
+
+        .install h1 {
+            margin-bottom: 1.3em;
+        }
+
+        .install h2 {
+            margin-bottom: 0.1em;
+            font-size: 1.5em;
+        }
+
+        .install ul {
+            margin: 0;
+            padding: 0;
+        }
+
+        .install li {
+            list-style: none outside none;
+        }
+
+        .install span {
+            display: inline-block;
+            width: 8em;
+            padding-right: 1em;
+        }
+
+        button#installButton {
+            margin-top: 1em;
+            font-size: 2em;
+        }
+
+        .message {
+            color: #ffffff;
+            margin-bottom: 2em;
+        }
+
+        .message li {
+            border: 1px solid #212121
+        }
+
+        .messageError {
+            background-color: #F16529;
+        }
+
+        .messageSuccess {
+            background-color: #008000;
+        }
+    </style>
+</head>
+<body>
+<div class="global-wrapper">
+    <div id="header-container">
+        <header class="wrapper clearfix">
+            <h1 class="logo" id="title"><a href="/">In<i>Flux</i></a></h1>
+            <nav>
+            </nav>
+        </header>
+    </div>
+
+    <div id="main-container">
+        <div id="main" class="wrapper clearfix">
+            <div id="menuBar">
+                <aside>
+                    <h3 class="left">{{ trans.INSTALL_PRE_REQUIS }}</h3>
+                    <ul class="clear" style="margin:0">
+
+                    </ul>
+                </aside>
+            </div>
+            {% if action == 'general' %}
+                <form action="/install" method="POST" class="install">
+                    <h1>{{ trans.INSTALL_TITLE }}</h1>
+                    <h2>{{ trans.INSTALL_TAB_GENERAL }}</h2>
+                    <ul>
+                        <li>
+                            <span>{{ trans.INSTALL_LANGUAGE }}</span>
+                            <select name="install_changeLng">
+                            {% for ln in list_lang %}
+                                <option value='{{ ln }}'>{{ ln }}</option>
+                            {% endfor %}
+                            </select>
+                        </li>
+                        <li>
+                            <span>{{ trans.INSTALL_TEMPLATE }}</span>
+                            <select name='template'>
+                                {% for tpl in list_templates %}
+                                    <option value='{{ tpl }}'>{{ tpl }}</option>
+                                {% endfor %}
+                            </select>
+                        </li>
+                        <li>
+                            <span>{{ trans.PROJECT_ROOT }}</span>
+                            <input type="text" name="root" value="{{ root }}">
+                        </li>
+                    </ul>
+                    <input type="hidden" name="action" value="database" />
+                    <button id="installButton" name="{{ installActionName }}">{{ trans.INSTALL_BTN }}</button>
+                </form>
+            {% endif %}
+            {% if action == 'database' %}
+                <form action="/install" method="POST" class="install">
+                    <h2>{{ trans.INSTALL_TAB_BDD }}</h2>
+                    <ul>
+                        <li>
+                            <span>{{ trans.INSTALL_HOST }}</span>
+                            <input type="text" name="mysqlHost" placeholder="{{ trans.INSTALL_COMMENT_HOST }}">
+                        </li>
+                        <li>
+                            <span>{{ trans.LOGIN }}</span>
+                            <input type="text" name="mysqlLogin">
+                        </li>
+                        <li>
+                            <span>{{ trans.PASSWORD }}</span>
+                            <input type="text" autocomplete="off" name="mysqlMdp"
+                                   placeholder="{{ trans.INSTALL_DISPLAY_CLEAR }}">
+                        </li>
+                        <li>
+                            <span>{{ trans.INSTALL_BDD }}</span>
+                            <input type="text" name="mysqlBase" placeholder="{{ trans.INSTALL_COMMENT_BDD }}">
+                        </li>
+                        <li>
+                            <span>{{ trans.INSTALL_PREFIX_TABLE }}</span>
+                            <input type="text" name="mysqlPrefix">
+                        </li>
+                    </ul>
+                    <input type="hidden" name="action" value="admin" />
+                    <button id="installButton" name="{{ installActionName }}">{{ trans.INSTALL_BTN }}</button>
+                </form>
+            {% endif %}
+            {% if action == 'admin' %}
+            <form action="/install" method="POST" class="install">
+                <h2>{{ trans.INSTALL_TAB_ADMIN }}</h2>
+                <ul>
+                    <li>
+                        <span>{{ trans.LOGIN }}</span>
+                        <input type="text" name="login" placeholder="{{ trans.LOGIN }}">
+                    </li>
+                    <li>
+                        <span>{{ trans.PASSWORD }}</span>
+                        <input type="text" autocomplete="off" name="password"
+                               placeholder="{{ trans.INSTALL_DISPLAY_CLEAR }}">
+                    </li>
+                </ul>
+                <input type="hidden" name="action" value="end" />
+                <button id="installButton" name="{{ installActionName }}">{{ trans.INSTALL_BTN }}</button>
+            </form>
+            {% endif %}
+
+</body>
+</html>
