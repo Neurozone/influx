@@ -66,7 +66,7 @@ if (file_exists('conf/config.php')) {
     $conf = new Configuration($db);
     $config = $conf->getAll();
 
-    $templateName = 'influx-adminlte-3';
+    $templateName = 'influx-template-dark';
     $templatePath = __DIR__ . '/templates/' . $templateName;
 
     $loader = new \Twig\Loader\FilesystemLoader($templatePath);
