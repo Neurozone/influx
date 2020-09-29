@@ -13,7 +13,7 @@
     <script src="https://kit.fontawesome.com/3dc7e89a7c.js" crossorigin="anonymous"></script>
 </head>
 <body>
-<header>
+
     <nav class="navbar sticky">
         <a class="" href="#">InFlux</a>
         <input class="" type="text" placeholder="Search" aria-label="Search">
@@ -23,7 +23,7 @@
             </li>
         </ul>
     </nav>
-</header>
+
 
 <nav>
     {% for category in categories %}
@@ -33,7 +33,7 @@
                data-id="{{ category.id }}">
                 <span data-feather="plus-circle"></span>
             </a>
-            <a id="pageTop" class="hidden" style="display: none">{{ action }}</a>
+
         </h6>
         <ul class="">
             {% for flux in category.flux %}
@@ -56,6 +56,7 @@
                           class="text-dark">{{ flux.name }}</a></h1>
         {{ flux.description }}
         <a href="{{ url }}/flux/{{ flux.id }}">Non lu</a>
+        <a id="pageTop" class="hidden" style="display: none">{{ action }}</a>
     </header>
 
     {% include "item.twig" %}
