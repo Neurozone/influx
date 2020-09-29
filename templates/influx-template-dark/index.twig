@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en">
 <head>
@@ -7,23 +6,12 @@
     <meta name="description" content="">
     <meta name="author" content="Mark Otto, Jacob Thornton, and Bootstrap contributors">
     <meta name="generator" content="Jekyll v3.8.6">
-    <title>Dashboard Template · Bootstrap</title>
-
-    <link rel="canonical" href="https://getbootstrap.com/docs/4.4/examples/dashboard/">
-
+    <title>InFlux - RSS Reader</title>
     <!-- Bootstrap core CSS -->
-    <link href="{{ url }}/templates/influx-template-dark/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
-
-    <!-- Favicons -->
-    <link rel="apple-touch-icon" href="/docs/4.4/assets/img/favicons/apple-touch-icon.png" sizes="180x180">
-    <link rel="icon" href="/docs/4.4/assets/img/favicons/favicon-32x32.png" sizes="32x32" type="image/png">
-    <link rel="icon" href="/docs/4.4/assets/img/favicons/favicon-16x16.png" sizes="16x16" type="image/png">
-    <link rel="manifest" href="/docs/4.4/assets/img/favicons/manifest.json">
-    <link rel="mask-icon" href="/docs/4.4/assets/img/favicons/safari-pinned-tab.svg" color="#563d7c">
-    <link rel="icon" href="/docs/4.4/assets/img/favicons/favicon.ico">
-    <meta name="msapplication-config" content="/docs/4.4/assets/img/favicons/browserconfig.xml">
+    <link href="{{ url }}/templates/influx-template-dark/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <link rel="icon" href="{{ url }}/templates/influx-template-dark/img/Icone_Neurozone01.png">
     <meta name="theme-color" content="#563d7c">
-
 
     <style>
         .bd-placeholder-img {
@@ -63,7 +51,8 @@
                 {% for category in categories %}
                     <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-muted">
                         <span>{{ category.name }}</span>
-                        <a class="d-flex align-items-center text-muted" href="{{ url }}/category/{{ category.id }}" data-id="{{ category.id }}">
+                        <a class="d-flex align-items-center text-muted" href="{{ url }}/category/{{ category.id }}"
+                           data-id="{{ category.id }}">
                             <span data-feather="plus-circle"></span>
                         </a>
                     </h6>
@@ -86,7 +75,8 @@
         <main role="main" class="col-md-9 ml-sm-auto col-lg-10 pt-3 px-4">
             <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
                 {% if action == 'item' %}
-                    <h1 class="h2"><a target="_blank" rel="noopener noreferrer" href="{{ flux.website }}" class="text-dark">{{ flux.name }}</a></h1>
+                    <h1 class="h2"><a target="_blank" rel="noopener noreferrer" href="{{ flux.website }}"
+                                      class="text-dark">{{ flux.name }}</a></h1>
                     {{ flux.description }}
                     <a href="{{ url }}/flux/{{ flux.id }}">Non lu</a>
                     <div class="btn-toolbar mb-2 mb-md-0">
@@ -106,10 +96,18 @@
         </main>
     </div>
 </div>
-<script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
-<script>window.jQuery || document.write('<script src="/docs/4.4/assets/js/vendor/jquery.slim.min.js"><\/script>')</script><script src="/docs/4.4/dist/js/bootstrap.bundle.min.js" integrity="sha384-6khuMg9gaYr5AxOqhkVIODVIvm9ynTT5J4V1cfthmT+emCG6yVmEZsRHdxlotUnm" crossorigin="anonymous"></script>
+
+<script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"
+        integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n"
+        crossorigin="anonymous"></script>
+<script>window.jQuery || document.write('<script src="/docs/4.4/assets/js/vendor/jquery.slim.min.js"><\/script>')</script>
+<script src="/docs/4.4/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-6khuMg9gaYr5AxOqhkVIODVIvm9ynTT5J4V1cfthmT+emCG6yVmEZsRHdxlotUnm"
+        crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/feather-icons/4.9.0/feather.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.3/Chart.min.js"></script>
-<script src="{{ url }}/templates/influx-template-dark/js/dashboard.js"></script></body>
-<script src="{{ url }}/templates/influx-template-dark/js/script-influx.js"></script></body>
+<script src="{{ url }}/templates/influx-template-dark/js/dashboard.js"></script>
+<script src="{{ url }}/templates/influx-template-dark/js/script-influx.js"></script>
+
+</body>
 </html>
