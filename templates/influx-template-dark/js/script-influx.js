@@ -42,6 +42,27 @@ $('#articles').infiniteScroll({
   history: false,
 });
 
+$(window).scroll(function () {
+  // End of the document reached?
+  if ($(document).height() - $(this).height() == $(this).scrollTop()) {
+    $.ajax({
+      type: "POST",
+      url: "index.aspx/GetData",
+      contentType: "application/json; charset=utf-8",
+      data: '',
+      dataType: "json",
+      success: function (msg) {
+        if (msg.d) {
+          $(".container").append(msg.d);
+        }
+      },
+      error: function (req, status, error) {
+        alert("Error try again");
+      }
+    });
+  }
+});
+
 function targetThisEvent(event, focusOn) {
   target = $(event);
   if (target.prop("tagName") == 'SECTION') {
